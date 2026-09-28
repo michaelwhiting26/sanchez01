@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Components | Sanchez prototype style guide</title>
+  <meta name="description" content="Living style guide: every token, component and state in the Sanchez prototype.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0e0b09">
+  <link rel="icon" href="../media-scrape/other/3d2aa4_667e005177ab4313add5e21aa0bdfd69~mv2.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
+  <script src="app.js" defer></script>
+</head>
+<body data-page="components">
+<header class="site-header" data-chrome="header"></header>
+
+<main id="main" tabindex="-1">
+  <div class="container">
+    <section class="sg-section">
+      <p class="eyebrow">Prototype · visual source of truth</p>
+      <h1 class="display-2">Components</h1>
+      <p class="lede">Every token, component and state. Class names are listed in <span class="sg-code">code</span>. Port these to Tailwind tokens and React components in <span class="mono">apps/web</span>.</p>
+      <ul class="sg-toc" style="margin-block-start:var(--space-5)">
+        <li><a href="#colour">Colour</a></li><li><a href="#type">Type</a></li><li><a href="#space">Spacing</a></li><li><a href="#buttons">Buttons</a></li>
+        <li><a href="#tags">Tags</a></li><li><a href="#forms">Forms</a></li><li><a href="#choices">Choices</a></li><li><a href="#feedback">Feedback</a></li>
+        <li><a href="#states">States</a></li><li><a href="#overlays">Overlays</a></li><li><a href="#nav">Tabs + accordion</a></li><li><a href="#commerce">Commerce</a></li>
+        <li><a href="#cards">Cards + media</a></li><li><a href="#config">Configurator</a></li>
+      </ul>
+    </section>
+
+    <section class="sg-section" id="colour" aria-labelledby="c-h">
+      <h2 id="c-h">Colour tokens</h2>
+      <p class="muted small">Semantic tokens (use these) map to the raw palette. Contrast ratios on <span class="sg-code">--color-bg</span>.</p>
+      <div class="sg-row">
+        <div class="sg-swatch" style="--sw:var(--color-bg)"><span></span><span class="sg-code">--color-bg</span><span>#0E0B09</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-surface)"><span></span><span class="sg-code">--color-surface</span><span>#17120F</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-surface-raised)"><span></span><span class="sg-code">--color-surface-raised</span><span>#211A15</span></div>
+        <div class="sg-swatch" style="--sw:var(--c-leather-700)"><span></span><span class="sg-code">--c-leather-700</span><span>#3D2C21</span></div>
+        <div class="sg-swatch" style="--sw:var(--c-leather-500)"><span></span><span class="sg-code">--c-leather-500</span><span>#7D5638</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-border-strong)"><span></span><span class="sg-code">--color-border-strong</span><span>#5A3F2C</span></div>
+      </div>
+      <div class="sg-row">
+        <div class="sg-swatch" style="--sw:var(--color-text)"><span></span><span class="sg-code">--color-text</span><span>#F3EADC · 16.4:1</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-text-2)"><span></span><span class="sg-code">--color-text-2</span><span>#D6C8B3 · 11.9:1</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-text-muted)"><span></span><span class="sg-code">--color-text-muted</span><span>#A8977F · 6.9:1</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-accent)"><span></span><span class="sg-code">--color-accent</span><span>#A83E26 · text 5.2:1</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-accent-text)"><span></span><span class="sg-code">--color-accent-text</span><span>#E0724F · 6.2:1</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-stitch)"><span></span><span class="sg-code">--color-stitch</span><span>#C9A45C (detail only)</span></div>
+      </div>
+      <div class="sg-row">
+        <div class="sg-swatch" style="--sw:var(--color-success)"><span></span><span class="sg-code">--color-success</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-warning)"><span></span><span class="sg-code">--color-warning</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-danger)"><span></span><span class="sg-code">--color-danger</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-focus)"><span></span><span class="sg-code">--color-focus</span></div>
+        <div class="sg-swatch" style="--sw:var(--color-ph-bg)"><span></span><span class="sg-code">--color-ph-bg / -text</span></div>
+      </div>
+    </section>
+
+    <section class="sg-section" id="type" aria-labelledby="t-h">
+      <h2 id="t-h">Typography</h2>
+      <p class="muted small">Display: Barlow Condensed (500–800), uppercase. Text: Barlow (400–700). Google Fonts in the prototype; self-host + subset in production.</p>
+      <div class="stack" style="margin-block-start:var(--space-4)">
+        <p class="display-1">Display 1 <span class="sg-code">.display-1 · --fs-4xl</span></p>
+        <p class="display-2" style="font-family:var(--font-display);text-transform:uppercase;font-weight:700">Display 2 <span class="sg-code">.display-2 · --fs-3xl</span></p>
+        <p class="h2" style="font-family:var(--font-display);text-transform:uppercase;font-weight:700">Heading 2 <span class="sg-code">.h2 · --fs-2xl</span></p>
+        <p class="h3" style="font-family:var(--font-display);text-transform:uppercase;font-weight:700">Heading 3 <span class="sg-code">.h3 · --fs-xl</span></p>
+        <p class="eyebrow">Eyebrow <span class="sg-code">.eyebrow</span></p>
+        <p class="lede">Lede paragraph for intros. <span class="sg-code">.lede</span></p>
+        <p>Body text at 16px with 1.6 line height. <span class="sg-code">body</span></p>
+        <p class="small muted">Small muted. <span class="sg-code">.small .muted</span></p>
+        <p class="origin-line">Designed in Sydney. Handmade in Pattaya. <span class="sg-code">.origin-line</span></p>
+        <a class="wordmark" href="index.html"><span class="wordmark__name">SANCHEZ</span><span class="wordmark__sub">Custom Boxing Equipment</span></a>
+        <p class="small"><span class="sg-code">.wordmark</span> CSS-text fallback of the logo <span class="ph">PLACEHOLDER until the shield is redrawn as SVG</span></p>
+      </div>
+    </section>
+
+    <section class="sg-section" id="space" aria-labelledby="s-h">
+      <h2 id="s-h">Spacing, radius, shadow, motion</h2>
+      <div class="sg-row" style="align-items:flex-end">
+        <div class="stack stack--sm"><div style="inline-size:var(--space-1);block-size:var(--space-1);background:var(--color-accent)"></div><span class="sg-code">--space-1 4</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-2);block-size:var(--space-2);background:var(--color-accent)"></div><span class="sg-code">-2 8</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-3);block-size:var(--space-3);background:var(--color-accent)"></div><span class="sg-code">-3 12</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-4);block-size:var(--space-4);background:var(--color-accent)"></div><span class="sg-code">-4 16</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-5);block-size:var(--space-5);background:var(--color-accent)"></div><span class="sg-code">-5 24</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-6);block-size:var(--space-6);background:var(--color-accent)"></div><span class="sg-code">-6 32</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-8);block-size:var(--space-8);background:var(--color-accent)"></div><span class="sg-code">-8 48</span></div>
+        <div class="stack stack--sm"><div style="inline-size:var(--space-10);block-size:var(--space-10);background:var(--color-accent)"></div><span class="sg-code">-10 96</span></div>
+      </div>
+      <p class="small muted">Radius <span class="sg-code">--radius-sm 2 · md 4 · lg 8 · round</span>. Shadow <span class="sg-code">--shadow-1..3</span>. Motion <span class="sg-code">--dur-1 120 · -2 200 · -3 320ms, --ease-out</span> (all 0 under reduced motion). Z-index <span class="sg-code">--z-sticky 100 · header 200 · drawer 400 · modal 500 · toast 600</span>.</p>
+      <div class="card stitch" style="max-inline-size:24rem;margin-block-start:var(--space-4)"><strong>Stitch motif</strong><span class="small muted"><span class="sg-code">.stitch</span> dashed inner border. <span class="sg-code">.stitch-rule</span> for dividers. One per view.</span></div>
+    </section>
+
+    <section class="sg-section" id="buttons" aria-labelledby="b-h">
+      <h2 id="b-h">Buttons</h2>
+      <div class="sg-row">
+        <button class="btn btn--primary" type="button">Primary</button>
+        <button class="btn btn--secondary" type="button">Secondary</button>
+        <button class="btn" type="button">Default</button>
+        <button class="btn btn--ghost" type="button">Ghost</button>
+        <button class="btn btn--link" type="button">Link button</button>
+      </div>
+      <div class="sg-row">
+        <button class="btn btn--primary btn--lg" type="button">Large <svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+        <button class="btn btn--primary btn--sm" type="button">Small</button>
+        <button class="btn btn--secondary btn--icon" type="button" aria-label="Previous"><svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-left"></use></svg></button>
+        <button class="btn btn--primary" type="button" disabled>Disabled</button>
+        <button class="btn btn--primary" type="button" aria-busy="true">Busy</button>
+        <button class="icon-btn" type="button" aria-label="Cart, 2 items"><svg class="icon" aria-hidden="true"><use href="#i-bag"></use></svg><span class="count-badge" data-count="2">2</span></button>
+      </div>
+      <div class="wallet-row" style="max-inline-size:24rem"><button class="btn btn--wallet" type="button" data-mock-wallet="Apple Pay"> Pay</button><button class="btn btn--gpay" type="button" data-mock-wallet="Google Pay">G Pay</button></div>
+      <p class="small muted" style="margin-block-start:var(--space-3)"><span class="sg-code">.btn .btn--primary|secondary|ghost|link .btn--sm|lg|block|icon .btn--wallet .btn--gpay .icon-btn .count-badge</span> · busy = <span class="sg-code">aria-busy="true"</span></p>
+    </section>
+
+    <section class="sg-section" id="tags" aria-labelledby="tg-h">
+      <h2 id="tg-h">Placeholder tag, badges, chips</h2>
+      <div class="sg-row">
+        <span class="ph">PLACEHOLDER price</span>
+        <span class="badge">Default</span><span class="badge badge--accent">Accent</span><span class="badge badge--success">Success</span><span class="badge badge--warning">Warning</span><span class="badge badge--danger">Danger</span>
+      </div>
+      <p class="ph ph--block">PLACEHOLDER — block form for longer notes. <span class="sg-code" style="color:inherit">.ph--block</span></p>
+      <ul class="chip-list" style="margin-block-start:var(--space-3)"><li class="chip">Customisable colours</li><li class="chip">Customisable stitching</li></ul>
+      <p class="small muted" style="margin-block-start:var(--space-3)"><span class="sg-code">.ph</span> marks every price, lead time, weight, spec or claim not in the scrape. Never remove it without a source.</p>
+    </section>
+
+    <section class="sg-section" id="forms" aria-labelledby="f-h">
+      <h2 id="f-h">Form fields and validation</h2>
+      <form class="stack" data-validate data-success="Style guide form is valid." style="max-inline-size:36rem">
+        <div class="error-summary" data-error-summary hidden tabindex="-1"></div>
+        <div class="field"><label class="field__label" for="sg-name">Text input <span class="req" aria-hidden="true">*</span></label><p class="field__hint" id="sg-name-hint">Hint text sits under the label.</p><input class="input" id="sg-name" required aria-describedby="sg-name-hint" placeholder="Placeholder"></div>
+        <div class="field is-invalid"><label class="field__label" for="sg-bad">Invalid (static)</label><input class="input" id="sg-bad" aria-invalid="true" value="not-an-email" aria-describedby="sg-bad-err"><p class="field__error" id="sg-bad-err"><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg><span>Enter an email address like name@gym.com</span></p></div>
+        <div class="field is-valid"><label class="field__label" for="sg-ok">Valid (static)</label><input class="input" id="sg-ok" value="jesse@example.com"></div>
+        <div class="field"><label class="field__label" for="sg-dis">Disabled</label><input class="input" id="sg-dis" disabled value="Disabled"></div>
+        <div class="field"><label class="field__label" for="sg-sel">Select</label><select class="select" id="sg-sel"><option>Option one</option><option>Option two</option></select></div>
+        <div class="field"><label class="field__label" for="sg-ta">Textarea</label><textarea class="textarea" id="sg-ta"></textarea></div>
+        <label class="check" for="sg-chk"><input type="checkbox" id="sg-chk" required><span>Checkbox (required)</span></label>
+        <div class="field"><label class="switch" for="sg-sw"><span class="field__label">Switch</span><input type="checkbox" role="switch" id="sg-sw" checked></label></div>
+        <div class="field"><label class="field__label" for="sg-qty">Stepper</label><div class="stepper" data-stepper><button type="button" data-step="-1" aria-label="Decrease">−</button><input id="sg-qty" type="number" min="1" max="99" value="1"><button type="button" data-step="1" aria-label="Increase">+</button></div></div>
+        <div class="field"><span class="field__label" id="sg-file-l">File drop</span><div class="file-drop"><svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg><span>Drag and drop or choose a file</span><input type="file" aria-labelledby="sg-file-l"></div></div>
+        <div><button class="btn btn--primary" type="submit">Submit to see validation</button></div>
+      </form>
+      <p class="small muted" style="margin-block-start:var(--space-3)"><span class="sg-code">form[data-validate] .field .field__label .req .field__hint .field__error .is-invalid .is-valid .input .select .textarea .check .check-group(--row) .switch .stepper .file-drop .file-preview .error-summary [data-error-summary] [data-form-success] data-error="…"</span></p>
+    </section>
+
+    <section class="sg-section" id="choices" aria-labelledby="ch-h">
+      <h2 id="ch-h">Choice cards, segmented, swatches</h2>
+      <fieldset class="field"><legend>Choice cards <span class="sg-code">.choice-grid .choice .choice__box .choice__art .choice__title .choice__desc</span></legend>
+        <div class="choice-grid">
+          <label class="choice" for="sg-c1"><input type="radio" id="sg-c1" name="sg-c" checked><span class="choice__box"><span class="choice__title">Premium vinyl</span><span class="choice__desc">Selected</span></span></label>
+          <label class="choice" for="sg-c2"><input type="radio" id="sg-c2" name="sg-c"><span class="choice__box"><span class="choice__title">Genuine leather</span><span class="choice__desc">Default</span></span></label>
+          <label class="choice" for="sg-c3"><input type="radio" id="sg-c3" name="sg-c" disabled><span class="choice__box"><span class="choice__title">Debossed</span><span class="choice__desc">Disabled with reason</span></span></label>
+        </div></fieldset>
+      <fieldset class="field" style="margin-block-start:var(--space-4)"><legend>Segmented <span class="sg-code">.seg</span></legend>
+        <div class="seg"><label class="choice" for="sg-s1"><input type="radio" id="sg-s1" name="sg-s" checked><span class="choice__box"><span class="choice__title">S</span></span></label><label class="choice" for="sg-s2"><input type="radio" id="sg-s2" name="sg-s"><span class="choice__box"><span class="choice__title">M</span></span></label><label class="choice" for="sg-s3"><input type="radio" id="sg-s3" name="sg-s"><span class="choice__box"><span class="choice__title">L</span></span></label></div></fieldset>
+      <fieldset class="field" style="margin-block-start:var(--space-4)"><legend>Swatches <span class="sg-code">.swatches .swatch(--brand) .swatch__chip --swatch</span></legend>
+        <div class="swatches">
+          <label class="swatch swatch--brand" for="sg-w0" title="Brand primary"><input type="radio" id="sg-w0" name="sg-w"><span class="swatch__chip" style="--swatch:#a83e26"></span><span class="visually-hidden">Brand primary</span></label>
+          <label class="swatch" for="sg-w1" title="Black"><input type="radio" id="sg-w1" name="sg-w" checked><span class="swatch__chip" style="--swatch:#111"></span><span class="visually-hidden">Black</span></label>
+          <label class="swatch" for="sg-w2" title="Bone"><input type="radio" id="sg-w2" name="sg-w"><span class="swatch__chip" style="--swatch:#e9dcc4"></span><span class="visually-hidden">Bone</span></label>
+          <label class="swatch" for="sg-w3" title="Royal blue (unavailable)"><input type="radio" id="sg-w3" name="sg-w" disabled><span class="swatch__chip" style="--swatch:#1f5fbf"></span><span class="visually-hidden">Royal blue, not available</span></label>
+        </div></fieldset>
+    </section>
+
+    <section class="sg-section" id="feedback" aria-labelledby="fb-h">
+      <h2 id="fb-h">Notices and toasts</h2>
+      <div class="stack" style="max-inline-size:36rem">
+        <div class="notice notice--info"><svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg><div>Info notice <span class="sg-code">.notice--info</span></div></div>
+        <div class="notice notice--success"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><div>Success notice <span class="sg-code">.notice--success</span></div></div>
+        <div class="notice notice--warning"><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg><div>Guard rail: show the fix, not just the error. <button class="btn btn--link" type="button">Fix: use leather colours</button></div></div>
+        <div class="notice notice--error"><svg class="icon" aria-hidden="true"><use href="#i-x-circle"></use></svg><div>Error notice <span class="sg-code">.notice--error</span></div></div>
+      </div>
+      <div class="sg-row">
+        <button class="btn btn--sm" type="button" data-sg-toast="info">Info toast</button>
+        <button class="btn btn--sm" type="button" data-sg-toast="success">Success toast</button>
+        <button class="btn btn--sm" type="button" data-sg-toast="warning">Warning toast</button>
+        <button class="btn btn--sm" type="button" data-sg-toast="error">Error toast</button>
+      </div>
+      <p class="small muted"><span class="sg-code">SZ.toast(message, "info|success|warning|error", ms)</span> → <span class="sg-code">.toast-region .toast .toast--*</span> (role="status", polite)</p>
+    </section>
+
+    <section class="sg-section" id="states" aria-labelledby="st-h">
+      <h2 id="st-h">Loading, empty, error</h2>
+      <div class="grid" style="--grid-min:16rem">
+        <div class="card" aria-label="Loading example"><div class="skeleton skeleton--block"></div><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--text"></div><span class="sg-code">.skeleton(--text|--title|--block)</span></div>
+        <div class="state"><svg class="state__icon icon" aria-hidden="true"><use href="#i-package"></use></svg><h3>Empty state</h3><p>Say what goes here and give one next step.</p><a class="btn btn--primary btn--sm" href="configure.html">Build your bag</a><span class="sg-code">.state</span></div>
+        <div class="state state--error"><svg class="state__icon icon" aria-hidden="true"><use href="#i-x-circle"></use></svg><h3>Error state</h3><p>Your design is saved, try again.</p><button class="btn btn--secondary btn--sm" type="button">Try again</button><span class="sg-code">.state--error</span></div>
+      </div>
+      <p class="small muted" style="margin-block-start:var(--space-4)">Wire any region with <span class="sg-code">[data-stateful] &gt; [data-when="ready|loading|empty|error"]</span>. Reviewers switch with <span class="sg-code">?state=…</span> (named regions: <span class="sg-code">data-stateful="pay"</span> → <span class="sg-code">?pay=…</span>). <span class="sg-code">[data-retry]</span> simulates a reload.</p>
+    </section>
+
+    <section class="sg-section" id="overlays" aria-labelledby="ov-h">
+      <h2 id="ov-h">Drawers and modals</h2>
+      <div class="sg-row">
+        <button class="btn" type="button" data-open="nav-drawer">Open nav drawer</button>
+        <button class="btn" type="button" data-open="cart-drawer">Open cart drawer</button>
+        <button class="btn" type="button" data-open="sg-modal">Open modal</button>
+      </div>
+      <p class="small muted">Native <span class="sg-code">&lt;dialog&gt;</span> + <span class="sg-code">showModal()</span>: focus trap, Esc, inert page, focus return. Openers: <span class="sg-code">[data-open="id"]</span>; closers: <span class="sg-code">[data-close]</span>; backdrop click closes. Classes: <span class="sg-code">.drawer(--start) .drawer__header|__title|__body|__footer .modal .modal__header|__title|__body|__footer</span></p>
+    </section>
+
+    <section class="sg-section" id="nav" aria-labelledby="tb-h">
+      <h2 id="tb-h">Tabs and accordion</h2>
+      <div class="tabs" data-tabs>
+        <div class="tabs__list" role="tablist" aria-label="Example tabs">
+          <button class="tabs__tab" role="tab" id="sgt-1" aria-controls="sgp-1" aria-selected="true">One</button>
+          <button class="tabs__tab" role="tab" id="sgt-2" aria-controls="sgp-2" aria-selected="false">Two</button>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="sgp-1" aria-labelledby="sgt-1" tabindex="0">Arrow keys move between tabs (mirrored in RTL). <span class="sg-code">[data-tabs] .tabs__list .tabs__tab .tabs__panel</span></div>
+        <div class="tabs__panel" role="tabpanel" id="sgp-2" aria-labelledby="sgt-2" tabindex="0" hidden>Panel two.</div>
+      </div>
+      <details class="accordion"><summary>Accordion item <span class="sg-code">details.accordion</span></summary><div class="accordion__body">Native details/summary.</div></details>
+    </section>
+
+    <section class="sg-section" id="commerce" aria-labelledby="cm-h">
+      <h2 id="cm-h">Price, summary, totals, timeline, progress</h2>
+      <div class="grid" style="--grid-min:18rem">
+        <div class="stack">
+          <span class="price price--lg" data-price="heavy-bag-custom" data-prefix="From"></span>
+          <span class="price" data-price="heavy-bag-custom" data-range></span>
+          <p class="small muted"><span class="sg-code">.price(--lg) [data-price="key"] [data-range] [data-prefix]</span> render from <span class="sg-code">SZ.DATA.priceBook</span>; null → PLACEHOLDER.</p>
+          <dl class="summary-list"><dt>Type</dt><dd>Heavy bag</dd><dt>Size</dt><dd>4ft</dd></dl>
+          <div class="totals"><div class="totals__row"><span>Shipping</span><span class="ph">PLACEHOLDER</span></div><div class="totals__row totals__row--grand"><span>Total</span><span class="price" data-price="heavy-bag-stock"></span></div></div>
+        </div>
+        <div class="stack">
+          <ol class="timeline"><li class="is-done"><span class="mono">pending</span></li><li class="is-current"><span class="mono">deposit_paid</span></li><li><span class="mono">in_production</span></li><li><span class="mono">qc</span></li></ol>
+          <div class="progress"><div class="progress__meta"><span>Build your bag</span><span>Step 3 of 10</span></div><div class="progress__bar" role="progressbar" aria-label="Example progress" aria-valuemin="1" aria-valuemax="10" aria-valuenow="3"><div class="progress__fill" style="--progress:30%"></div></div></div>
+          <ol class="step-nav"><li><button type="button" class="is-done"><span class="step-nav__n" aria-hidden="true">✓</span>Brand</button></li><li><button type="button" aria-current="step"><span class="step-nav__n" aria-hidden="true">A1</span>Type</button></li><li><button type="button" disabled><span class="step-nav__n" aria-hidden="true">A2</span>Size</button></li></ol>
+          <p class="small muted"><span class="sg-code">.timeline .progress .progress__bar .progress__fill(--progress) .step-nav .step-nav__n .is-done .is-skipped</span></p>
+        </div>
+      </div>
+      <div class="sticky-bar" style="position:relative;margin-block-start:var(--space-5);border-radius:var(--radius-md)">
+        <div class="sticky-bar__info"><span class="sticky-bar__label">Estimate</span><span class="price" data-price="heavy-bag-custom" data-range></span></div>
+        <div class="sticky-bar__actions"><button class="btn btn--secondary btn--icon" type="button" aria-label="Back"><svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-left"></use></svg></button><button class="btn btn--primary" type="button">Continue</button></div>
+      </div>
+      <p class="small muted"><span class="sg-code">.sticky-bar(--mobile-only) .sticky-bar__info|__label|__actions</span></p>
+    </section>
+
+    <section class="sg-section" id="cards" aria-labelledby="cd-h">
+      <h2 id="cd-h">Cards and media</h2>
+      <div class="grid" style="--grid-min:15rem">
+        <a class="path-card" href="configure.html"><img src="../media-scrape/images/3d2aa4_53bb9dfbccab4f3da838f823d595b52ff000.jpg" alt="" width="1080" height="1920" loading="lazy"><span class="path-card__title h3">Path card</span><span class="small muted">.path-card</span></a>
+        <div class="card"><h3 class="h4">Card</h3><p class="small muted">.card (.card--flush .card__body .card--link)</p></div>
+        <article class="feature"><span class="feature__num">01</span><h3 class="h4">Feature</h3><p class="small muted">.feature .feature__num</p></article>
+        <div class="logo-slot"><span>Client logo</span><span class="ph">PLACEHOLDER — needs written consent</span></div>
+      </div>
+      <p class="small muted" style="margin-block-start:var(--space-3)"><span class="sg-code">.media(--16x9|--1x1|--9x16) .media__caption .hero .hero__media .hero__content .hero__toggle .steps-list .logo-wall .gallery .gallery__thumb .spec-table .breadcrumbs .cart-line</span> · always set width/height on images (no layout shift).</p>
+    </section>
+
+    <section class="sg-section" id="config" aria-labelledby="cf-h">
+      <h2 id="cf-h">Configurator</h2>
+      <p class="small muted">Layout <span class="sg-code">.cfg .cfg__preview[data-vibe] .cfg__stage .cfg__panel .cfg-step .cfg-step__head .tier-table .material-swatch</span>. Steps render from <span class="sg-code">SZ.STEPS</span> + <span class="sg-code">SZ.OPT</span>; preview from <span class="sg-code">SZ.bag.render(config, {view, human})</span>; state in <span class="sg-code">localStorage["sz.config.v1"]</span>.</p>
+      <div class="cfg__preview" style="border-radius:var(--radius-lg);max-inline-size:20rem" data-sg-bag>
+        <div class="cfg__preview-label"><span class="badge">3D preview (production: React Three Fiber). 2D fallback shown</span></div>
+        <div class="cfg__stage"></div>
+      </div>
+    </section>
+  </div>
+
+  <dialog class="modal" id="sg-modal" aria-labelledby="sgm-title">
+    <div class="modal__header"><h2 class="modal__title" id="sgm-title">Modal title</h2><button class="icon-btn" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+    <div class="modal__body"><p>Modal body. Focus is trapped; Esc or the backdrop closes it.</p></div>
+    <div class="modal__footer"><button class="btn btn--ghost" type="button" data-close>Cancel</button><button class="btn btn--primary" type="button" data-close>Confirm</button></div>
+  </dialog>
+</main>
+
+<footer class="site-footer" data-chrome="footer"></footer>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-sg-toast]");
+      if (b) SZ.toast("This is a " + b.getAttribute("data-sg-toast") + " toast.", b.getAttribute("data-sg-toast"));
+    });
+    var stage = document.querySelector("[data-sg-bag] .cfg__stage");
+    var c = SZ.config.defaults(); c.brand.name = "City Fight Club"; c.brand.primary = "#c8102e"; c.item.qty = 12; c.item.numbering = true;
+    stage.innerHTML = SZ.bag.render(c, {});
+  });
+</script>
+</body>
+</html>

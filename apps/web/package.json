@@ -1,0 +1,46 @@
+{
+  "name": "@sanchez/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --root ../..  --config ../../vitest.config.ts",
+    "e2e": "playwright test",
+    "generate:types": "payload generate:types"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/richtext-lexical": "3.90.2",
+    "@sanchez/analytics": "*",
+    "@sanchez/config3d": "*",
+    "@sanchez/domain": "*",
+    "file-type": "^22.1.1",
+    "graphql": "^16.8.1",
+    "isomorphic-dompurify": "^4.4.0",
+    "next": "16.3.6",
+    "next-intl": "^4.14.7",
+    "payload": "3.90.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "^0.35.5",
+    "stripe": "^22.6.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^24.19.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "typescript": "~5.9.3"
+  }
+}

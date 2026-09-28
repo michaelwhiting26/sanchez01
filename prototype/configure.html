@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Build your bag | Sanchez Custom Boxing Equipment</title>
+  <meta name="description" content="Design a custom boxing bag step by step: your logo, colours, material, stitching and hardware, with a live preview.">
+  <meta name="theme-color" content="#0e0b09">
+  <link rel="icon" href="../media-scrape/other/3d2aa4_667e005177ab4313add5e21aa0bdfd69~mv2.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
+  <script src="app.js" defer></script>
+</head>
+<body data-page="configure">
+<header class="site-header" data-chrome="header"></header>
+
+<main id="main" tabindex="-1">
+  <!-- The whole step UI is generated from the bag schema in app.js (SZ.STEPS +
+       SZ.OPT), the same way production renders controls from the versioned
+       JSON schema. Markup patterns: see components.html. -->
+  <div id="configurator" data-stateful>
+    <div data-when="ready">
+      <form class="cfg" novalidate aria-label="Bag configurator">
+        <div class="cfg__preview" data-cfg-preview data-vibe="oldschool">
+          <div class="cfg__preview-label">
+            <span class="badge">3D preview (production: React Three Fiber). 2D fallback shown</span>
+          </div>
+          <div class="cfg__stage" data-cfg-stage></div>
+          <div class="cfg__view-toggle cluster" role="group" aria-label="Preview side" style="--cluster-gap:var(--space-1)">
+            <button class="btn btn--sm btn--secondary" type="button" data-cfg-view="front" aria-pressed="true">Front</button>
+            <button class="btn btn--sm btn--secondary" type="button" data-cfg-view="back" aria-pressed="false">Back</button>
+          </div>
+        </div>
+
+        <div class="cfg__panel">
+          <div class="progress">
+            <div class="progress__meta"><span>Build your bag</span><span data-cfg-count>Step 1 of 10</span></div>
+            <div class="progress__bar" role="progressbar" aria-label="Configurator progress" aria-valuemin="1" aria-valuenow="1" aria-valuemax="10" data-cfg-progressbar>
+              <div class="progress__fill" data-cfg-progress></div>
+            </div>
+          </div>
+          <nav aria-label="Configurator steps"><ol class="step-nav" data-cfg-nav></ol></nav>
+          <div class="cluster xsmall muted" style="justify-content:space-between">
+            <span><svg class="icon" aria-hidden="true" style="display:inline"><use href="#i-check"></use></svg> Autosaved on this device · <span class="mono" data-cfg-id></span><br>Est. handover <span class="ph">PLACEHOLDER date</span></span>
+            <span class="cluster" style="--cluster-gap:var(--space-1)">
+              <button class="btn btn--ghost btn--sm" type="button" data-cfg-share><svg class="icon" aria-hidden="true"><use href="#i-share"></use></svg>Share</button>
+              <button class="btn btn--ghost btn--sm" type="button" data-cfg-reset><svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Start over</button>
+            </span>
+          </div>
+          <div data-cfg-panel></div>
+        </div>
+      </form>
+
+      <!-- Sticky price / action bar (thumb zone) -->
+      <div class="sticky-bar" role="region" aria-label="Price and navigation">
+        <div class="sticky-bar__info">
+          <span class="sticky-bar__label">Est. range <span data-cfg-mode></span></span>
+          <span class="price" data-price="heavy-bag-custom" data-range data-ph-label="PLACEHOLDER"></span>
+          <span class="xsmall muted hide-below-md">Est. handover <span class="ph">PLACEHOLDER date</span></span>
+        </div>
+        <div class="sticky-bar__actions">
+          <button class="btn btn--secondary btn--icon" type="button" data-cfg-back aria-label="Previous step"><svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-left"></use></svg></button>
+          <button class="btn btn--primary" type="button" data-cfg-next><span data-cfg-next-label>Continue</span><svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-right"></use></svg></button>
+        </div>
+      </div>
+      <p class="visually-hidden" aria-live="polite" data-cfg-live></p>
+    </div>
+
+    <!-- LOADING (schema + 3D assets loading) -->
+    <div data-when="loading" hidden aria-label="Loading configurator">
+      <div class="cfg">
+        <div class="cfg__preview"><div class="skeleton" style="inline-size:12rem; block-size:18rem"></div></div>
+        <div class="cfg__panel">
+          <div class="skeleton" style="block-size:4px"></div>
+          <div class="skeleton skeleton--text" style="inline-size:25%"></div>
+          <div class="skeleton skeleton--title"></div>
+          <div class="choice-grid"><div class="skeleton" style="block-size:9rem"></div><div class="skeleton" style="block-size:9rem"></div><div class="skeleton" style="block-size:9rem"></div><div class="skeleton" style="block-size:9rem"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPTY (no schema published for this product) -->
+    <div data-when="empty" hidden class="container section--tight">
+      <div class="state">
+        <svg class="state__icon icon" aria-hidden="true"><use href="#i-package"></use></svg>
+        <h1 class="h2">This product can't be customised online yet</h1>
+        <p>Tell us what you need and Jesse will design it with you.</p>
+        <div class="cluster" style="justify-content:center"><a class="btn btn--primary" href="index.html#quote">Request a quote</a><a class="btn btn--secondary" href="shop.html">Shop</a></div>
+      </div>
+    </div>
+
+    <!-- ERROR (save or schema failed) -->
+    <div data-when="error" hidden class="container section--tight">
+      <div class="state state--error" role="alert">
+        <svg class="state__icon icon" aria-hidden="true"><use href="#i-x-circle"></use></svg>
+        <h1 class="h2">Something went wrong</h1>
+        <p>Your design is saved, try again.</p>
+        <button class="btn btn--primary" type="button" data-retry><svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Try again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: material swatch zoom -->
+  <dialog class="modal" id="swatch-modal" aria-labelledby="swatch-title">
+    <div class="modal__header"><h2 class="modal__title" id="swatch-title">Material swatches</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+    <div class="modal__body stack">
+      <p class="ph ph--block">PLACEHOLDER — macro photos of each material needed. CSS textures shown.</p>
+      <div class="grid" style="--grid-min:8rem; --grid-gap:var(--space-3)">
+        <figure class="stack stack--sm" style="margin:0"><div class="material-swatch material-swatch--vinyl"></div><figcaption class="small">Premium vinyl (house material)</figcaption></figure>
+        <figure class="stack stack--sm" style="margin:0"><div class="material-swatch material-swatch--leather"></div><figcaption class="small">Genuine leather</figcaption></figure>
+        <figure class="stack stack--sm" style="margin:0"><div class="material-swatch material-swatch--canvas"></div><figcaption class="small">Heavy canvas</figcaption></figure>
+      </div>
+    </div>
+    <div class="modal__footer"><button class="btn btn--primary" type="button" data-close>Done</button></div>
+  </dialog>
+
+  <!-- MODAL: confirm start over -->
+  <dialog class="modal" id="reset-modal" aria-labelledby="reset-title" aria-describedby="reset-desc">
+    <div class="modal__header"><h2 class="modal__title" id="reset-title">Start a new design?</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+    <div class="modal__body"><p id="reset-desc">This clears your current design on this device. Share it first if you want to keep a copy.</p></div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" type="button" data-close>Keep my design</button>
+      <button class="btn btn--primary" type="button" data-cfg-reset-confirm>Start over</button>
+    </div>
+  </dialog>
+</main>
+
+<footer class="site-footer" data-chrome="footer"></footer>
+</body>
+</html>

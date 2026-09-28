@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Checkout | Sanchez Custom Boxing Equipment</title>
+  <meta name="description" content="Secure checkout. Pay your deposit with Apple Pay, Google Pay or card.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0e0b09">
+  <link rel="icon" href="../media-scrape/other/3d2aa4_667e005177ab4313add5e21aa0bdfd69~mv2.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
+  <script src="app.js" defer></script>
+</head>
+<body data-page="checkout">
+<header class="site-header" data-chrome="header"></header>
+
+<main id="main" tabindex="-1">
+  <div class="container" id="checkout">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li data-if-mode="deposit"><a href="configure.html">Build your bag</a></li>
+        <li data-if-mode="deposit"><a href="review.html">Review and price</a></li>
+        <li data-if-mode="stock" hidden><a href="shop.html">Shop</a></li>
+        <li><span aria-current="page">Checkout</span></li>
+      </ol>
+    </nav>
+
+    <div data-stateful>
+      <div data-when="ready">
+        <h1 class="display-2"><span data-if-mode="deposit">Pay your deposit</span><span data-if-mode="stock" hidden>Checkout</span></h1>
+
+        <div class="checkout">
+          <div class="stack stack--lg">
+            <!-- RESULT: failure (stays above the form so the user can retry) -->
+            <div class="result-panel result-panel--error" data-result="failure" role="alert" tabindex="-1" hidden>
+              <div class="cluster"><svg class="icon" aria-hidden="true" style="color:var(--color-danger)"><use href="#i-x-circle"></use></svg><h2 class="h3">Payment didn't go through</h2></div>
+              <p data-fail-msg>Your card was declined.</p>
+              <div class="cluster"><button class="btn btn--primary" type="button" data-retry-pay>Try again</button><a class="btn btn--ghost" href="contact.html">Contact us</a></div>
+            </div>
+
+            <!-- RESULT: success. Production: this page only shows "received";
+                 payment truth comes from the verified Stripe webhook. -->
+            <div class="result-panel result-panel--success" data-result="success" hidden>
+              <div class="cluster"><svg class="icon" aria-hidden="true" style="color:var(--color-success)"><use href="#i-check"></use></svg><h2 class="h3" tabindex="-1">Thank you. Your bag is booked in.</h2></div>
+              <dl class="summary-list">
+                <dt>Order</dt><dd class="mono" data-order-id></dd>
+                <dt>Paid with</dt><dd data-paid-via></dd>
+                <dt>Status</dt><dd data-order-status aria-live="polite"></dd>
+              </dl>
+              <ol class="timeline" data-order-timeline aria-label="Order progress"></ol>
+              <p class="small muted">A confirmation email with your spec sheet and a "watch it being made" link is on its way. <span class="ph">PLACEHOLDER: email template</span></p>
+              <div class="cluster"><a class="btn btn--primary" href="order.html">Watch it being made</a><a class="btn btn--ghost" href="index.html">Back to home</a></div>
+            </div>
+
+            <form id="checkout-form" class="stack stack--lg" data-validate aria-label="Checkout">
+              <div class="error-summary" data-error-summary hidden tabindex="-1"></div>
+
+              <div class="notice notice--warning" data-checkout-quote-warning hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg><div>Parts of this design go to a quote. You can still pay a deposit to book a slot. <a href="review.html">Review options</a></div></div>
+
+              <!-- Express checkout (Stripe Express Checkout Element, mocked) -->
+              <section class="stack" aria-labelledby="express-title">
+                <h2 class="visually-hidden" id="express-title">Express checkout</h2>
+                <div class="wallet-row">
+                  <button class="btn btn--wallet btn--lg" type="button" data-mock-wallet="Apple Pay" aria-label="Pay with Apple Pay (mock)"> Pay</button>
+                  <button class="btn btn--gpay btn--lg" type="button" data-mock-wallet="Google Pay" aria-label="Pay with Google Pay (mock)">G Pay</button>
+                </div>
+                <p class="or-divider">or pay another way</p>
+              </section>
+
+              <section class="checkout__section" aria-labelledby="co-contact-title">
+                <h2 id="co-contact-title"><span class="checkout__num" aria-hidden="true">1</span>Contact</h2>
+                <div class="field__row">
+                  <div class="field"><label class="field__label" for="co-email">Email <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-email" name="email" type="email" autocomplete="email" required></div>
+                  <div class="field"><label class="field__label" for="co-phone">Phone <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-phone" name="phone" type="tel" autocomplete="tel" required data-error="Enter a phone number so the workshop can reach you"></div>
+                </div>
+              </section>
+
+              <section class="checkout__section" aria-labelledby="co-ship-title">
+                <h2 id="co-ship-title"><span class="checkout__num" aria-hidden="true">2</span>Delivery</h2>
+                <div class="field__row">
+                  <div class="field"><label class="field__label" for="co-name">Full name <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-name" name="name" autocomplete="name" required></div>
+                  <div class="field"><label class="field__label" for="co-company">Gym / company</label><input class="input" id="co-company" name="company" autocomplete="organization"></div>
+                </div>
+                <div class="field"><label class="field__label" for="co-country">Country <span class="req" aria-hidden="true">*</span></label>
+                  <select class="select" id="co-country" name="country" autocomplete="country" required>
+                    <option value="">Choose…</option>
+                    <option value="AU">Australia</option><option value="AE">United Arab Emirates</option><option value="SA">Saudi Arabia</option><option value="QA">Qatar</option>
+                    <option value="SG">Singapore</option><option value="GB">United Kingdom</option><option value="US">United States</option><option value="TH">Thailand</option><option value="NZ">New Zealand</option>
+                  </select>
+                  <p class="field__hint">Gulf destinations: duties shown here <span class="ph">PLACEHOLDER: DDP vs DAP</span></p>
+                </div>
+                <div class="field"><label class="field__label" for="co-addr">Address <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-addr" name="address" autocomplete="address-line1" required></div>
+                <div class="field__row">
+                  <div class="field"><label class="field__label" for="co-city">City <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-city" name="city" autocomplete="address-level2" required></div>
+                  <div class="field"><label class="field__label" for="co-post">Postcode</label><input class="input" id="co-post" name="postcode" autocomplete="postal-code"></div>
+                </div>
+              </section>
+
+              <section class="checkout__section" aria-labelledby="co-pay-title" style="border:0">
+                <h2 id="co-pay-title"><span class="checkout__num" aria-hidden="true">3</span>Payment</h2>
+                <div data-stateful="pay">
+                  <!-- Mock of the Stripe Payment Element. Production renders Stripe's
+                       iframe; card data never touches our servers. -->
+                  <div class="stripe-mock" data-when="ready">
+                    <div class="stripe-mock__label"><span>Stripe Payment Element (mock)</span><span><svg class="icon" aria-hidden="true" style="display:inline"><use href="#i-lock"></use></svg> Secure</span></div>
+                    <div class="field"><label class="field__label" for="co-card">Card number <span class="req" aria-hidden="true">*</span></label>
+                      <input class="input mono" id="co-card" name="card" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" required pattern="^[0-9 ]{15,19}$" title="Enter the 16-digit card number" data-error="Enter a valid card number"></div>
+                    <div class="field__row" style="grid-template-columns:1fr 1fr">
+                      <div class="field"><label class="field__label" for="co-exp">Expiry <span class="req" aria-hidden="true">*</span></label><input class="input mono" id="co-exp" name="exp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / YY" required pattern="^(0[1-9]|1[0-2]) / [0-9]{2}$" title="Use MM / YY" data-error="Enter the expiry as MM / YY"></div>
+                      <div class="field"><label class="field__label" for="co-cvc">CVC <span class="req" aria-hidden="true">*</span></label><input class="input mono" id="co-cvc" name="cvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" required pattern="^[0-9]{3,4}$" title="3 or 4 digits" data-error="Enter the 3 or 4 digit security code"></div>
+                    </div>
+                    <p class="xsmall muted">Test: any card succeeds; <span class="mono">4000 0000 0000 0002</span> is declined. Or add <span class="mono">?result=fail</span> to the URL. <span class="mono">?pay=loading|error</span> shows this element's own states.</p>
+                  </div>
+                  <div data-when="loading" hidden class="stripe-mock" aria-label="Loading secure payment form">
+                    <div class="skeleton skeleton--text" style="inline-size:40%"></div><div class="skeleton" style="block-size:44px"></div>
+                    <div class="field__row" style="grid-template-columns:1fr 1fr"><div class="skeleton" style="block-size:44px"></div><div class="skeleton" style="block-size:44px"></div></div>
+                  </div>
+                  <div data-when="error" hidden class="state state--error" role="alert">
+                    <svg class="state__icon icon" aria-hidden="true"><use href="#i-x-circle"></use></svg>
+                    <h3>We couldn't load secure payment</h3>
+                    <p>Your design is saved, try again. Apple Pay and Google Pay above may still work.</p>
+                    <button class="btn btn--secondary" type="button" data-retry><svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Try again</button>
+                  </div>
+                </div>
+              </section>
+
+              <div class="field">
+                <label class="check" for="co-terms"><input type="checkbox" id="co-terms" name="terms" required data-error="Please accept the terms to continue">
+                  <span class="small">I agree to the <a href="legal-terms.html">terms</a> and <a href="legal-privacy.html">privacy policy</a>.<span data-if-mode="deposit"> The deposit is <span class="ph">PLACEHOLDER: refundable / non-refundable — pending decision</span>.</span></span></label>
+              </div>
+
+              <button class="btn btn--primary btn--lg btn--block" type="submit" data-pay>
+                <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+                <span data-if-mode="deposit">Pay deposit</span><span data-if-mode="stock" hidden>Pay now</span>
+              </button>
+              <p class="xsmall muted" style="text-align:center">3D Secure may ask you to confirm with your bank. Payments by Stripe.</p>
+            </form>
+          </div>
+
+          <!-- ORDER SUMMARY -->
+          <aside class="order-summary" aria-labelledby="os-title">
+            <h2 class="h3" id="os-title">Order summary</h2>
+            <div data-checkout-item></div>
+            <div class="totals">
+              <div class="totals__row" data-if-mode="deposit"><span>Estimate</span><span class="price" data-price="heavy-bag-custom" data-range></span></div>
+              <div class="totals__row"><span>Shipping</span><span class="ph">PLACEHOLDER: zone rates</span></div>
+              <div class="totals__row"><span>Tax</span><span class="ph">PLACEHOLDER: Stripe Tax</span></div>
+              <div class="totals__row totals__row--grand"><span><span data-if-mode="deposit">Deposit due today (<span class="ph">PLACEHOLDER %</span>)</span><span data-if-mode="stock" hidden>Total</span></span><span class="price" data-price="heavy-bag-custom"></span></div>
+              <p class="xsmall muted" data-if-mode="deposit">Balance invoiced before dispatch. Prices set per currency (<span data-currency-code>AUD</span>), never converted live.</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div data-when="loading" hidden aria-label="Loading checkout">
+        <div class="checkout"><div class="stack"><div class="skeleton" style="block-size:52px"></div><div class="skeleton skeleton--block"></div><div class="skeleton skeleton--block"></div></div><div class="skeleton skeleton--block"></div></div>
+      </div>
+      <div data-when="empty" hidden class="section--tight">
+        <div class="state">
+          <svg class="state__icon icon" aria-hidden="true"><use href="#i-package"></use></svg>
+          <h1 class="h2">Nothing to pay for yet</h1>
+          <p>Design a bag first, then pay the deposit from the review page.</p>
+          <a class="btn btn--primary" href="configure.html">Build your bag</a>
+        </div>
+      </div>
+      <div data-when="error" hidden class="section--tight">
+        <div class="state state--error" role="alert">
+          <svg class="state__icon icon" aria-hidden="true"><use href="#i-x-circle"></use></svg>
+          <h1 class="h2">Checkout is unavailable</h1>
+          <p>Your design is saved, try again.</p>
+          <button class="btn btn--primary" type="button" data-retry><svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: mock wallet payment sheet -->
+  <dialog class="modal" id="wallet-sheet" aria-labelledby="ws-title">
+    <div class="modal__header"><h2 class="modal__title" id="ws-title"><span data-wallet-name>Apple Pay</span> (mock)</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Cancel"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+    <div class="modal__body stack">
+      <p class="small muted">In production this is the device's native payment sheet, opened by Stripe Express Checkout.</p>
+      <dl class="summary-list"><dt>Pay</dt><dd>Sanchez Custom Boxing</dd><dt>Amount</dt><dd><span class="price" data-price="heavy-bag-custom"></span></dd></dl>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" type="button" data-close>Cancel</button>
+      <button class="btn btn--wallet" type="button" data-wallet-confirm>Confirm payment</button>
+    </div>
+  </dialog>
+</main>
+
+<footer class="site-footer" data-chrome="footer"></footer>
+</body>
+</html>

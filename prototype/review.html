@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Review your bag | Sanchez Custom Boxing Equipment</title>
+  <meta name="description" content="Check your custom bag design, then pay a deposit or request a quote.">
+  <meta name="theme-color" content="#0e0b09">
+  <link rel="icon" href="../media-scrape/other/3d2aa4_667e005177ab4313add5e21aa0bdfd69~mv2.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
+  <script src="app.js" defer></script>
+</head>
+<body data-page="configure">
+<header class="site-header" data-chrome="header"></header>
+
+<main id="main" tabindex="-1">
+  <div class="container" id="review">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="configure.html">Build your bag</a></li>
+        <li><span aria-current="page">Review and price</span></li>
+        <li><span class="muted">Deposit</span></li>
+      </ol>
+    </nav>
+
+    <div data-stateful>
+      <!-- READY -->
+      <div data-when="ready">
+        <div class="pdp">
+          <div class="stack">
+            <div class="cfg__preview" style="border-radius:var(--radius-lg); border:1px solid var(--color-border)">
+              <div class="cfg__preview-label"><span class="badge">2D preview. Production: 3D snapshot (PNG)</span></div>
+              <div class="cfg__stage" data-review-preview></div>
+            </div>
+            <div class="cluster">
+              <button class="btn btn--secondary btn--sm" type="button" data-review-share><svg class="icon" aria-hidden="true"><use href="#i-share"></use></svg>Share with my business partner</button>
+              <button class="btn btn--ghost btn--sm" type="button" disabled aria-describedby="pdf-note">Download spec sheet (PDF)</button>
+              <span class="xsmall muted" id="pdf-note">Server-rendered PDF in production</span>
+            </div>
+          </div>
+
+          <div class="pdp__info" style="gap:var(--space-4)">
+            <div class="stack stack--sm">
+              <p class="eyebrow">Step 10 · Review and price</p>
+              <h1 class="pdp__title">Your bag</h1>
+              <p class="xsmall muted">Design <span class="mono" data-review-id></span> · schema <span class="mono" data-review-version></span></p>
+            </div>
+
+            <div data-review-notes class="stack stack--sm"></div>
+
+            <div class="order-summary">
+              <div class="totals">
+                <div class="totals__row"><span>Estimate</span><span class="price" data-price="heavy-bag-custom" data-range></span></div>
+                <p class="xsmall muted">Shown as a range (±15%) until the spec is locked. The firm price is confirmed on the order.</p>
+                <div class="totals__row"><span>Estimated handover</span><span class="ph">PLACEHOLDER date</span></div>
+                <div class="totals__row" data-mode="deposit"><span>Deposit today</span><span><span class="ph">PLACEHOLDER %</span> of the estimate</span></div>
+                <div class="totals__row" data-mode="deposit"><span class="muted small">Balance</span><span class="muted small">Invoiced before dispatch</span></div>
+              </div>
+
+              <!-- DEPOSIT MODE -->
+              <div class="stack" data-mode="deposit">
+                <form id="review-confirm-form" novalidate>
+                  <div class="field">
+                    <label class="check" for="rv-confirm"><input type="checkbox" id="rv-confirm" name="confirm" required data-error="Please confirm the design before paying the deposit">
+                      <span class="small">I've checked my design. I understand the deposit starts production and the balance is invoiced before dispatch. <a href="legal-terms.html">Terms</a> · <a href="returns-warranty.html">Refunds</a> <span class="ph">PLACEHOLDER: refund policy</span></span></label>
+                  </div>
+                </form>
+                <a class="btn btn--primary btn--lg btn--block" href="checkout.html" data-review-pay>Pay deposit <svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
+                <button class="btn btn--ghost btn--block" type="button" data-open="quote-modal">Request a quote instead</button>
+              </div>
+
+              <!-- QUOTE MODE -->
+              <div class="stack" data-mode="quote" hidden>
+                <div class="notice notice--warning"><svg class="icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+                  <div><strong>This design goes to a quote</strong><ul data-quote-reasons style="padding-inline-start:var(--space-5)"></ul></div></div>
+                <button class="btn btn--primary btn--lg btn--block" type="button" data-open="quote-modal">Request a quote</button>
+                <a class="btn btn--ghost btn--block" href="contact.html">Book a design consult</a>
+              </div>
+            </div>
+
+            <div data-review-summary></div>
+            <a class="btn btn--secondary" href="configure.html#step-1"><svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-left"></use></svg>Back to the configurator</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div data-when="loading" hidden aria-label="Loading your design">
+        <div class="pdp">
+          <div class="skeleton" style="aspect-ratio:3/4"></div>
+          <div class="stack"><div class="skeleton skeleton--title"></div><div class="skeleton skeleton--block"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text"></div><div class="skeleton skeleton--text" style="inline-size:60%"></div></div>
+        </div>
+      </div>
+
+      <!-- EMPTY (no saved design) -->
+      <div data-when="empty" hidden class="section--tight">
+        <div class="state">
+          <svg class="state__icon icon" aria-hidden="true"><use href="#i-package"></use></svg>
+          <h1 class="h2">No design to review yet</h1>
+          <p>Designs are saved on this device as you build. Start one and it will appear here.</p>
+          <a class="btn btn--primary" href="configure.html">Build your bag</a>
+        </div>
+      </div>
+
+      <!-- ERROR -->
+      <div data-when="error" hidden class="section--tight">
+        <div class="state state--error" role="alert">
+          <svg class="state__icon icon" aria-hidden="true"><use href="#i-x-circle"></use></svg>
+          <h1 class="h2">We couldn't price your design</h1>
+          <p>Your design is saved, try again.</p>
+          <button class="btn btn--primary" type="button" data-retry><svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: request a quote (real Wix quote fields, pre-filled from the design) -->
+  <dialog class="modal" id="quote-modal" aria-labelledby="rq-title">
+    <div class="modal__header"><h2 class="modal__title" id="rq-title">Request a quote</h2>
+      <button class="icon-btn" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button></div>
+    <form class="modal__body stack" data-validate data-success="Quote request sent with your design attached (prototype: nothing was sent).">
+      <div class="error-summary" data-error-summary hidden tabindex="-1"></div>
+      <div class="field"><label class="field__label" for="rq-name">First name</label><input class="input" id="rq-name" name="firstName" autocomplete="given-name"></div>
+      <div class="field"><label class="field__label" for="rq-email">Email <span class="req" aria-hidden="true">*</span></label><input class="input" id="rq-email" name="email" type="email" required autocomplete="email"></div>
+      <div class="field"><label class="field__label" for="rq-phone">Phone</label><input class="input" id="rq-phone" name="phone" type="tel" autocomplete="tel"></div>
+      <div class="field"><label class="field__label" for="rq-gym">Gym name</label><input class="input" id="rq-gym" name="gym" autocomplete="organization"></div>
+      <label class="check" for="rq-today"><input type="checkbox" id="rq-today" name="urgent"><span>I need a quote today</span></label>
+      <div class="field"><label class="field__label" for="rq-need">What do you need</label><textarea class="textarea" id="rq-need" name="need" rows="4"></textarea><p class="field__hint">Your design is attached automatically.</p></div>
+      <div class="field"><label class="field__label" for="rq-date">When do you need it by</label><input class="input" id="rq-date" name="neededBy" type="date"></div>
+      <fieldset class="field"><legend>Contact me via</legend>
+        <div class="check-group check-group--row">
+          <label class="check" for="rq-via-text"><input type="checkbox" id="rq-via-text" name="via" value="text"><span>Text</span></label>
+          <label class="check" for="rq-via-call"><input type="checkbox" id="rq-via-call" name="via" value="call"><span>Call</span></label>
+          <label class="check" for="rq-via-email"><input type="checkbox" id="rq-via-email" name="via" value="email"><span>Email</span></label>
+        </div></fieldset>
+      <div class="cluster" style="justify-content:flex-end">
+        <button class="btn btn--ghost" type="button" data-close>Cancel</button>
+        <button class="btn btn--primary" type="submit">Send request</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+
+<footer class="site-footer" data-chrome="footer"></footer>
+</body>
+</html>
