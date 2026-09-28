@@ -1,0 +1,447 @@
+/**
+ * Seed schema: Ring (spec 01 §4). PLACEHOLDER — spec 01 says to confirm Sanchez makes rings at all;
+ * this flow is quote-only. Sizes, platform heights, padding and sanctioning rulebooks are unconfirmed.
+ * TODO(business): rulebook-permitted sizes per sanctioning body (spec 01 §4 C1a / §10).
+ */
+import type { ProductConfiguration } from "../schema";
+import { choice, l } from "./helpers";
+
+const isEvent = { option: "purpose", eq: "event" } as const;
+
+export const ringSchema: ProductConfiguration = {
+  format: 1,
+  id: "ring",
+  version: "0.1.0",
+  productType: "ring",
+  label: l("Boxing ring"),
+  placeholder: true,
+  paymentMode: "quote",
+  leadTimeDays: null,
+  steps: [
+    {
+      id: "c1_purpose",
+      label: l("Ring purpose"),
+      options: [
+        {
+          id: "purpose",
+          kind: "choice",
+          label: l("Ring purpose"),
+          required: true,
+          default: "training",
+          choices: [
+            choice("competition", "Competition (sanctioned events)"),
+            choice("training", "Training / gym"),
+            choice("floor", "Floor ring (no platform)"),
+            choice("event", "Event / portable (touring)"),
+          ],
+        },
+        {
+          id: "sanction",
+          kind: "choice",
+          label: l("Sanctioning target"),
+          required: true,
+          visibleWhen: { option: "purpose", eq: "competition" },
+          choices: [
+            choice("iba", "IBA"),
+            choice("wbc", "WBC"),
+            choice("wba", "WBA"),
+            choice("ibf", "IBF"),
+            choice("wbo", "WBO"),
+            choice("national", "National commission"),
+            choice("none", "None"),
+          ],
+        },
+      ],
+    },
+    {
+      id: "c2_size",
+      label: l("Size"),
+      options: [
+        {
+          id: "size",
+          kind: "choice",
+          label: l("Size (inside the ropes)"),
+          required: true,
+          choices: [14, 16, 18, 20, 22, 24].map((ft) =>
+            choice(`ft${ft}`, `${ft} ft`, { attributes: { sizeFt: ft } }),
+          ),
+        },
+        {
+          id: "room_length_m",
+          kind: "number",
+          label: l("Room length"),
+          required: false,
+          min: 1,
+          max: 200,
+          integer: false,
+          unit: "m",
+        },
+        {
+          id: "room_width_m",
+          kind: "number",
+          label: l("Room width"),
+          required: false,
+          min: 1,
+          max: 200,
+          integer: false,
+          unit: "m",
+        },
+      ],
+    },
+    {
+      id: "c3_platform",
+      label: l("Platform"),
+      options: [
+        {
+          id: "platform_height",
+          kind: "choice",
+          label: l("Platform height"),
+          required: true,
+          choices: [
+            choice("floor", "Floor", { attributes: { heightM: 0 } }),
+            choice("m0_5", "0.5 m", { attributes: { heightM: 0.5 } }),
+            choice("m0_9", "0.9 m", { attributes: { heightM: 0.9 } }),
+            choice("m1_0", "1.0 m", { attributes: { heightM: 1.0 } }),
+            choice("m1_2", "1.2 m", { attributes: { heightM: 1.2 } }),
+          ],
+        },
+        {
+          id: "apron",
+          kind: "choice",
+          label: l("Apron width"),
+          required: true,
+          choices: [
+            choice("m0_5", "0.5 m", { attributes: { apronM: 0.5 } }),
+            choice("m0_75", "0.75 m", { attributes: { apronM: 0.75 } }),
+            choice("m1_0", "1 m", { attributes: { apronM: 1 } }),
+          ],
+        },
+        {
+          id: "steps",
+          kind: "choice",
+          label: l("Steps"),
+          required: true,
+          choices: [
+            choice("one_set", "1 set"),
+            choice("two_sets", "2 sets"),
+            choice("three_sets", "3 sets"),
+          ],
+        },
+      ],
+    },
+    {
+      id: "c4_ropes",
+      label: l("Ropes"),
+      options: [
+        {
+          id: "rope_count",
+          kind: "choice",
+          label: l("Rope count"),
+          required: true,
+          default: "four",
+          choices: [choice("three", "3"), choice("four", "4")],
+        },
+        {
+          id: "rope_colours",
+          kind: "colour_list",
+          label: l("Rope colours"),
+          required: true,
+          minItems: 1,
+          maxItems: 4,
+        },
+        {
+          id: "rope_print",
+          kind: "choice",
+          label: l("Rope-sleeve printing"),
+          required: true,
+          default: "none",
+          choices: [
+            choice("none", "None"),
+            choice("logo_repeat", "Logo repeat"),
+            choice("text", "Text"),
+          ],
+        },
+        {
+          id: "spacer_colour",
+          kind: "colour",
+          label: l("Spacers and ties colour"),
+          required: false,
+        },
+      ],
+    },
+    {
+      id: "c5_corners",
+      label: l("Corner pads"),
+      options: [
+        {
+          id: "corner_scheme",
+          kind: "choice",
+          label: l("Corner scheme"),
+          required: true,
+          default: "standard",
+          choices: [
+            choice("standard", "Red, blue, 2 × neutral"),
+            choice("brand", "Brand colours (training only)"),
+          ],
+        },
+        {
+          id: "corner_print",
+          kind: "choice",
+          label: l("Corner print"),
+          required: true,
+          default: "none",
+          choices: [
+            choice("none", "None"),
+            choice("logo_each", "Logo on each"),
+            choice("sponsor_slots", "Sponsor slots per corner"),
+          ],
+        },
+      ],
+    },
+    {
+      id: "c6_canvas",
+      label: l("Canvas and floor"),
+      options: [
+        { id: "canvas_colour", kind: "colour", label: l("Canvas colour"), required: true },
+        {
+          id: "centre_logo",
+          kind: "choice",
+          label: l("Centre logo"),
+          required: true,
+          default: "none",
+          choices: [
+            choice("none", "None"),
+            choice("s", "S"),
+            choice("m", "M"),
+            choice("l", "L"),
+            choice("full", "Full"),
+          ],
+        },
+        {
+          id: "sponsor_zones",
+          kind: "number",
+          label: l("Sponsor zones"),
+          required: false,
+          min: 0,
+          max: 4,
+          integer: true,
+          unit: "count",
+          default: 0,
+        },
+        {
+          id: "padding",
+          kind: "choice",
+          label: l("Under-canvas padding"),
+          required: true,
+          choices: [choice("mm25", "25 mm"), choice("mm40", "40 mm"), choice("mm50", "50 mm")],
+        },
+        {
+          id: "non_slip",
+          kind: "choice",
+          label: l("Non-slip finish"),
+          required: true,
+          default: "standard",
+          choices: [choice("standard", "Standard"), choice("tournament", "Tournament grade")],
+        },
+      ],
+    },
+    {
+      id: "c7_skirt",
+      label: l("Apron skirt"),
+      options: [
+        { id: "skirt_colour", kind: "colour", label: l("Skirt colour"), required: true },
+        {
+          id: "skirt_print",
+          kind: "choice",
+          label: l("Skirt branding"),
+          required: true,
+          default: "none",
+          choices: [
+            choice("none", "None"),
+            choice("logo", "Logo"),
+            choice("gym_name", "Gym name"),
+            choice("sponsor_panels", "Sponsor panels (4 sides)"),
+          ],
+        },
+      ],
+    },
+    {
+      id: "c8_posts",
+      label: l("Posts and frame"),
+      options: [
+        {
+          id: "post_finish",
+          kind: "choice",
+          label: l("Post finish"),
+          required: true,
+          default: "black",
+          choices: [
+            choice("black", "Black"),
+            choice("silver", "Silver"),
+            choice("brand_colour", "Brand colour powder coat"),
+          ],
+        },
+        { id: "post_pad_colour", kind: "colour", label: l("Post pad colour"), required: false },
+        {
+          id: "post_pad_print",
+          kind: "boolean",
+          label: l("Post pad print"),
+          required: false,
+          default: false,
+        },
+      ],
+    },
+    {
+      id: "c9_install",
+      label: l("Delivery and install"),
+      options: [
+        {
+          id: "install",
+          kind: "choice",
+          label: l("Install"),
+          required: true,
+          choices: [
+            choice("self_assembly", "Self-assembly"),
+            choice("sanchez_team", "Sanchez team"),
+            choice("partner", "Partner"),
+          ],
+        },
+        {
+          id: "transport_cases",
+          kind: "boolean",
+          label: l("Transport cases"),
+          required: false,
+          default: false,
+          visibleWhen: isEvent,
+        },
+        {
+          id: "swap_kit",
+          kind: "boolean",
+          label: l("Tour branding swap kit"),
+          required: false,
+          default: false,
+          visibleWhen: isEvent,
+        },
+      ],
+    },
+  ],
+  constraints: [
+    {
+      rule: "ring_room_clearance",
+      sizeOption: "size",
+      sizeFtAttribute: "sizeFt",
+      apronOption: "apron",
+      apronMAttribute: "apronM",
+      clearanceM: 1,
+      roomLengthOption: "room_length_m",
+      roomWidthOption: "room_width_m",
+      alternative: { option: "purpose", value: "floor" },
+    },
+    {
+      rule: "competition_corner_lock",
+      purposeOption: "purpose",
+      competitionValues: ["competition"],
+      cornerOption: "corner_scheme",
+      lockedValue: "standard",
+    },
+    {
+      rule: "low_res_logo",
+      minLongestSidePx: 1000,
+      offer: { id: "vectorising", label: l("Logo vectorising"), priceKey: "line.vectorising" },
+    },
+    {
+      rule: "opening_date_lead_time",
+      offers: [
+        { id: "phased_install", label: l("Phased install"), priceKey: "line.phased_install" },
+      ],
+    },
+  ],
+  pricing: {
+    base: { priceKey: "ring.base.{purpose}.{size}", label: l("Ring") },
+    modifiers: [
+      {
+        id: "platform",
+        label: l("Platform"),
+        priceKey: "ring.platform.{platform_height}",
+        scope: "unit",
+      },
+      { id: "apron", label: l("Apron"), priceKey: "ring.apron.{apron}", scope: "unit" },
+      { id: "steps", label: l("Steps"), priceKey: "ring.steps.{steps}", scope: "unit" },
+      { id: "ropes", label: l("Ropes"), priceKey: "ring.ropes.{rope_count}", scope: "unit" },
+      {
+        id: "rope_print",
+        label: l("Rope printing"),
+        priceKey: "ring.rope_print.{rope_print}",
+        scope: "unit",
+      },
+      {
+        id: "corner_scheme",
+        label: l("Corner pads"),
+        priceKey: "ring.corner_scheme.{corner_scheme}",
+        scope: "unit",
+      },
+      {
+        id: "corner_print",
+        label: l("Corner print"),
+        priceKey: "ring.corner_print.{corner_print}",
+        scope: "unit",
+      },
+      {
+        id: "centre_logo",
+        label: l("Centre logo"),
+        priceKey: "ring.centre_logo.{centre_logo}",
+        scope: "unit",
+      },
+      {
+        id: "sponsor_zones",
+        label: l("Sponsor zones"),
+        priceKey: "ring.sponsor_zone",
+        scope: "unit",
+        multiplyBy: "sponsor_zones",
+      },
+      { id: "padding", label: l("Padding"), priceKey: "ring.padding.{padding}", scope: "unit" },
+      {
+        id: "non_slip",
+        label: l("Non-slip finish"),
+        priceKey: "ring.non_slip.{non_slip}",
+        scope: "unit",
+      },
+      {
+        id: "skirt_print",
+        label: l("Skirt branding"),
+        priceKey: "ring.skirt_print.{skirt_print}",
+        scope: "unit",
+      },
+      {
+        id: "post_finish",
+        label: l("Post finish"),
+        priceKey: "ring.post_finish.{post_finish}",
+        scope: "unit",
+      },
+      {
+        id: "post_pad_print",
+        label: l("Post pad print"),
+        priceKey: "ring.post_pad_print",
+        scope: "unit",
+        when: { option: "post_pad_print", eq: true },
+      },
+      {
+        id: "transport_cases",
+        label: l("Transport cases"),
+        priceKey: "ring.transport_cases",
+        scope: "unit",
+        when: { option: "transport_cases", eq: true },
+      },
+      {
+        id: "swap_kit",
+        label: l("Tour swap kit"),
+        priceKey: "ring.swap_kit",
+        scope: "unit",
+        when: { option: "swap_kit", eq: true },
+      },
+      { id: "install", label: l("Install"), priceKey: "ring.install.{install}", scope: "line" },
+    ],
+    rangeBps: 1500,
+    rounding: "half-even",
+  },
+};

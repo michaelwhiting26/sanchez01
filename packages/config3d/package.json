@@ -1,0 +1,18 @@
+{
+  "name": "@sanchez/config3d",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Configurator rules engine: versioned declarative schema, validation, server-authoritative pricing, spec sheets. Must never import three.js.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./seeds": "./src/seeds/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sanchez/domain": "*",
+    "zod": "^4.6.5"
+  }
+}

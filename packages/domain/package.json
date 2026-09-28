@@ -1,0 +1,17 @@
+{
+  "name": "@sanchez/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Money, price books, order state machine, deposits, attribution. Browser-safe except the ./server entry.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

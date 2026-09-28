@@ -1,0 +1,9 @@
+node_modules
+coverage
+dist
+prototype
+specs
+media-assets
+media-scrape
+package-lock.json
+CLAUDE.md

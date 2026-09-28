@@ -1,0 +1,18 @@
+{
+  "name": "@sanchez/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Typed event catalogue, consent gate and vendor adapters. The ./server entry uses node:crypto.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sanchez/domain": "*",
+    "zod": "^4.6.5"
+  }
+}
