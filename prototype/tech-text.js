@@ -22,6 +22,9 @@
     holeF.setAttribute("fill", "#000"); holeF.setAttribute("filter", "url(#" + uid + "b)");
     var blur = el("filter", { id: uid + "b", x: "-50%", y: "-50%", width: "200%", height: "200%" }, defs); el("feGaussianBlur", { stdDeviation: REACH * 0.25 }, blur);
     var holeL = el("circle", { r: REACH, fill: "#fff", filter: "url(#" + uid + "b)" }, mLine);
+    /* site DNA: fine square dots (as in the hero's engraved rings) for the outline, plus a faint gold dotted halo round each letter */
+    var dots = el("pattern", { id: uid + "d", width: 5, height: 5, patternUnits: "userSpaceOnUse" }, defs); el("rect", { width: 1.8, height: 1.8, fill: "#c9a45c" }, dots);
+    var gHalo = el("g", { opacity: 0.26 }, svg);
     var gFill = el("g", { mask: "url(#" + uid + "f)" }, svg), gLine = el("g", { mask: "url(#" + uid + "l)" }, svg);
     var frame = el("rect", { class: "tech-text__frame", fill: "none", stroke: accent, "stroke-width": 1.5, rx: 2 }, svg);
     var label = el("text", { class: "tech-text__label", fill: accent }, svg);
@@ -41,7 +44,8 @@
     [bgF].forEach(function (r) { r.setAttribute("x", -PAD); r.setAttribute("y", -PAD); r.setAttribute("width", W + 2 * PAD); r.setAttribute("height", H + 2 * PAD); });
     letters.forEach(function (L) {
       L.fill = el("text", { class: "tech-text__glyph", x: L.x, y: BASE, "font-size": FS, fill: color }, gFill); L.fill.textContent = L.ch;
-      L.line = el("text", { class: "tech-text__glyph", x: L.x, y: BASE, "font-size": FS, fill: "none", stroke: color, "stroke-width": 1.5, "stroke-dasharray": "4 2" }, gLine); L.line.textContent = L.ch;
+      L.halo = el("text", { class: "tech-text__glyph", x: L.x, y: BASE, "font-size": FS, fill: "none", stroke: "url(#" + uid + "d)", "stroke-width": 11, "stroke-linejoin": "round" }, gHalo); L.halo.textContent = L.ch;
+      L.line = el("text", { class: "tech-text__glyph", x: L.x, y: BASE, "font-size": FS, fill: "none", stroke: color, "stroke-width": 2.4, "stroke-dasharray": "0.01 4.4", "stroke-linecap": "square", "stroke-linejoin": "round" }, gLine); L.line.textContent = L.ch;
     });
 
     /* specks */
@@ -78,7 +82,7 @@
       /* springs + positions */
       letters.forEach(function (L) {
         if (!L.drag) { var k = 180, d = 14; L.vx += (-k * L.dx - d * L.vx) * dt; L.vy += (-k * L.dy - d * L.vy) * dt; L.dx += L.vx * dt; L.dy += L.vy * dt; }
-        var tr = "translate(" + L.dx.toFixed(2) + "," + L.dy.toFixed(2) + ")"; L.fill.setAttribute("transform", tr); L.line.setAttribute("transform", tr);
+        var tr = "translate(" + L.dx.toFixed(2) + "," + L.dy.toFixed(2) + ")"; L.fill.setAttribute("transform", tr); L.line.setAttribute("transform", tr); L.halo.setAttribute("transform", tr);
       });
       /* frame glides to the active letter */
       if (active >= 0) {

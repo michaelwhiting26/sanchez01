@@ -17,7 +17,7 @@ function start(root) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
   renderer.setClearColor(0x000000, 0);
-  const el = renderer.domElement; el.style.cssText = "display:block;inline-size:100%;block-size:100%;cursor:pointer;touch-action:pan-y";
+  const el = renderer.domElement; el.style.cssText = "display:block;inline-size:100%;block-size:100%;cursor:grab;touch-action:pan-y";
   el.setAttribute("aria-label", "Interactive punch bag. Click or tap the bag to hit it."); el.setAttribute("role", "img");
   host.appendChild(el);
 
@@ -43,7 +43,7 @@ function start(root) {
   const img = (f) => { const t = new THREE.TextureLoader().load(ASSETS + f); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso; return t; };
   const tiger = !!(window.SZ_ART && window.SZ_ART.kinds && window.SZ_ART.kinds.tigerfull);
   if (tiger) {
-    M.body = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.42, clearcoat: 0.25, clearcoatRoughness: 0.25 });
+    M.body = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.4 });   /* satin, so the stitching reads instead of a glossy haze */
     M.bandTop = new THREE.MeshPhysicalMaterial({ map: img("band_top_plain.png"), roughness: 0.5, sheen: 0.3 });
     M.bandBottom = new THREE.MeshPhysicalMaterial({ map: img("band_bottom_plain.png"), roughness: 0.5, sheen: 0.3 });
     M.patch = new THREE.MeshPhysicalMaterial({ map: img("patch.png"), roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -75,6 +75,7 @@ function start(root) {
   const pivot = new THREE.Group(); pivot.position.y = HOOK; scene.add(pivot);
   const twist = new THREE.Group(); pivot.add(twist);
   const bodyGroup = new THREE.Group(); twist.add(bodyGroup);
+  const spinG = new THREE.Group(); bodyGroup.add(spinG);   /* drag turns this, 360 degrees, round the bag's own vertical axis */
   let bodyMeshes = [];
 
   /* shock ring at the impact point */
@@ -84,13 +85,13 @@ function start(root) {
   new GLTFLoader().load(new URL("./assets/bag3d/bag_4ft.glb", import.meta.url).href, (g) => {
     const model = g.scene; model.position.y = -HOOK;
     model.traverse((o) => { if (o.isMesh) { o.material = pick(o.name); if (/^(body|crown)/.test(o.name)) bodyMeshes.push(o); } });
-    bodyGroup.add(model);
+    spinG.add(model);
     if (tiger) {
-      bodyGroup.updateWorldMatrix(true, true);
-      const aspect = cylUV(model), cv = window.SZ_ART.canvas("tigerfull", 2048, Math.round(2048 * aspect));
+      spinG.updateWorldMatrix(true, true);
+      const aspect = cylUV(model), cw = Math.min(2560, Math.floor(6144 / aspect)), cv = window.SZ_ART.canvas("tigerfull", cw, Math.round(cw * aspect));
       const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso; t.flipY = false;
       cv.__refresh = () => { t.needsUpdate = true; };      /* art.js redraws the canvas once tiger.png has loaded */
-      M.body.map = t; M.body.needsUpdate = true;
+      M.body.map = t; M.body.bumpMap = t; M.body.bumpScale = 1.4; M.body.needsUpdate = true;   /* the artwork doubles as a bump map: stitches catch the light */
     }
     root.classList.add("is-ready"); fit(); if (!reduce) idle();
   });
@@ -98,7 +99,7 @@ function start(root) {
   /* camera framing */
   const fit = () => {
     const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-    const f = THREE.MathUtils.degToRad(cam.fov), half = 1.02;
+    const f = THREE.MathUtils.degToRad(cam.fov), half = 1.2;
     const d = Math.max(half / Math.tan(f / 2), 0.55 / (Math.tan(f / 2) * cam.aspect));
     cam.position.set(0.35, 0.95, d); cam.lookAt(0, 0.92, 0);
   };
@@ -135,23 +136,42 @@ function start(root) {
     setTimeout(combo, 1200);
   }
 
-  /* user punches: hit side sets the direction, a raycast finds the impact point */
+  /* input: drag sideways to spin the bag 360 degrees (with a little momentum); a click / tap without dragging punches it */
   const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+  let spin = 0, spinVel = 0, down = null, lastMove = 0, hover = false, resumeAt = 0;
   el.addEventListener("pointerdown", (e) => {
+    down = { x: e.clientX, y: e.clientY, lx: e.clientX, moved: false, id: e.pointerId }; spinVel = 0; resumeAt = performance.now() + 3500;
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (!down || e.pointerId !== down.id) return;
+    if (!down.moved && Math.abs(e.clientX - down.x) > 6) { down.moved = true; el.style.cursor = "grabbing"; try { el.setPointerCapture(e.pointerId); } catch (_) {} }
+    if (!down.moved) return;
+    const dx = e.clientX - down.lx; down.lx = e.clientX; spin += dx * 0.011; spinVel = dx * 0.011; lastMove = performance.now(); resumeAt = lastMove + 3500;
+  });
+  const release = (e) => {
+    if (!down) return; const d = down; down = null; el.style.cursor = "grab";
+    if (d.moved || (e.type !== "pointerup")) { if (performance.now() - lastMove > 90) spinVel = 0; return; }
     const r = el.getBoundingClientRect(); ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ptr, cam);
     const hit = ray.intersectObjects(bodyMeshes, false)[0];
     if (!hit) return;
     lastUser = performance.now();
-    const local = hit.point.clone(); const dx = local.x >= 0 ? 1 : -1;
+    const dx = hit.point.x >= 0 ? 1 : -1;
     punch(-dx, 0.35, reduce ? 0.3 : 1, hit.point);
     root.classList.add("was-hit");
-  });
+  };
+  el.addEventListener("pointerup", release); el.addEventListener("pointercancel", release);
+  el.addEventListener("pointerenter", () => { hover = true; }); el.addEventListener("pointerleave", () => { hover = false; });
 
   /* render loop: apply the animated state to the rig */
   const base = new THREE.Vector3(1, 1, 1);
   const loop = () => {
     requestAnimationFrame(loop);
+    if (!down) {
+      spin += spinVel; spinVel *= 0.94; if (Math.abs(spinVel) < 0.0004) spinVel = 0;
+      if (!reduce && !hover && spinVel === 0 && performance.now() > resumeAt) spin += 0.003;   /* slow turn (about 35 s a revolution) while nobody is touching it */
+    }
+    spinG.rotation.y = spin;
     pivot.rotation.z = S.swingZ; pivot.rotation.x = S.swingX; twist.rotation.y = S.twist;
     const d = S.dent * 0.045; bodyGroup.scale.set(base.x - d, base.y + d * 0.35, base.z - d);
     ring.material.opacity = S.ring > 0 && S.ring < 1 ? (1 - S.ring) * 0.8 : 0; ring.scale.setScalar(0.4 + S.ring * 1.8);

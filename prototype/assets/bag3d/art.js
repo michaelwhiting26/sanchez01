@@ -138,7 +138,7 @@
       g.restore();
       if (c.__refresh) c.__refresh();
     };
-    im.src = (document.currentScript && document.currentScript.src ? document.currentScript.src.replace(/art\.js.*$/, "") : "assets/bag3d/") + "tiger.png";
+    im.src = (document.currentScript && document.currentScript.src ? document.currentScript.src.replace(/art\.js.*$/, "") : "assets/bag3d/") + (window.SZ_TIGER_SRC || "tiger.png");
     return c;
   }
 
