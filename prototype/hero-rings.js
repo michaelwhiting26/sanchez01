@@ -7,8 +7,8 @@
   var root = document.querySelector("[data-hero-rings]"); if (!root) return;
   var cv = root.querySelector("canvas"), ctx = cv.getContext("2d");
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var MW = 0, MH = 0, MHe = 0, N = 0, curExtra = -1, bd, bp, bl, dist, pipe, letr, seed, offX, offY, bucketOf, order, counts;   /* MH = map rows, MHe = rows incl. the bleed below the hero */
-  var PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25;   /* 4.2s slowed by 20% */
+  var ddw, thv, fpA = 1.7, fpB = 4.1, fpC = 0.6, MW = 0, MH = 0, MHe = 0, N = 0, curExtra = -1, bd, bp, bl, dist, pipe, letr, seed, offX, offY, bucketOf, order, counts;   /* MH = map rows, MHe = rows incl. the bleed below the hero */
+  var STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25;   /* 4.2s slowed by 20% */
   var CREAM = [243, 234, 220], GOLD = [201, 164, 92];
   /* dithered-logo physics, in CSS pixels */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
@@ -54,7 +54,19 @@
     dist.set(bd); pipe.set(bp); letr.set(bl);
     for (var y = MH; y < MHe; y++) for (var x = 0; x < MW; x++) dist[y * MW + x] = bd[(MH - 1) * MW + x] + (y - MH + 1);
     for (var i = 0; i < N; i++) { var h = Math.sin(i * 12.9898) * 43758.5453; seed[i] = h - Math.floor(h); }
+    ddw = new Float32Array(N); thv = new Float32Array(N); fingerprint();
   }
+  /* The ridges are a fingerprint: rings round a core (the word), wobbled so they are never perfect ellipses, like a loop or whorl.
+     The wobble comes from three numbers, so a name typed in later can give every visitor's print its own shape (SZ_FINGERPRINT.setSeed). */
+  function fingerprint() {
+    var cx = MW / 2, cy = MH / 2;
+    for (var y = 0, i = 0; y < MHe; y++) for (var x = 0; x < MW; x++, i++) {
+      var th = Math.atan2(y - cy, x - cx), d = dist[i];
+      ddw[i] = d + 1.15 * Math.sin(th * 3 + fpA) + 0.75 * Math.sin(th * 5 + d * 0.045 + fpB) + 0.55 * Math.sin(d * 0.09 + th * 2 + fpC); thv[i] = th;
+    }
+  }
+  function hashSeed(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  window.SZ_FINGERPRINT = { setSeed: function (str) { var h = hashSeed(String(str || "sanchez")); fpA = (h & 1023) / 1023 * 6.28; fpB = ((h >> 10) & 1023) / 1023 * 6.28; fpC = ((h >> 20) & 511) / 511 * 6.28; if (ddw) fingerprint(); } };
   addEventListener("resize", function () { if (MW) size(); });
   var loopEl = document.querySelector(".curved-loop");
   if (loopEl && window.ResizeObserver) new ResizeObserver(function () { if (MW) size(); }).observe(loopEl);
@@ -105,10 +117,13 @@
       var b = -1;
       if (pipe[i]) { if (seed[i] < 0.9) b = LEVELS * WARMS; }                 /* outline: full cream */
       else if (!letr[i]) {
-        var dd = dist[i];
+        var dd = dist[i], dw = ddw[i];
         if (dd > 2.2) {
-          var ph = ((dd - drift) % PERIOD + PERIOD) % PERIOD;
-          if (ph < WIDTH && seed[i] < 0.86) {
+          var rel = dw - drift, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
+          /* stitch: dashes of STITCH cells with a small gap, the length measured along the ridge (angle x radius), each ridge starting a little apart */
+          var run = (thv[i] * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
+          var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;          /* the odd stitch missing: minutiae, the flaw that makes it a print */
+          if (ph < WIDTH && inD && !gone) {
             var fade = Math.exp(-dd / (maxD * 0.34));
             var pulse = reduce ? 0 : Math.exp(-Math.pow((dd - wave) / 7, 2)) * 0.55;
             var k = Math.min(1, 0.34 * fade + pulse * fade);
