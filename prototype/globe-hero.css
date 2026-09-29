@@ -185,7 +185,7 @@
 body[data-page="home"] .site-header { margin-block-end: calc(-1 * var(--header-h)); transition: transform .5s cubic-bezier(.2,.7,.2,1), opacity .4s ease; }
 body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 .wm-hero--rings { block-size: 100svh; }
-.wm-hero__rings { touch-action: pan-y; cursor: crosshair; }
+.wm-hero__rings { touch-action: pan-y; }
 @media (prefers-reduced-motion: reduce) { body[data-page="home"] .site-header { transition: none; } }
 
 /* Carousel ruler cursor (lgc-ruler.js): mouse/trackpad only. Hides the system cursor and the carousel's own "View" label. */
@@ -204,3 +204,15 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 .lgc-ruler__num.is-active { fill: #c4553a; font-weight: 700; font-size: 16px; }
 .lgc-ruler.is-down .lgc-ruler__ink { stroke: #c4553a; }
 .lgc-section { position: relative; }
+
+/* Hero cursor (hero-cursor.js): stitched ring + red centre dot. Mouse/trackpad only. */
+@media (hover: hover) and (pointer: fine) { .wm-hero--rings, .wm-hero--rings * { cursor: none; } }
+.hero-cursor { position: fixed; inset: 0 auto auto 0; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+.hero-cursor.is-on { opacity: 1; }
+.hero-cursor__ring, .hero-cursor__dot { position: absolute; left: 0; top: 0; will-change: transform; }
+.hero-cursor__ring { inline-size: 44px; block-size: 44px; margin: -22px 0 0 -22px; }
+.hero-cursor__ring svg { display: block; inline-size: 100%; block-size: 100%; overflow: visible; animation: hero-cursor-spin 14s linear infinite; }
+.hero-cursor__ring circle { fill: none; stroke: #f3eadc; stroke-opacity: .8; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1.1 .9; filter: drop-shadow(0 0 3px rgb(0 0 0 / .9)); }
+.hero-cursor__dot { inline-size: 6px; block-size: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #c4553a; box-shadow: 0 0 0 1.5px rgb(0 0 0 / .7), 0 0 10px rgb(196 85 58 / .6); }
+@keyframes hero-cursor-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hero-cursor__ring svg { animation: none; } }
