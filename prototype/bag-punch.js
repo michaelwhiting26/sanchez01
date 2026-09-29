@@ -50,6 +50,37 @@ function start(root) {
     M.strap = new THREE.MeshStandardMaterial({ color: 0xd8d8d2, roughness: 0.7 });
     M.stitch = new THREE.MeshStandardMaterial({ color: 0xe4e4e0, roughness: 0.8 });
   }
+  /* ---- products: the slots the left / right buttons cycle through. Add a product here and it appears in the switcher. ---- */
+  const PRODUCTS = [
+    { id: "tiger", name: "Tiger", sub: "Heavy bag", kind: "bag", art: "tigerfull", trim: 0xffffff, bump: 1.4 },
+    { id: "portrait", name: "Painted Portrait", sub: "Heavy bag · sample", kind: "bag", art: "portraitfull", trim: 0x1f4d2b, bump: 0.5 },
+    { id: "glove", name: "Glove", sub: "Placeholder", kind: "glove", mid: 0.86 }
+  ];
+  let cur = 0;
+
+  /* placeholder glove, built from simple shapes: red lacquer fist, thumb, cream cuff, hung on a chain like the bags. Swap for a Blender model later. */
+  const gloveRoot = new THREE.Group(); gloveRoot.visible = false;
+  const gloveHit = [];
+  {
+    const red = new THREE.MeshPhysicalMaterial({ color: 0xa83e26, roughness: 0.32, clearcoat: 0.9, clearcoatRoughness: 0.12 });
+    const cream = new THREE.MeshPhysicalMaterial({ color: 0xf3eadc, roughness: 0.5, clearcoat: 0.25 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xc9a45c, roughness: 0.45, metalness: 0.6 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x1b1b1d, metalness: 1, roughness: 0.3 });
+    const G = new THREE.Group(); G.scale.setScalar(1.5); G.position.y = 0.86 - 1.824; G.rotation.y = 0.35;
+    const add = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1, rz = 0, rx = 0, hit = true) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.set(rx, 0, rz); G.add(m); if (hit) gloveHit.push(m); return m; };
+    const sph = new THREE.SphereGeometry(1, 64, 48);
+    add(sph, red, 0, -0.02, 0, 0.19, 0.245, 0.175);                              // main fist
+    add(sph, red, 0.005, -0.15, 0.035, 0.175, 0.125, 0.155);                     // knuckle roll at the bottom
+    add(new THREE.CapsuleGeometry(0.062, 0.15, 12, 24), red, -0.165, -0.035, 0.085, 1, 1, 0.9, 0.5, 0.25);   // thumb
+    add(new THREE.CylinderGeometry(0.105, 0.118, 0.17, 64), cream, 0, 0.225, 0, 1, 1, 0.92);                // cuff
+    add(new THREE.TorusGeometry(0.112, 0.011, 16, 64), gold, 0, 0.145, 0, 1, 1, 0.92, 0, Math.PI / 2, false); // stitched band
+    add(new THREE.TorusGeometry(0.111, 0.011, 16, 64), gold, 0, 0.305, 0, 1, 1, 0.92, 0, Math.PI / 2, false);
+    add(new THREE.TorusGeometry(0.028, 0.008, 12, 32), dark, 0, 0.335, 0, 1, 1, 1, 0, 0, false);             // hanging eye
+    gloveRoot.add(G);
+    const chainLen = 1.824 - 1.0 - 0.02;                                                                     // eye (~world y 1.02) up to the hook
+    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, chainLen, 8), dark); chain.position.y = 1.02 - 1.824 + chainLen / 2; gloveRoot.add(chain);
+  }
+
   /* The exported body has collapsed UVs, so map it cylindrically: u wraps once round the bag, v runs bottom to top (u = 0.5 faces the camera). */
   function cylUV(root) {
     const body = [], box = new THREE.Box3();
@@ -71,7 +102,7 @@ function start(root) {
   const pick = (n) => /^(body|crown)/.test(n) ? M.body : /^band_top/.test(n) && M.bandTop ? M.bandTop : /^band_bottom/.test(n) && M.bandBottom ? M.bandBottom : /^band/.test(n) ? M.band : /^strap/.test(n) ? M.strap : /^stitch/.test(n) ? M.stitch : /^metal/.test(n) ? M.metal : /^patch/.test(n) ? M.patch : M.body;
 
   /* rig: pivot at the top of the hook, the bag hangs below it */
-  const HOOK = 1.824, MID = 0.55;
+  const HOOK = 1.824; let MID = 0.55;
   const pivot = new THREE.Group(); pivot.position.y = HOOK; scene.add(pivot);
   const twist = new THREE.Group(); pivot.add(twist);
   const bodyGroup = new THREE.Group(); twist.add(bodyGroup);
@@ -82,26 +113,57 @@ function start(root) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.2, 64), new THREE.MeshBasicMaterial({ color: 0xf3eadc, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
   scene.add(ring);
 
+  let bagModel = null, bagAspect = 1, hitMeshes = bodyMeshes;
+  const artTex = {};
+  function bagTexture(key) {                                     /* one texture per artwork, made the first time it is needed */
+    if (artTex[key]) return artTex[key];
+    const cw = Math.min(2560, Math.floor(6144 / bagAspect)), cv = window.SZ_ART.canvas(key, cw, Math.round(cw * bagAspect));
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso; t.flipY = false;
+    cv.__refresh = () => { t.needsUpdate = true; };              /* art.js redraws the canvas once the picture has loaded */
+    return (artTex[key] = t);
+  }
   new GLTFLoader().load(new URL("./assets/bag3d/bag_4ft.glb", import.meta.url).href, (g) => {
     const model = g.scene; model.position.y = -HOOK;
     model.traverse((o) => { if (o.isMesh) { o.material = pick(o.name); if (/^(body|crown)/.test(o.name)) bodyMeshes.push(o); } });
-    spinG.add(model);
-    if (tiger) {
-      spinG.updateWorldMatrix(true, true);
-      const aspect = cylUV(model), cw = Math.min(2560, Math.floor(6144 / aspect)), cv = window.SZ_ART.canvas("tigerfull", cw, Math.round(cw * aspect));
-      const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso; t.flipY = false;
-      cv.__refresh = () => { t.needsUpdate = true; };      /* art.js redraws the canvas once tiger.png has loaded */
-      M.body.map = t; M.body.bumpMap = t; M.body.bumpScale = 1.4; M.body.needsUpdate = true;   /* the artwork doubles as a bump map: stitches catch the light */
-    }
+    spinG.add(model); spinG.add(gloveRoot); bagModel = model;
+    if (tiger) { spinG.updateWorldMatrix(true, true); bagAspect = cylUV(model); }
+    show(0, true);
     root.classList.add("is-ready"); fit(); if (!reduce) idle();
   });
+
+  /* switching product: shrink out, swap, spring back in */
+  const SW = { k: 1 };
+  function apply(i) {
+    const P = PRODUCTS[i]; cur = i;
+    const isBag = P.kind === "bag", ok = isBag && window.SZ_ART && window.SZ_ART.kinds && window.SZ_ART.kinds[P.art];
+    if (bagModel) bagModel.visible = isBag; gloveRoot.visible = !isBag;
+    if (isBag && ok) {
+      const t = bagTexture(P.art); M.body.map = t; M.body.bumpMap = t; M.body.bumpScale = P.bump; M.body.needsUpdate = true;
+      [M.bandTop, M.bandBottom].forEach((m) => m && m.color.setHex(P.trim));
+    }
+    hitMeshes = isBag ? bodyMeshes : gloveHit; MID = P.mid || 0.55;
+    el.setAttribute("aria-label", "Interactive " + P.name.toLowerCase() + ". Drag to spin, click or tap to hit it.");
+    ui(i);
+  }
+  function show(i, instant) {
+    if (instant || reduce) { apply(i); SW.k = 1; return; }
+    animate(SW, { k: 0.001, duration: 150, ease: "inQuad", onComplete: () => { apply(i); spinVel = 0; animate(SW, { k: 1, duration: 700, ease: createSpring({ stiffness: 170, damping: 13 }) }); } });
+  }
+  const go = (d) => show((cur + d + PRODUCTS.length) % PRODUCTS.length);
+  /* the buttons, name and dots */
+  const ui = (i) => { if (nameEl) nameEl.textContent = PRODUCTS[i].name; if (subEl) subEl.textContent = PRODUCTS[i].sub; dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false")); };
+  const nameEl = root.querySelector("[data-product-name]"), subEl = root.querySelector("[data-product-sub]"), dots = [...root.querySelectorAll("[data-product-dot]")];
+  root.querySelector("[data-product-prev]")?.addEventListener("click", () => go(-1));
+  root.querySelector("[data-product-next]")?.addEventListener("click", () => go(1));
+  dots.forEach((d, k) => d.addEventListener("click", () => k !== cur && show(k)));
+  root.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") { go(-1); e.preventDefault(); } else if (e.key === "ArrowRight") { go(1); e.preventDefault(); } });
 
   /* camera framing */
   const fit = () => {
     const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-    const f = THREE.MathUtils.degToRad(cam.fov), half = 1.2;
+    const f = THREE.MathUtils.degToRad(cam.fov), half = 1.42;
     const d = Math.max(half / Math.tan(f / 2), 0.55 / (Math.tan(f / 2) * cam.aspect));
-    cam.position.set(0.35, 0.95, d); cam.lookAt(0, 0.92, 0);
+    cam.position.set(0.35, 0.9, d); cam.lookAt(0, 0.66, 0);   /* looks a little low, so the product sits high and the name has room below it */
   };
   new ResizeObserver(fit).observe(host);
 
@@ -153,7 +215,7 @@ function start(root) {
     if (d.moved || (e.type !== "pointerup")) { if (performance.now() - lastMove > 90) spinVel = 0; return; }
     const r = el.getBoundingClientRect(); ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(ptr, cam);
-    const hit = ray.intersectObjects(bodyMeshes, false)[0];
+    const hit = ray.intersectObjects(hitMeshes, false)[0];
     if (!hit) return;
     lastUser = performance.now();
     const dx = hit.point.x >= 0 ? 1 : -1;
@@ -176,7 +238,7 @@ function start(root) {
     }
     spinG.rotation.y = spin;
     pivot.rotation.z = S.swingZ; pivot.rotation.x = S.swingX; twist.rotation.y = S.twist;
-    const d = S.dent * 0.045; bodyGroup.scale.set(base.x - d, base.y + d * 0.35, base.z - d);
+    const d = S.dent * 0.045; bodyGroup.scale.set((base.x - d) * SW.k, (base.y + d * 0.35) * SW.k, (base.z - d) * SW.k);
     ring.material.opacity = S.ring > 0 && S.ring < 1 ? (1 - S.ring) * 0.8 : 0; ring.scale.setScalar(0.4 + S.ring * 1.8);
     renderer.render(scene, cam);
   };

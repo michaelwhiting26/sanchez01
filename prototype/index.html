@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=1790707048">
+  <link rel="stylesheet" href="globe-hero.css?v=1790707805">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
   <script src="app.js?v=1790706831" defer></script>
@@ -54,11 +54,17 @@
   <!-- HIT IT: the Blender punch bag live in 3D, animated with anime.js (bag-punch.js). Click or tap the bag to punch it. -->
   <section class="bag-punch" data-bag-punch aria-label="Punch the bag">
     <div class="bag-punch__view" data-bag-view></div>
+    <div class="bag-punch__switch" role="group" aria-label="Choose a product">
+      <button class="bag-punch__arrow bag-punch__arrow--prev" type="button" data-product-prev aria-label="Previous product"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <button class="bag-punch__arrow bag-punch__arrow--next" type="button" data-product-next aria-label="Next product"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+    </div>
+    <div class="bag-punch__label" aria-live="polite"><p class="bag-punch__name" data-product-name>Tiger</p><p class="bag-punch__sub" data-product-sub>Heavy bag</p>
+      <div class="bag-punch__dots"><button type="button" data-product-dot aria-label="Tiger" aria-current="true"></button><button type="button" data-product-dot aria-label="Painted Portrait" aria-current="false"></button><button type="button" data-product-dot aria-label="Glove" aria-current="false"></button></div></div>
     <p class="bag-punch__hint" aria-hidden="true">Drag to spin · click to hit</p>
   </section>
   <script>window.SZ_TIGER_SRC = "tiger-hd.jpg";</script>   <!-- sharper enlarged tiger for this bag only; the configurator keeps tiger.png -->
   <script src="assets/bag3d/art.js?v=1790706831"></script>
-  <script type="module" src="bag-punch.js?v=1790704185"></script>
+  <script type="module" src="bag-punch.js?v=1790707875"></script>
 
   <!-- DEPTH CARDS: tilt + layered parallax + cursor spotlight (our own implementation; depth-card.js) -->
   <section class="depth-cards" aria-label="Featured">
