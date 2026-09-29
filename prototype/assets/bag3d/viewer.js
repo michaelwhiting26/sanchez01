@@ -171,7 +171,7 @@ export function createBagViewer(host) {
   let artKey = null, artTex = null;
   function setArt(k) {
     if (k === artKey) return; artKey = k;
-    if (!k || !window.SZ_ART) { [M.left, M.right].forEach((m) => { m.map = null; m.bumpMap = null; m.roughnessMap = null; m.metalnessMap = null; m.roughness = 0.42; m.metalness = 0; m.clearcoat = 0.25; m.needsUpdate = true; }); return; }
+    if (!k || !window.SZ_ART || !window.SZ_ART.kinds[k]) { [M.left, M.right].forEach((m) => { m.map = null; m.bumpMap = null; m.roughnessMap = null; m.metalnessMap = null; m.roughness = 0.42; m.metalness = 0; m.clearcoat = 0.25; m.needsUpdate = true; }); return; }
     const fit = !!(window.SZ_ART.kinds[k] && window.SZ_ART.kinds[k].fit);
     if (fit && model) cylUV(model, true);
     const cv = window.SZ_ART.canvas(k, 2048, fit ? Math.round(2048 * ((model && model.userData.aspect) || 1)) : 1024);

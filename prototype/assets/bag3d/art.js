@@ -142,21 +142,6 @@
     return c;
   }
 
-  /* ---------- PAINTED PORTRAIT (sample): artwork on the front, plain green back ("green for now") ---------- */
-  function portraitfull(w, h) {
-    var c = mk(w, h), g = c.getContext("2d");
-    g.fillStyle = "#2d6a34"; g.fillRect(0, 0, w, h);                        /* green half = the BACK */
-    var im = new Image();
-    im.onload = function () {
-      var hw = w / 2, k = Math.max(hw / im.naturalWidth, h / im.naturalHeight), dw = im.naturalWidth * k, dh = im.naturalHeight * k;
-      g.save(); g.beginPath(); g.rect(w / 4, 0, hw, h); g.clip();            /* front = u 0.25-0.75 */
-      g.imageSmoothingQuality = "high"; g.drawImage(im, w / 4 + (hw - dw) / 2, (h - dh) / 2, dw, dh); g.restore();
-      if (c.__refresh) c.__refresh();
-    };
-    im.src = (document.currentScript && document.currentScript.src ? document.currentScript.src.replace(/art\.js.*$/, "") : "assets/bag3d/") + "portrait-sample.jpg";
-    return c;
-  }
-
   /* ---------- LUXURY WRAPS: finished full-wrap textures made by tools/lux-textures (koi, dragon, monogram, kintsugi) ---------- */
   var BASE = document.currentScript && document.currentScript.src ? document.currentScript.src.replace(/art\.js.*$/, "") : "assets/bag3d/";
   function lux(name, back) {
@@ -174,7 +159,7 @@
     kintsugi: luxKind("kintsugi", "Gold-vein leather", "#0b0b0c")
   };
 
-  var KINDS = { koifull: LUX.koifull, dragonfull: LUX.dragonfull, monogram: LUX.monogram, kintsugi: LUX.kintsugi, tiger: { name: "Tiger embroidery", draw: tiger }, tigerfull: { name: "Tiger (full)", draw: tigerfull, fit: true }, portraitfull: { name: "Painted portrait (sample)", draw: portraitfull, fit: true }, hex: { name: "Fractal hexagons", draw: hexmosaic }, uv: { name: "UV test", draw: uv } };
+  var KINDS = { koifull: LUX.koifull, dragonfull: LUX.dragonfull, monogram: LUX.monogram, kintsugi: LUX.kintsugi, tiger: { name: "Tiger embroidery", draw: tiger }, tigerfull: { name: "Tiger (full)", draw: tigerfull, fit: true }, hex: { name: "Fractal hexagons", draw: hexmosaic }, uv: { name: "UV test", draw: uv } };
   var cache = {};
   window.SZ_ART = {
     kinds: KINDS,

@@ -731,7 +731,6 @@
       blocks.forEach(function (b, i) { s += rect(x0 + b[0] * w, y0 + b[1] * h, b[2] * w + 0.5, b[3] * h + 0.5, pal[i % pal.length]); });
     }
     if (it.art === "tigerfull") s += '<image href="assets/bag3d/tiger.png" x="' + (x0 + w * 0.05) + '" y="' + (y0 + h * 0.1) + '" width="' + (w * 0.9) + '" height="' + (h * 0.8) + '" preserveAspectRatio="xMidYMid meet"/>';
-    else if (it.art === "portraitfull") s += '<image href="assets/bag3d/portrait-sample.jpg" x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice"/>';
     else if (it.art && window.SZ_ART && SZ_ART.src(it.art)) s += '<image href="' + SZ_ART.src(it.art) + '" x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice"/>';
     else if (it.art && window.SZ_ART) s += '<image href="' + SZ_ART.url(it.art, 900, 450) + '" x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice"/>';
     /* caps */
@@ -1159,8 +1158,7 @@
       { id: "monogram", name: "Monogram", layout: "single", a: "#0b0b0c", caps: "#1a1a1c", art: "monogram" },
       { id: "kintsugi", name: "Gold Vein", layout: "single", a: "#0b0b0c", caps: "#b8953f", art: "kintsugi" }
     ];
-    /* Painted Portrait: sample artwork (source and artist credit still to be confirmed). Label kept as "sample". */
-    PRESETS.push({ id: "portrait", name: "Painted Portrait (sample)", layout: "single", a: "#2d6a34", caps: "#173a20", art: "portraitfull" });
+    if (c.item.art && window.SZ_ART && !SZ_ART.kinds[c.item.art]) { c.item.art = null; CONFIG.save(c); }   /* an artwork that no longer exists: back to plain colour */
     var presetBox = $("[data-cfg-presets]", root);
     function presetOn(pr) {
       var it = c.item, lo = function (x) { return (x || "").toLowerCase(); };
@@ -1171,7 +1169,7 @@
       presetBox.innerHTML = '<p class="eyebrow">Sanchez Custom</p><p class="xsmall muted">Off-the-shelf bags. Tap one to try it on the preview.</p>' +
         '<div class="presets__grid" role="group" aria-label="Sanchez Custom colourways">' + PRESETS.map(function (pr) {
           return '<button class="preset" type="button" data-preset="' + pr.id + '" aria-pressed="' + presetOn(pr) + '" title="' + esc(pr.name) + '">' +
-            '<span class="preset__chip" aria-hidden="true">' + (pr.art === "tigerfull" ? '<i style="background:#f7f7f2"></i><i style="background:#b4402e url(assets/bag3d/tiger.png) center/cover"></i>' : pr.art && window.SZ_ART && SZ_ART.kinds[pr.art] && SZ_ART.kinds[pr.art].chip ? '<i style="background:#0d0f12 url(' + SZ_ART.kinds[pr.art].chip + ') center/cover"></i>' : pr.art === "portraitfull" ? '<i style="background:#2d6a34"></i><i style="background:#0d0f12 url(assets/bag3d/portrait-sample.jpg) center/cover"></i>' : pr.art && window.SZ_ART ? '<i style="background:url(' + SZ_ART.url(pr.art, 160, 80) + ') center/cover"></i>' : '<i style="background:' + pr.a + '"></i>' + (pr.b ? '<i style="background:' + pr.b + '"></i>' : "")) + "</span>" +
+            '<span class="preset__chip" aria-hidden="true">' + (pr.art === "tigerfull" ? '<i style="background:#f7f7f2"></i><i style="background:#b4402e url(assets/bag3d/tiger.png) center/cover"></i>' : pr.art && window.SZ_ART && SZ_ART.kinds[pr.art] && SZ_ART.kinds[pr.art].chip ? '<i style="background:#0d0f12 url(' + SZ_ART.kinds[pr.art].chip + ') center/cover"></i>' : pr.art && window.SZ_ART ? '<i style="background:url(' + SZ_ART.url(pr.art, 160, 80) + ') center/cover"></i>' : '<i style="background:' + pr.a + '"></i>' + (pr.b ? '<i style="background:' + pr.b + '"></i>' : "")) + "</span>" +
             '<span class="preset__name">' + esc(pr.name) + "</span></button>";
         }).join("") + "</div>";
     }

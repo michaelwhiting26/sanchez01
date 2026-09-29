@@ -1,94 +1,103 @@
-/* Hero 3: SANCHEZ with engraved rings rippling outward.
-   A small precomputed map (R = distance from the word, G = the outline, B = the letters) gives every dot its place.
-   Rings dim and warm toward gold with distance, and a slow pulse travels outward every few seconds.
-   Every dot is a particle: the cursor pushes dots away and they ease back, and a click or tap sends a shockwave out
-   (same physics constants as the dithered-logo component used in revisions 1 and 2). Reduced motion: a still frame. */
+/* The Sanchez fingerprint: stitched ridges round the SANCHEZ wordmark that carry on down the page.
+   One field of dots for the whole top of the site, drawn on a fixed canvas BEHIND the sections and scrolling with the page, so the hero,
+   the curved strip, the gallery, the marquee and the bag all sit in the same pattern (their backgrounds are transparent).
+   A small precomputed map (R = distance from the word, G = the outline, B = the letters) sets the hero; above and below it the ridges simply keep going.
+   Ridges are running stitch (dashes with gaps and the odd missing stitch), dim and warm toward gold with distance; a slow pulse travels outward.
+   Every dot is a particle: the cursor pushes dots away, a click sends a shockwave (same physics as the dithered-logo component).
+   SZ_FINGERPRINT.setSeed("name") reshapes the ridges for a name. Reduced motion: a still frame. */
 (function () {
   var root = document.querySelector("[data-hero-rings]"); if (!root) return;
   var cv = root.querySelector("canvas"), ctx = cv.getContext("2d");
-  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var ddw, thv, fpA = 1.7, fpB = 4.1, fpC = 0.6, MW = 0, MH = 0, MHe = 0, N = 0, curExtra = -1, bd, bp, bl, dist, pipe, letr, seed, offX, offY, bucketOf, order, counts;   /* MH = map rows, MHe = rows incl. the bleed below the hero */
-  var STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25;   /* 4.2s slowed by 20% */
+  document.body.insertBefore(cv, document.body.firstChild); cv.className = "wm-field";      /* out of the hero, behind everything */
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, coarse = matchMedia("(pointer: coarse)").matches;
+  var MW = 0, MH = 0, bd, bp, bl;                                 /* the map */
+  var R = 0, r0 = 0, ddw, thv, pseed;                              /* the page-long grid: rows, map's first row, ridge distance, angle, per-dot random */
+  var nRows = 0, topRow = 0, sub = 0, bucketOf, order, counts, offX, offY;   /* what is on screen right now */
+  var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25, FLOOR = 0.26;
   var CREAM = [243, 234, 220], GOLD = [201, 164, 92];
-  /* dithered-logo physics, in CSS pixels */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
   var LEVELS = 20, WARMS = 6, NB = (LEVELS + 1) * WARMS, styles = [];
   for (var lv = 0; lv <= LEVELS; lv++) for (var w = 0; w < WARMS; w++) {
     var k = lv / LEVELS, t = w / (WARMS - 1);
     styles.push("rgb(" + Math.round((CREAM[0] + (GOLD[0] - CREAM[0]) * t) * k) + "," + Math.round((CREAM[1] + (GOLD[1] - CREAM[1]) * t) * k) + "," + Math.round((CREAM[2] + (GOLD[2] - CREAM[2]) * t) * k) + ")");
   }
-  var cursor = { x: 0, y: 0, active: false }, ripples = [];
+  var cursor = { x: 0, y: 0, active: false }, ripples = [], cell = 1, ox = 0, dpr = 1, moving = false, fieldEnd = 1e9, cw = 0, ch = 0;
 
   function load() {
     var port = innerWidth < innerHeight, im = new Image();
     im.onload = function () {
-      MW = im.width; MH = im.height; N = MW * MH;
+      MW = im.width; MH = im.height; var n = MW * MH;
       var t = document.createElement("canvas"); t.width = MW; t.height = MH; var tc = t.getContext("2d"); tc.drawImage(im, 0, 0);
       var px = tc.getImageData(0, 0, MW, MH).data;
-      bd = new Float32Array(N); bp = new Uint8Array(N); bl = new Uint8Array(N);
-      for (var i = 0; i < N; i++) { bd[i] = px[i * 4]; bp[i] = px[i * 4 + 1] > 127; bl[i] = px[i * 4 + 2] > 127; }
-      size(); root.classList.add("is-ready");
+      bd = new Float32Array(n); bp = new Uint8Array(n); bl = new Uint8Array(n);
+      for (var i = 0; i < n; i++) { bd[i] = px[i * 4]; bp[i] = px[i * 4 + 1] > 127; bl[i] = px[i * 4 + 2] > 127; }
+      size(true); cv.classList.add("is-ready");
       if (reduce) draw(0); else requestAnimationFrame(loop);
     };
     im.src = "assets/globe/rings-map-" + (port ? "port" : "land") + ".png?v=1";
   }
 
-  /* cover-fit the map into the canvas; cell = one map pixel, in device pixels */
-  var coarse = matchMedia("(pointer: coarse)").matches;   /* phones / tablets: lighter canvas, 30 fps, physics only while something is moving */
-  var cell = 1, ox = 0, oy = 0, dpr = 1, moving = false;
-  function size() {
-    var r = root.getBoundingClientRect(), loop = document.querySelector(".curved-loop");
-    var bleed = loop ? loop.getBoundingClientRect().height : 0, heroH = r.height; dpr = Math.min(devicePixelRatio || 1, coarse ? 1.5 : 2);
-    cv.width = Math.round(r.width * dpr); cv.height = Math.round((heroH + bleed) * dpr); cv.style.height = (heroH + bleed) + "px";
-    cell = Math.max(cv.width / MW, heroH * dpr / MH); ox = (cv.width - MW * cell) / 2; oy = (heroH * dpr - MH * cell) / 2;   /* the map is fitted to the hero box */
-    build(Math.max(0, Math.ceil((cv.height - (oy + MH * cell)) / cell)));
-    if (reduce && MW) draw(0);
+  /* where the field ends: the bottom of the last transparent section (below that the sections are solid, so nothing needs drawing) */
+  function measureEnd() {
+    var end = 0; [].forEach.call(document.querySelectorAll("[data-hero-rings], .curved-loop, .lgc-track, .sz-marquee, .bag-punch"), function (e) { end = Math.max(end, e.getBoundingClientRect().bottom + scrollY); });
+    return end || innerHeight;
   }
-  /* grid = the map plus `extra` rows below it. Distance in the extra rows keeps growing straight down from the map's last row,
-     so the rings and the pulse carry on past the hero's bottom edge instead of stopping at it. */
-  function build(extra) {
-    if (extra === curExtra && dist) return;
-    curExtra = extra; MHe = MH + extra; N = MW * MHe;
-    dist = new Float32Array(N); pipe = new Uint8Array(N); letr = new Uint8Array(N); seed = new Float32Array(N);
-    offX = new Float32Array(N); offY = new Float32Array(N); bucketOf = new Int16Array(N); order = new Int32Array(N); counts = new Int32Array(NB + 1);
-    dist.set(bd); pipe.set(bp); letr.set(bl);
-    for (var y = MH; y < MHe; y++) for (var x = 0; x < MW; x++) dist[y * MW + x] = bd[(MH - 1) * MW + x] + (y - MH + 1);
-    for (var i = 0; i < N; i++) { var h = Math.sin(i * 12.9898) * 43758.5453; seed[i] = h - Math.floor(h); }
-    ddw = new Float32Array(N); thv = new Float32Array(N); fingerprint();
+
+  var gridKey = "";
+  function size(force) {
+    var vw = document.documentElement.clientWidth, vh = innerHeight, heroH = root.getBoundingClientRect().height || vh;
+    dpr = Math.min(devicePixelRatio || 1, coarse ? 1.5 : 2);
+    if (force || cw !== Math.round(vw * dpr) || ch !== Math.round(vh * dpr)) { cw = Math.round(vw * dpr); ch = Math.round(vh * dpr); cv.width = cw; cv.height = ch; }
+    cell = Math.max(cw / MW, heroH * dpr / MH); ox = (cw - MW * cell) / 2;
+    var mapTop = (heroH * dpr - MH * cell) / 2; r0 = Math.round(mapTop / cell);
+    fieldEnd = measureEnd();
+    var rows = Math.ceil(((fieldEnd + vh) * dpr) / cell) + 4, key = [cw, ch, Math.round(cell * 100), rows, r0].join();
+    if (key !== gridKey || force) { gridKey = key; build(rows); }
+    var win = Math.ceil(ch / cell) + 3; if (win !== nRows || !bucketOf) { nRows = win; var m = MW * nRows; bucketOf = new Int16Array(m); order = new Int32Array(m); offX = new Float32Array(m); offY = new Float32Array(m); }
+    if (reduce) draw(0);
   }
-  /* The ridges are a fingerprint: rings round a core (the word), wobbled so they are never perfect ellipses, like a loop or whorl.
-     The wobble comes from three numbers, so a name typed in later can give every visitor's print its own shape (SZ_FINGERPRINT.setSeed). */
+
+  /* the grid: ridge distance for every row of the page. Inside the map it is the map; above and below, distance keeps growing straight out from the map's edge row. */
+  function build(rows) {
+    R = rows; var n = MW * R; ddw = new Float32Array(n); thv = new Float32Array(n); pseed = new Float32Array(n); counts = counts || new Int32Array(NB + 1);
+    for (var i = 0; i < n; i++) { var h = Math.sin(i * 12.9898) * 43758.5453; pseed[i] = h - Math.floor(h); }
+    fingerprint();
+  }
+  /* The ridges are a fingerprint: rings round a core (the word), wobbled so they are never perfect ellipses, like a loop or whorl. */
   function fingerprint() {
-    var cx = MW / 2, cy = MH / 2;
-    for (var y = 0, i = 0; y < MHe; y++) for (var x = 0; x < MW; x++, i++) {
-      var th = Math.atan2(y - cy, x - cx), d = dist[i];
-      ddw[i] = d + 1.15 * Math.sin(th * 3 + fpA) + 0.75 * Math.sin(th * 5 + d * 0.045 + fpB) + 0.55 * Math.sin(d * 0.09 + th * 2 + fpC); thv[i] = th;
+    var cx = MW / 2, cy = r0 + MH / 2;
+    for (var y = 0, i = 0; y < R; y++) {
+      var m = y - r0;
+      for (var x = 0; x < MW; x++, i++) {
+        var d = m < 0 ? bd[x] + (-m) : m >= MH ? bd[(MH - 1) * MW + x] + (m - MH + 1) : bd[m * MW + x];
+        var th = Math.atan2(y - cy, x - cx);
+        ddw[i] = d + 1.15 * Math.sin(th * 3 + fpA) + 0.75 * Math.sin(th * 5 + d * 0.045 + fpB) + 0.55 * Math.sin(d * 0.09 + th * 2 + fpC); thv[i] = th;
+      }
     }
   }
   function hashSeed(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   window.SZ_FINGERPRINT = { setSeed: function (str) { var h = hashSeed(String(str || "sanchez")); fpA = (h & 1023) / 1023 * 6.28; fpB = ((h >> 10) & 1023) / 1023 * 6.28; fpC = ((h >> 20) & 511) / 511 * 6.28; if (ddw) fingerprint(); } };
-  addEventListener("resize", function () { if (MW) size(); });
-  var loopEl = document.querySelector(".curved-loop");
-  if (loopEl && window.ResizeObserver) new ResizeObserver(function () { if (MW) size(); }).observe(loopEl);
-  function local(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * dpr, y: (e.clientY - r.top) * dpr }; }
-  root.addEventListener("pointermove", function (e) { var p = local(e); cursor.x = p.x; cursor.y = p.y; cursor.active = true; });
-  root.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") cursor.active = false; });
-  root.addEventListener("pointercancel", function () { cursor.active = false; });
-  root.addEventListener("pointerup", function (e) {
-    var p = local(e); ripples.push({ x: p.x, y: p.y, start: performance.now() });
-    if (e.pointerType !== "mouse") cursor.active = false;
-  });
 
-  /* push dots away from the cursor and ripples; ease back when the force goes */
+  addEventListener("resize", function () { if (MW) size(false); });
+  var rz = 0; if (window.ResizeObserver) new ResizeObserver(function () { clearTimeout(rz); rz = setTimeout(function () { if (MW) size(false); }, 250); }).observe(document.body);
+  var idle = (function () { return function (e) { return !!(e.target && e.target.closest && e.target.closest("a,button,input,select,textarea,label,[data-lgc],[data-bag-view],dialog")); }; })();
+  addEventListener("pointermove", function (e) { if (scrollY > fieldEnd) return; cursor.x = e.clientX * dpr; cursor.y = e.clientY * dpr; cursor.active = true; }, { passive: true });
+  document.addEventListener("pointerleave", function () { cursor.active = false; });
+  addEventListener("pointerup", function (e) {
+    if (scrollY > fieldEnd || idle(e)) return; ripples.push({ x: e.clientX * dpr, y: e.clientY * dpr, start: performance.now() });
+    if (e.pointerType !== "mouse") cursor.active = false;
+  }, { passive: true });
+
+  /* push the dots on screen away from the cursor and ripples; ease back when the force goes */
   function step(now) {
     moving = false;
     for (var k = ripples.length - 1; k >= 0; k--) if (now - ripples[k].start >= RIPPLE_DURATION) ripples.splice(k, 1);
     var nr = ripples.length, mul = nr ? 1 + 0.5 * (nr - 1) : 0;
     var CR = CURSOR_RADIUS * dpr, CR2 = CR * CR, CF = CURSOR_FORCE * dpr, RW = RIPPLE_WIDTH * dpr, RF = RIPPLE_FORCE * dpr;
-    for (var y = 0, i = 0; y < MHe; y++) {
-      var by = oy + (y + 0.5) * cell;
+    for (var y = 0, i = 0; y < nRows; y++) {
+      var by = y * cell - sub + cell * 0.5;
       for (var x = 0; x < MW; x++, i++) {
-        if (bucketOf[i] < 0 && offX[i] === 0 && offY[i] === 0) continue;   /* unlit and at rest: nothing to move */
+        if (bucketOf[i] < 0 && offX[i] === 0 && offY[i] === 0) continue;
         var bx = ox + (x + 0.5) * cell, fx = 0, fy = 0;
         if (cursor.active) {
           var vx = bx + offX[i] - cursor.x, vy = by + offY[i] - cursor.y, d2 = vx * vx + vy * vy;
@@ -107,60 +116,61 @@
     }
   }
 
-  /* colour every dot into one of NB shades (brightness x warmth), then draw each shade in one pass */
+  /* colour every dot on screen into one of NB shades (brightness x warmth), then draw each shade in one pass */
   function draw(t) {
-    var maxD = Math.hypot(MW, MH) * 0.5;
-    var wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15;
-    var drift = reduce ? 0 : t / 1000 * 1.1;
+    var sy = scrollY * dpr; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
+    var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 1.1;
     counts.fill(0);
-    for (var i = 0; i < N; i++) {
-      var b = -1;
-      if (pipe[i]) { if (seed[i] < 0.9) b = LEVELS * WARMS; }                 /* outline: full cream */
-      else if (!letr[i]) {
-        var dd = dist[i], dw = ddw[i];
-        if (dd > 2.2) {
-          var rel = dw - drift, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
-          /* stitch: dashes of STITCH cells with a small gap, the length measured along the ridge (angle x radius), each ridge starting a little apart */
-          var run = (thv[i] * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
-          var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;          /* the odd stitch missing: minutiae, the flaw that makes it a print */
-          if (ph < WIDTH && inD && !gone) {
-            var fade = Math.exp(-dd / (maxD * 0.34));
-            var pulse = reduce ? 0 : Math.exp(-Math.pow((dd - wave) / 7, 2)) * 0.55;
-            var k = Math.min(1, 0.34 * fade + pulse * fade);
-            var warm = Math.min(1, dd / (maxD * 0.55));
-            var lv = Math.round(k * LEVELS); if (lv > 0) b = lv * WARMS + Math.round(warm * (WARMS - 1));
+    for (var y = 0, i = 0; y < nRows; y++) {
+      var pr = topRow + y, m = pr - r0, inMap = m >= 0 && m < MH, base = pr * MW;
+      for (var x = 0; x < MW; x++, i++) {
+        var b = -1;
+        if (pr < R) {
+          if (inMap && bp[m * MW + x]) { if (pseed[base + x] < 0.9) b = LEVELS * WARMS; }            /* the outline: full cream */
+          else if (!(inMap && bl[m * MW + x])) {
+            var dw = ddw[base + x];
+            if (dw > 2.2) {
+              var rel = dw - drift, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
+              /* stitch: dashes of STITCH cells with a small gap, measured along the ridge (angle x radius), each ridge starting a little apart */
+              var run = (thv[base + x] * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
+              var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;      /* the odd stitch missing: the flaw that makes it a print */
+              if (ph < WIDTH && inD && !gone) {
+                var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
+                var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 7, 2)) * 0.55;
+                var kk = Math.min(1, 0.34 * fade + pulse * fade), warm = Math.min(1, dw / (maxD * 0.55));
+                var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
+              }
+            }
           }
         }
+        bucketOf[i] = b; if (b >= 0) counts[b + 1]++;
       }
-      bucketOf[i] = b; if (b >= 0) counts[b + 1]++;
     }
     for (var c = 1; c <= NB; c++) counts[c] += counts[c - 1];
-    var start = counts.slice(0);
-    for (i = 0; i < N; i++) if (bucketOf[i] >= 0) order[start[bucketOf[i]]++] = i;
+    var start = counts.slice(0), nn = nRows * MW;
+    for (i = 0; i < nn; i++) if (bucketOf[i] >= 0) order[start[bucketOf[i]]++] = i;
 
-    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = "#050403"; ctx.fillRect(0, 0, cw, ch);
     var s = Math.max(1, cell * 0.72), pad = (cell - s) / 2;
     for (var bk = 0; bk < NB; bk++) {
       var a = counts[bk], z = counts[bk + 1]; if (a === z) continue;
       ctx.fillStyle = styles[bk];
       for (var j = a; j < z; j++) {
-        var n = order[j], x = n % MW, y = (n - x) / MW;
-        ctx.fillRect(ox + x * cell + pad + offX[n], oy + y * cell + pad + offY[n], s, s);
+        var n = order[j], xx = n % MW, yy = (n - xx) / MW;
+        ctx.fillRect(ox + xx * cell + pad + offX[n], yy * cell - sub + pad + offY[n], s, s);
       }
     }
   }
 
-  /* hide the nav while the hero is on screen: "on-hero" stays on until the hero's bottom passes the top of the viewport */
-  new IntersectionObserver(function (e) { document.body.classList.toggle("on-hero", e[0].isIntersecting); }, { rootMargin: "0px 0px 0px 0px", threshold: 0 }).observe(root);
-
-  var visible = true;
-  new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(root);
-  var lastFrame = 0;
+  addEventListener("scroll", function () { if (reduce && MW && scrollY <= fieldEnd + innerHeight) draw(0); }, { passive: true });
+  var lastFrame = 0, cleared = false;
   function loop(t) {
     requestAnimationFrame(loop);
-    if (!visible || (coarse && t - lastFrame < 32)) return;   /* phones: about 30 fps */
+    if (document.hidden || (coarse && t - lastFrame < 32)) return;
     lastFrame = t;
-    if (cursor.active || ripples.length || moving) step(t);    /* nothing pushing the dots: skip the whole physics pass */
+    if (scrollY > fieldEnd) { if (!cleared) { ctx.clearRect(0, 0, cw, ch); cleared = true; } return; }   /* below the last transparent section nothing shows: skip the work */
+    cleared = false;
+    if (cursor.active || ripples.length || moving) step(t);
     draw(t);
   }
   load();

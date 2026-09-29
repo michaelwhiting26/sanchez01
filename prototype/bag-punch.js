@@ -57,7 +57,6 @@ function start(root) {
     { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", kind: "bag", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: ["Order this bag", "product.html"], build: "configure.html?preset=koi" },
     { id: "monogram", name: "Monogram", sub: "Tone on tone · black on black", kind: "bag", art: "monogram", trim: 0x1c1c1e, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=monogram" },
     { id: "kintsugi", name: "Gold Vein", sub: "Kintsugi leather", kind: "bag", art: "kintsugi", trim: 0xb8953f, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=kintsugi" },
-    { id: "portrait", name: "Painted Portrait", sub: "Heavy bag · sample", kind: "bag", art: "portraitfull", trim: 0x1f4d2b, bump: 0.5, order: ["Order this bag", "product.html"], build: "configure.html?preset=portrait" },
   ];
   let cur = 0;
 
