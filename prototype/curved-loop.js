@@ -22,7 +22,9 @@
     }
     function wrap() { if (offset <= -spacing) offset += spacing; if (offset > 0) offset -= spacing; }
     var last = performance.now();
+    var vis = true; new IntersectionObserver(function (e) { vis = e[0].isIntersecting; }, { rootMargin: "150px" }).observe(root);
     function step(now) {
+      if (!vis) { last = now; requestAnimationFrame(step); return; }   /* off screen: idle */
       var dt = Math.min(0.05, (now - last) / 1000) * 60; last = now;
       if (!drag) offset += dir * speed * dt;
       wrap(); tp.setAttribute("startOffset", offset + "px"); requestAnimationFrame(step);

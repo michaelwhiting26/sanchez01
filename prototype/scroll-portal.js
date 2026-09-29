@@ -13,7 +13,9 @@
     var r = root.getBoundingClientRect(), total = root.offsetHeight - innerHeight;
     target = Math.min(1, Math.max(0, -r.top / Math.max(1, total))) * (N - 1);
   }
+  var vis = true; new IntersectionObserver(function (e) { vis = e[0].isIntersecting; }, { rootMargin: "150px" }).observe(root);
   function frame() {
+    if (!vis) { requestAnimationFrame(frame); return; }   /* off screen: idle */
     measure(); D = depth();
     cur += (target - cur) * 0.12;
     stage.style.transform = "translate3d(0,0," + (cur * D) + "px)";

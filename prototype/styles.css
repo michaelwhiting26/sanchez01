@@ -392,6 +392,10 @@ hr { border: 0; border-block-start: 1px solid var(--color-border); margin: var(-
 .footer-cities li + li::before { content: "·"; margin-inline-end: var(--space-3); color: var(--color-accent-text); }
 .footer-brand img { inline-size: 96px; block-size: auto; aspect-ratio: 728 / 631; }
 .footer-cols { display: grid; gap: var(--space-5); grid-template-columns: repeat(2, 1fr); }
+.footer-right { display: flex; flex-direction: column; gap: var(--space-5); min-inline-size: 0; }
+.footer-globe { inline-size: clamp(150px, 42vw, 200px); aspect-ratio: 1; margin-inline: auto; opacity: 0; transition: opacity 1.2s ease; }
+.footer-globe.is-ready { opacity: 1; }
+@media (min-width: 1024px) { .footer-globe { margin-inline: auto 0; inline-size: clamp(170px, 15vw, 210px); } }
 .footer-col h2 { font-size: var(--fs-md); letter-spacing: var(--tracking-caps); color: var(--color-text-muted); margin-block-end: var(--space-2); }
 .footer-col ul { list-style: none; }
 .footer-col a { display: inline-flex; align-items: center; min-block-size: 36px; text-decoration: none; color: var(--color-text-2); }

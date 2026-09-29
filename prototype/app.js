@@ -218,10 +218,11 @@
         '<ul class="social-links" aria-label="Instagram">' + D.socials.map(function (s) {
           return '<li><a href="' + s.href + '" rel="noopener" target="_blank">' + ic("instagram") + s.handle + '<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>';
         }).join("") + "</ul></div>" +
-        '<div class="footer-cols">' + D.footerCols.map(function (c, i) {
+        '<div class="footer-right"><div class="footer-cols">' + D.footerCols.map(function (c, i) {
           return '<nav class="footer-col" aria-labelledby="fc-' + i + '"><h2 id="fc-' + i + '">' + c.title + "</h2><ul>" +
             c.links.map(function (l) { return '<li><a href="' + l[0] + '">' + l[1] + "</a></li>"; }).join("") + "</ul></nav>";
-        }).join("") + "</div></div>" +
+        }).join("") + "</div>" +
+        '<div class="footer-globe" data-footer-globe aria-hidden="true"></div></div></div>' +
         '<div class="footer-bottom">' +
         '<div class="switchers">' +
         '<div class="field"><label class="field__label" for="ftr-currency">Currency</label>' + currencySelect("ftr-currency").replace(' aria-label="Currency"', "") + "</div>" +
@@ -231,8 +232,15 @@
         "<p>© " + new Date().getFullYear() + " Sanchez Custom Boxing Equipment. " + ph("PLACEHOLDER: legal entity + ABN") + "</p>" +
         '<div class="proto-tools" role="group" aria-label="Prototype review tools"><span class="xsmall">Prototype: view state</span>' +
         ["ready", "loading", "empty", "error"].map(function (s) { return '<a href="?state=' + s + '">' + s + "</a>"; }).join("") +
-        '<a href="components.html">Components</a></div>' +
+        '<a href="components.html">Components</a><a href="work-in-progress.html">Work in progress</a></div>' +
         "</div></div>";
+    }
+
+    /* Footer globe: a small live 3D Earth, loaded only when the footer scrolls near the screen (footer-globe.js) */
+    var fg = $('[data-footer-globe]');
+    if (fg && "IntersectionObserver" in window) {
+      var fio = new IntersectionObserver(function (e) { if (e[0].isIntersecting) { fio.disconnect(); import("./footer-globe.js").catch(function () {}); } }, { rootMargin: "700px 0px" });
+      fio.observe(fg);
     }
 
     /* Overlays: nav drawer, cart drawer, toast region */

@@ -228,3 +228,13 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 .lgc-note.is-on { opacity: 1; transform: translate(-50%, 0); }
 /* In the focus view the carousel lifts its title above its own box; let it show instead of being sliced by the top edge. */
 .lgc-track .lgc > div { overflow: visible; }
+
+/* Phones: the pinned gallery fills the screen, so a vertical swipe on it must scroll the page (which drives the slides);
+   horizontal drags still reach the carousel. The carousel sets touch-action:none on its canvas by itself, so override it. */
+.lgc, .lgc > div, .lgc canvas { touch-action: pan-y !important; }
+
+/* Work in progress page banner */
+.wip-banner { background: #000; padding-block: clamp(28px, 6vh, 64px) clamp(20px, 4vh, 40px); border-block-end: 1px dashed rgb(243 234 220 / .18); }
+.wip-banner h1 { font: 800 clamp(2rem, 1rem + 4vw, 3.6rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; margin: .2em 0 .4em; }
+.wip-banner p { color: rgb(243 234 220 / .72); max-inline-size: 60ch; }
+.wip-banner a { color: #c4553a; }

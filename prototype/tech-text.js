@@ -67,8 +67,10 @@
     function release() { if (dragging) { dragging.drag = false; dragging = null; root.classList.remove("is-dragging"); } }
     svg.addEventListener("pointerup", release); svg.addEventListener("pointercancel", release);
 
-    var last = performance.now(), sweepT = 0;
+    var last = performance.now(), sweepT = 0, vis = true;
+    new IntersectionObserver(function (e) { vis = e[0].isIntersecting; }, { rootMargin: "150px" }).observe(root);
     function tick(now) {
+      if (!vis) { last = now; requestAnimationFrame(tick); return; }   /* off screen: idle */
       var dt = Math.min(0.05, (now - last) / 1000); last = now;
       /* idle sweep */
       var px = pointer.x, py = pointer.y;

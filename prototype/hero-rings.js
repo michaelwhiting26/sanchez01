@@ -34,10 +34,11 @@
   }
 
   /* cover-fit the map into the canvas; cell = one map pixel, in device pixels */
-  var cell = 1, ox = 0, oy = 0, dpr = 1;
+  var coarse = matchMedia("(pointer: coarse)").matches;   /* phones / tablets: lighter canvas, 30 fps, physics only while something is moving */
+  var cell = 1, ox = 0, oy = 0, dpr = 1, moving = false;
   function size() {
     var r = root.getBoundingClientRect(), loop = document.querySelector(".curved-loop");
-    var bleed = loop ? loop.getBoundingClientRect().height : 0, heroH = r.height; dpr = Math.min(devicePixelRatio || 1, 2);
+    var bleed = loop ? loop.getBoundingClientRect().height : 0, heroH = r.height; dpr = Math.min(devicePixelRatio || 1, coarse ? 1.5 : 2);
     cv.width = Math.round(r.width * dpr); cv.height = Math.round((heroH + bleed) * dpr); cv.style.height = (heroH + bleed) + "px";
     cell = Math.max(cv.width / MW, heroH * dpr / MH); ox = (cv.width - MW * cell) / 2; oy = (heroH * dpr - MH * cell) / 2;   /* the map is fitted to the hero box */
     build(Math.max(0, Math.ceil((cv.height - (oy + MH * cell)) / cell)));
@@ -68,6 +69,7 @@
 
   /* push dots away from the cursor and ripples; ease back when the force goes */
   function step(now) {
+    moving = false;
     for (var k = ripples.length - 1; k >= 0; k--) if (now - ripples[k].start >= RIPPLE_DURATION) ripples.splice(k, 1);
     var nr = ripples.length, mul = nr ? 1 + 0.5 * (nr - 1) : 0;
     var CR = CURSOR_RADIUS * dpr, CR2 = CR * CR, CF = CURSOR_FORCE * dpr, RW = RIPPLE_WIDTH * dpr, RF = RIPPLE_FORCE * dpr;
@@ -88,6 +90,7 @@
         }
         offX[i] += (fx - offX[i]) * LERP; offY[i] += (fy - offY[i]) * LERP;
         if (Math.abs(offX[i]) < 0.01) offX[i] = 0; if (Math.abs(offY[i]) < 0.01) offY[i] = 0;
+        if (offX[i] !== 0 || offY[i] !== 0) moving = true;
       }
     }
   }
@@ -137,6 +140,13 @@
 
   var visible = true;
   new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(root);
-  function loop(t) { if (visible) { step(t); draw(t); } requestAnimationFrame(loop); }
+  var lastFrame = 0;
+  function loop(t) {
+    requestAnimationFrame(loop);
+    if (!visible || (coarse && t - lastFrame < 32)) return;   /* phones: about 30 fps */
+    lastFrame = t;
+    if (cursor.active || ripples.length || moving) step(t);    /* nothing pushing the dots: skip the whole physics pass */
+    draw(t);
+  }
   load();
 })();

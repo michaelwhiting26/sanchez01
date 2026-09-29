@@ -165,8 +165,11 @@ function start(root) {
 
   /* render loop: apply the animated state to the rig */
   const base = new THREE.Vector3(1, 1, 1);
+  let onScreen = true;   /* off screen: no drawing (a hidden WebGL scene still costs a phone real battery and frame rate) */
+  new IntersectionObserver((e) => { onScreen = e[0].isIntersecting; }, { rootMargin: "150px" }).observe(root);
   const loop = () => {
     requestAnimationFrame(loop);
+    if (!onScreen) return;
     if (!down) {
       spin += spinVel; spinVel *= 0.94; if (Math.abs(spinVel) < 0.0004) spinVel = 0;
       if (!reduce && !hover && spinVel === 0 && performance.now() > resumeAt) spin += 0.003;   /* slow turn (about 35 s a revolution) while nobody is touching it */
