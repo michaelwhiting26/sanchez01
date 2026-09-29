@@ -53,6 +53,10 @@ function start(root) {
   /* ---- products: the slots the left / right buttons cycle through. Add a product here and it appears in the switcher. ---- */
   const PRODUCTS = [
     { id: "tiger", name: "Tiger", sub: "Heavy bag", kind: "bag", art: "tigerfull", trim: 0xffffff, bump: 1.4, order: ["Order this bag", "product.html"], build: "configure.html?preset=tigerfull" },
+    { id: "dragon", name: "Dragon", sub: "After Hokusai · gold on oxblood", kind: "bag", art: "dragonfull", trim: 0xc9a45c, bump: 1.3, order: ["Order this bag", "product.html"], build: "configure.html?preset=dragon" },
+    { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", kind: "bag", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: ["Order this bag", "product.html"], build: "configure.html?preset=koi" },
+    { id: "monogram", name: "Monogram", sub: "Tone on tone · black on black", kind: "bag", art: "monogram", trim: 0x1c1c1e, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=monogram" },
+    { id: "kintsugi", name: "Gold Vein", sub: "Kintsugi leather", kind: "bag", art: "kintsugi", trim: 0xb8953f, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=kintsugi" },
     { id: "portrait", name: "Painted Portrait", sub: "Heavy bag · sample", kind: "bag", art: "portraitfull", trim: 0x1f4d2b, bump: 0.5, order: ["Order this bag", "product.html"], build: "configure.html?preset=portrait" },
     { id: "glove", name: "Glove", sub: "Placeholder", kind: "glove", mid: 0.86, order: ["Ask about gloves", "contact.html"], build: "contact.html" }
   ];
@@ -115,6 +119,12 @@ function start(root) {
 
   let bagModel = null, bagAspect = 1, hitMeshes = bodyMeshes;
   const artTex = {};
+  const rmTex = {};
+  function rmTexture(url) {                                     /* R = relief, G = roughness, B = metal */
+    if (rmTex[url]) return rmTex[url];
+    const t = new THREE.TextureLoader().load(url); t.flipY = false; t.colorSpace = THREE.NoColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso;
+    return (rmTex[url] = t);
+  }
   function bagTexture(key) {                                     /* one texture per artwork, made the first time it is needed */
     if (artTex[key]) return artTex[key];
     const cw = Math.min(2560, Math.floor(6144 / bagAspect)), cv = window.SZ_ART.canvas(key, cw, Math.round(cw * bagAspect));
@@ -138,7 +148,11 @@ function start(root) {
     const isBag = P.kind === "bag", ok = isBag && window.SZ_ART && window.SZ_ART.kinds && window.SZ_ART.kinds[P.art];
     if (bagModel) bagModel.visible = isBag; gloveRoot.visible = !isBag;
     if (isBag && ok) {
-      const t = bagTexture(P.art); M.body.map = t; M.body.bumpMap = t; M.body.bumpScale = P.bump; M.body.needsUpdate = true;
+      const t = bagTexture(P.art), kind = window.SZ_ART.kinds[P.art];
+      M.body.map = t; M.body.bumpScale = P.bump;
+      if (kind.rm) { const rm = rmTexture(kind.rm); M.body.bumpMap = rm; M.body.roughnessMap = rm; M.body.metalnessMap = rm; M.body.roughness = 1; M.body.metalness = 1; M.body.clearcoat = 0.12; }
+      else { M.body.bumpMap = t; M.body.roughnessMap = null; M.body.metalnessMap = null; M.body.roughness = 0.5; M.body.metalness = 0; M.body.clearcoat = 0.08; }
+      M.body.needsUpdate = true;
       [M.bandTop, M.bandBottom].forEach((m) => m && m.color.setHex(P.trim));
     }
     hitMeshes = isBag ? bodyMeshes : gloveHit; MID = P.mid || 0.55;
@@ -153,7 +167,9 @@ function start(root) {
   /* the buttons, name and dots */
   const orderEl = root.querySelector("[data-product-order]"), buildEl = root.querySelector("[data-product-build]");
   const ui = (i) => { const P = PRODUCTS[i]; if (orderEl) { orderEl.textContent = P.order[0]; orderEl.setAttribute("href", P.order[1]); } if (buildEl) { buildEl.setAttribute("href", P.build); buildEl.textContent = P.kind === "bag" ? "Build yourself" : "Design a glove"; } if (nameEl) nameEl.textContent = PRODUCTS[i].name; if (subEl) subEl.textContent = PRODUCTS[i].sub; dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false")); };
-  const nameEl = root.querySelector("[data-product-name]"), subEl = root.querySelector("[data-product-sub]"), dots = [...root.querySelectorAll("[data-product-dot]")];
+  const nameEl = root.querySelector("[data-product-name]"), subEl = root.querySelector("[data-product-sub]");
+  const dotBox = root.querySelector(".bag-punch__dots"); if (dotBox) dotBox.innerHTML = PRODUCTS.map((P, k) => '<button type="button" data-product-dot aria-label="' + P.name + '" aria-current="' + (k === 0) + '"></button>').join("");
+  const dots = [...root.querySelectorAll("[data-product-dot]")];
   root.querySelector("[data-product-prev]")?.addEventListener("click", () => go(-1));
   root.querySelector("[data-product-next]")?.addEventListener("click", () => go(1));
   dots.forEach((d, k) => d.addEventListener("click", () => k !== cur && show(k)));

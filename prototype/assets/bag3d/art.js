@@ -157,11 +157,29 @@
     return c;
   }
 
-  var KINDS = { tiger: { name: "Tiger embroidery", draw: tiger }, tigerfull: { name: "Tiger (full)", draw: tigerfull, fit: true }, portraitfull: { name: "Painted portrait (sample)", draw: portraitfull, fit: true }, hex: { name: "Fractal hexagons", draw: hexmosaic }, uv: { name: "UV test", draw: uv } };
+  /* ---------- LUXURY WRAPS: finished full-wrap textures made by tools/lux-textures (koi, dragon, monogram, kintsugi) ---------- */
+  var BASE = document.currentScript && document.currentScript.src ? document.currentScript.src.replace(/art\.js.*$/, "") : "assets/bag3d/";
+  function lux(name, back) {
+    return function (w, h) {
+      var c = mk(w, h), g = c.getContext("2d"); g.fillStyle = back; g.fillRect(0, 0, w, h);
+      var im = new Image(); im.onload = function () { g.imageSmoothingQuality = "high"; g.drawImage(im, 0, 0, w, h); if (c.__refresh) c.__refresh(); };
+      im.src = BASE + "lux/" + name + "-albedo.jpg"; return c;
+    };
+  }
+  function luxKind(id, label, back) { return { name: label, draw: lux(id, back), fit: true, src: BASE + "lux/" + id + "-albedo.jpg", rm: BASE + "lux/" + id + "-rm.jpg", chip: BASE + "lux/" + id + "-chip.jpg" }; }
+  var LUX = {
+    koifull: luxKind("koi", "Koi (after Gakutei)", "#102a44"),
+    dragonfull: luxKind("dragon", "Dragon (after Hokusai)", "#090808"),
+    monogram: luxKind("monogram", "Sanchez monogram, tone on tone", "#0b0b0c"),
+    kintsugi: luxKind("kintsugi", "Gold-vein leather", "#0b0b0c")
+  };
+
+  var KINDS = { koifull: LUX.koifull, dragonfull: LUX.dragonfull, monogram: LUX.monogram, kintsugi: LUX.kintsugi, tiger: { name: "Tiger embroidery", draw: tiger }, tigerfull: { name: "Tiger (full)", draw: tigerfull, fit: true }, portraitfull: { name: "Painted portrait (sample)", draw: portraitfull, fit: true }, hex: { name: "Fractal hexagons", draw: hexmosaic }, uv: { name: "UV test", draw: uv } };
   var cache = {};
   window.SZ_ART = {
     kinds: KINDS,
     name: function (k) { return KINDS[k] ? KINDS[k].name : ""; },
+    src: function (k) { return KINDS[k] && KINDS[k].src || null; },      /* flat picture of a finished wrap, for the 2D preview */
     canvas: function (k, w, h) { var key = k + ":" + w + "x" + h; return cache[key] || (cache[key] = KINDS[k].draw(w, h)); },
     url: function (k, w, h) { var key = "u:" + k + ":" + w; return cache[key] || (cache[key] = window.SZ_ART.canvas(k, w, h || (w / 2)).toDataURL("image/jpeg", 0.86)); }
   };

@@ -104,7 +104,8 @@ export function createBagViewer(host) {
   function fit(reset, keepAz) {
     if (!frameInfo) return;
     const fov = THREE.MathUtils.degToRad(cam.fov), asp = cam.aspect || 1;
-    const d = Math.max(frameInfo.halfH / Math.tan(fov / 2), 0.3 / (Math.tan(fov / 2) * asp)) * 1.06;
+    const roomy = innerWidth < 1024 ? 1.17 : 1.06;   /* phones: pull back so the whole bag sits in the middle of the strip, not edge to edge */
+    const d = Math.max(frameInfo.halfH / Math.tan(fov / 2), 0.3 / (Math.tan(fov / 2) * asp)) * roomy;
     controls.minDistance = d * 0.3; controls.maxDistance = d * 1.6;
     controls.target.set(0, frameInfo.cy, 0);
     const off = cam.position.clone().sub(controls.target);
@@ -170,12 +171,18 @@ export function createBagViewer(host) {
   let artKey = null, artTex = null;
   function setArt(k) {
     if (k === artKey) return; artKey = k;
-    if (!k || !window.SZ_ART) { [M.left, M.right].forEach((m) => { m.map = null; m.needsUpdate = true; }); return; }
+    if (!k || !window.SZ_ART) { [M.left, M.right].forEach((m) => { m.map = null; m.bumpMap = null; m.roughnessMap = null; m.metalnessMap = null; m.roughness = 0.42; m.metalness = 0; m.clearcoat = 0.25; m.needsUpdate = true; }); return; }
     const fit = !!(window.SZ_ART.kinds[k] && window.SZ_ART.kinds[k].fit);
     if (fit && model) cylUV(model, true);
     const cv = window.SZ_ART.canvas(k, 2048, fit ? Math.round(2048 * ((model && model.userData.aspect) || 1)) : 1024);
     artTex = new THREE.CanvasTexture(cv); cv.__refresh = () => { artTex.needsUpdate = true; }; artTex.colorSpace = THREE.SRGBColorSpace; artTex.wrapS = THREE.RepeatWrapping; artTex.wrapT = THREE.RepeatWrapping; artTex.anisotropy = aniso; artTex.flipY = false;
     [M.left, M.right].forEach((m) => { m.map = artTex; m.needsUpdate = true; });
+    const kind = window.SZ_ART.kinds[k];
+    if (kind && kind.rm) {          /* R = relief, G = roughness, B = metal (gold veins, gold thread) */
+      const rm = new THREE.TextureLoader().load(kind.rm, () => [M.left, M.right].forEach((m) => { m.needsUpdate = true; }));
+      rm.flipY = false; rm.colorSpace = THREE.NoColorSpace; rm.wrapS = rm.wrapT = THREE.RepeatWrapping; rm.anisotropy = aniso;
+      [M.left, M.right].forEach((m) => { m.bumpMap = rm; m.bumpScale = 1.3; m.roughnessMap = rm; m.metalnessMap = rm; m.roughness = 1; m.metalness = 1; m.clearcoat = 0.1; m.needsUpdate = true; });
+    } else [M.left, M.right].forEach((m) => { m.bumpMap = null; m.roughnessMap = null; m.metalnessMap = null; m.roughness = 0.42; m.metalness = 0; m.clearcoat = 0.25; m.needsUpdate = true; });
   }
 
   function apply(st) {

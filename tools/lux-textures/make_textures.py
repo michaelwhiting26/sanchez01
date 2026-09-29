@@ -51,6 +51,9 @@ def save(name, albedo, bump, rough, metal):
     Image.fromarray(a).save(os.path.join(OUT, name + '-albedo.jpg'), quality=90, optimize=True, subsampling=0)
     rm = np.stack([np.clip(bump, 0, 1), np.clip(rough, 0, 1), np.clip(metal, 0, 1)], -1) * 255
     Image.fromarray(rm.astype(np.uint8)).save(os.path.join(OUT, name + '-rm.jpg'), quality=90, optimize=True, subsampling=0)
+    # small square chip for the colour-option buttons: the middle of the front
+    cx0, cy0 = (W - 900) // 2, int(H * 0.28)
+    Image.fromarray(a).crop((cx0, cy0, cx0 + 900, cy0 + 900)).resize((160, 160), Image.LANCZOS).save(os.path.join(OUT, name + '-chip.jpg'), quality=86)
     print('wrote', name, os.path.getsize(os.path.join(OUT, name + '-albedo.jpg')) // 1024, 'KB +', os.path.getsize(os.path.join(OUT, name + '-rm.jpg')) // 1024, 'KB')
 
 def place(img_arr, frac, fill):
@@ -72,10 +75,11 @@ def koi():
     R, G, B = a[..., 0], a[..., 1], a[..., 2]
     yy, xx = np.mgrid[0:a.shape[0], 0:a.shape[1]]
     seal = (R > 140) & (G < 120) & (B < 120) & (xx < 60 * sx) & (yy > 420 * sy) & (yy < 590 * sy)
-    poem = (R > 70) & (R > B + 5) & (xx < 200 * sx) & (yy < 385 * sy)
+    Lb = gaussian_filter(a.mean(-1), 14); dark = Lb < 80
+    poem = (R > 85) & (R > B + 22) & dark & (xx < 210 * sx) & (yy < 390 * sy)
     m = (seal | poem).astype(np.uint8)
     from scipy.ndimage import binary_dilation
-    m = binary_dilation(m, iterations=int(9 * sx)); small = 6
+    m = binary_dilation(m, iterations=int(5 * sx)); small = 6
     sm = np.array(Image.fromarray(a.astype(np.uint8)).resize((a.shape[1] // small, a.shape[0] // small), Image.LANCZOS)) / 255.0
     ms = np.array(Image.fromarray((m * 255).astype(np.uint8)).resize((sm.shape[1], sm.shape[0]), Image.NEAREST)) > 0
     inp = inpaint_biharmonic(sm, ms, channel_axis=-1); inp = np.array(Image.fromarray((inp * 255).astype(np.uint8)).resize((a.shape[1], a.shape[0]), Image.BICUBIC)).astype(np.float32)
@@ -94,7 +98,7 @@ def koi():
 # ------------------------------------------------------------------ DRAGON
 def dragon():
     im = Image.open(os.path.join(SRC, 'dragon-full.jpg')).convert('L'); k = im.width / 1400.0
-    left = im.crop((int(150 * k), int(140 * k), int(672 * k), int(860 * k))); right = im.crop((int(710 * k), int(140 * k), int(1222 * k), int(860 * k)))
+    left = im.crop((int(168 * k), int(150 * k), int(662 * k), int(846 * k))); right = im.crop((int(720 * k), int(150 * k), int(1208 * k), int(846 * k)))
     joined = Image.new('L', (left.width + right.width, left.height)); joined.paste(left, (0, 0)); joined.paste(right, (left.width, 0))   # the page gutter is cut out
     joined = joined.rotate(90, expand=True)                                  # coils run up the bag, head at the top
     L = np.array(joined).astype(np.float32) / 255.0
@@ -106,6 +110,7 @@ def dragon():
     can_L, mask = place(np.stack([L * 255] * 3, -1), 0.70, (0, 0, 0)); Lc = can_L[..., 0] / 255.0
     gold = smooth(0.52, 0.78, Lc) * mask; cloud = smooth(0.12, 0.38, Lc) * (1 - smooth(0.50, 0.72, Lc)) * mask
     ft = feather_x(0.70, 130); gold *= ft; cloud *= ft
+    vy = 1 - smooth(0.90, 0.955, np.arange(H) / H)[:, None]; gold = gold * vy; cloud = cloud * vy      # fade the bottom edge (margin text of the page)
     # thread sheen: the gold catches light across the threads and along the body
     th = thread(52, 4.6, 0.20); sheen = 0.78 + 0.32 * noise(70, 5)
     t = np.clip(Lc * th * sheen, 0, 1.2)
@@ -127,12 +132,12 @@ def sparkle_poly(cx, cy, r):
 def monogram():
     cols = 8; cw = W / cols; rows = 8; ch = H / rows
     S = 4; big = Image.new('L', (W * S // 2, H * S // 2), 0); d = ImageDraw.Draw(big); k = S / 2
-    font = ImageFont.truetype('/System/Library/Fonts/Supplemental/Didot.ttc', int(ch * 0.62 * k), index=0)
+    font = ImageFont.truetype('/System/Library/Fonts/Supplemental/Didot.ttc', int(ch * 0.70 * k), index=0)
     for row in range(-1, rows + 1):
         for c in range(cols):
             cx = (c + 0.5) * cw; cy = (row + 0.5) * ch + (ch / 2 if c % 2 else 0)
             if (row + c) % 2 == 0:   # the sparkle
-                d.polygon([(x * k, y * k) for x, y in sparkle_poly(cx, cy, ch * 0.30)], fill=255)
+                d.polygon([(x * k, y * k) for x, y in sparkle_poly(cx, cy, ch * 0.34)], fill=255)
             else:                    # the S
                 bb = d.textbbox((0, 0), 'S', font=font); tw, th_ = bb[2] - bb[0], bb[3] - bb[1]
                 d.text((cx * k - tw / 2 - bb[0], cy * k - th_ / 2 - bb[1]), 'S', font=font, fill=255)
@@ -155,13 +160,15 @@ def worley_edge(n, seed, warp, wscale, amp):
     wx = (noise(wscale, seed + 1) - 0.5) * 2 * amp; wy = (noise(wscale, seed + 2) - 0.5) * 2 * amp
     wx += (noise(wscale / 4, seed + 3) - 0.5) * 2 * amp * 0.25; wy += (noise(wscale / 4, seed + 4) - 0.5) * 2 * amp * 0.25
     q = np.stack([(xx + wx).ravel(), (yy + wy).ravel()], -1); d, _ = tree.query(q, k=2)
-    return (d[:, 1] - d[:, 0]).reshape(H, W).astype(np.float32)
+    e = (d[:, 1] - d[:, 0]).reshape(H, W).astype(np.float32)
+    gy, gx = np.gradient(gaussian_filter(e, 0.8)); g = np.sqrt(gx * gx + gy * gy)
+    return e / np.maximum(g, 0.6)          # ~ distance to the border in screen pixels
 
 def kintsugi():
-    e1 = worley_edge(30, 3, 1, 170, 120)
+    e1 = worley_edge(24, 3, 1, 170, 110)
     e2 = worley_edge(170, 5, 1, 90, 60); e3 = worley_edge(520, 9, 1, 60, 30)
     m2 = smooth(0.55, 0.75, noise(260, 31)); m3 = smooth(0.66, 0.82, noise(180, 32))
-    w1 = 4.5 + 6.5 * noise(140, 41)                                      # main veins: 4.5-11 px, swelling and thinning
+    w1 = 3.2 + 4.8 * noise(140, 41)                                      # main veins: 4.5-11 px, swelling and thinning
     w2 = (1.6 + 2.6 * noise(90, 42)) * m2; w3 = (0.9 + 1.0 * noise(60, 43)) * m3
     c1 = 1 - smooth(w1 * 0.35, w1, e1); c2 = (1 - smooth(w2 * 0.35, np.maximum(w2, 0.01), e2)) * (m2 > 0.02); c3 = (1 - smooth(w3 * 0.35, np.maximum(w3, 0.01), e3)) * (m3 > 0.02)
     crack = np.clip(np.maximum(np.maximum(c1, c2 * 0.9), c3 * 0.8), 0, 1)
