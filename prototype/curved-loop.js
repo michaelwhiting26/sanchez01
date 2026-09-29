@@ -4,7 +4,7 @@
     var NS = "http://www.w3.org/2000/svg", text = (root.getAttribute("data-text") || "SANCHEZ ✦ ").replace(/ /g, " ");
     var curve = Number(root.getAttribute("data-curve") || 400), speed = Number(root.getAttribute("data-speed") || 1.6);
     var id = "cl-" + Math.random().toString(36).slice(2, 8);
-    var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 1440 " + (80 + curve)); svg.setAttribute("class", "curved-loop__svg"); svg.setAttribute("aria-hidden", "true");
+    var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 1440 " + (70 + curve / 2)); svg.setAttribute("class", "curved-loop__svg"); svg.setAttribute("aria-hidden", "true");
     var path = document.createElementNS(NS, "path"); path.setAttribute("id", id); path.setAttribute("d", "M-100,50 Q720," + (50 + curve) + " 1540,50"); path.setAttribute("fill", "none");
     var measure = document.createElementNS(NS, "text"); measure.setAttribute("class", "curved-loop__text"); measure.style.visibility = "hidden"; measure.textContent = text;
     var t = document.createElementNS(NS, "text"); t.setAttribute("class", "curved-loop__text");

@@ -1,4 +1,4 @@
-/* "Hit it": the Blender punch bag (bag_4ft.glb) hanging live in 3D, animated with anime.js 4.
+/* "Hit it": the Blender punch bag (bag_4ft.glb), tiger colourway, hanging live in 3D, animated with anime.js 4.
    Click / tap the bag to punch it. It swings from the hook on a spring, twists a little, the body dents at the impact,
    and a shock ring flashes. When nobody is punching, it throws its own 1-2-hook combo every few seconds and sways gently. */
 import * as THREE from "three";
@@ -37,7 +37,38 @@ function start(root) {
     metal: new THREE.MeshStandardMaterial({ color: 0x1b1b1d, metalness: 1, roughness: 0.28 }),
     patch: new THREE.MeshStandardMaterial({ color: 0xf3eadc, roughness: 0.6 })
   };
-  const pick = (n) => /^(body|crown)/.test(n) ? M.body : /^band/.test(n) ? M.band : /^strap/.test(n) ? M.strap : /^stitch/.test(n) ? M.stitch : /^metal/.test(n) ? M.metal : /^patch/.test(n) ? M.patch : M.body;
+  /* tiger colourway (same artwork + mapping as the configurator: tiger on the front, white back). Falls back to the black bag if art.js is missing. */
+  const ASSETS = new URL("./assets/bag3d/", import.meta.url).href;
+  const aniso = renderer.capabilities.getMaxAnisotropy();
+  const img = (f) => { const t = new THREE.TextureLoader().load(ASSETS + f); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso; return t; };
+  const tiger = !!(window.SZ_ART && window.SZ_ART.kinds && window.SZ_ART.kinds.tigerfull);
+  if (tiger) {
+    M.body = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.42, clearcoat: 0.25, clearcoatRoughness: 0.25 });
+    M.bandTop = new THREE.MeshPhysicalMaterial({ map: img("band_top_plain.png"), roughness: 0.5, sheen: 0.3 });
+    M.bandBottom = new THREE.MeshPhysicalMaterial({ map: img("band_bottom_plain.png"), roughness: 0.5, sheen: 0.3 });
+    M.patch = new THREE.MeshPhysicalMaterial({ map: img("patch.png"), roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    M.strap = new THREE.MeshStandardMaterial({ color: 0xd8d8d2, roughness: 0.7 });
+    M.stitch = new THREE.MeshStandardMaterial({ color: 0xe4e4e0, roughness: 0.8 });
+  }
+  /* The exported body has collapsed UVs, so map it cylindrically: u wraps once round the bag, v runs bottom to top (u = 0.5 faces the camera). */
+  function cylUV(root) {
+    const body = [], box = new THREE.Box3();
+    root.traverse((o) => { if (o.isMesh && /^(body|crown)_[LR]/.test(o.name)) { body.push(o); o.updateWorldMatrix(true, false); box.expandByObject(o); } });
+    if (!body.length) return 1;
+    const size = box.getSize(new THREE.Vector3()), ctr = box.getCenter(new THREE.Vector3());
+    const rad = (size.x + size.z) / 4, circ = 2 * Math.PI * rad, v3 = new THREE.Vector3();
+    body.forEach((m) => {
+      const p = m.geometry.attributes.position, uv = new Float32Array(p.count * 2);
+      for (let i = 0; i < p.count; i++) {
+        v3.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld);
+        uv[i * 2] = Math.atan2(v3.x - ctr.x, v3.z - ctr.z) / (2 * Math.PI) + 0.5;
+        uv[i * 2 + 1] = 1 - (v3.y - box.min.y) / size.y;
+      }
+      m.geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+    });
+    return size.y / circ;
+  }
+  const pick = (n) => /^(body|crown)/.test(n) ? M.body : /^band_top/.test(n) && M.bandTop ? M.bandTop : /^band_bottom/.test(n) && M.bandBottom ? M.bandBottom : /^band/.test(n) ? M.band : /^strap/.test(n) ? M.strap : /^stitch/.test(n) ? M.stitch : /^metal/.test(n) ? M.metal : /^patch/.test(n) ? M.patch : M.body;
 
   /* rig: pivot at the top of the hook, the bag hangs below it */
   const HOOK = 1.824, MID = 0.55;
@@ -53,7 +84,15 @@ function start(root) {
   new GLTFLoader().load(new URL("./assets/bag3d/bag_4ft.glb", import.meta.url).href, (g) => {
     const model = g.scene; model.position.y = -HOOK;
     model.traverse((o) => { if (o.isMesh) { o.material = pick(o.name); if (/^(body|crown)/.test(o.name)) bodyMeshes.push(o); } });
-    bodyGroup.add(model); root.classList.add("is-ready"); fit(); if (!reduce) idle();
+    bodyGroup.add(model);
+    if (tiger) {
+      bodyGroup.updateWorldMatrix(true, true);
+      const aspect = cylUV(model), cv = window.SZ_ART.canvas("tigerfull", 2048, Math.round(2048 * aspect));
+      const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = aniso; t.flipY = false;
+      cv.__refresh = () => { t.needsUpdate = true; };      /* art.js redraws the canvas once tiger.png has loaded */
+      M.body.map = t; M.body.needsUpdate = true;
+    }
+    root.classList.add("is-ready"); fit(); if (!reduce) idle();
   });
 
   /* camera framing */

@@ -1,5 +1,5 @@
 /* ---- Curved text loop under the black hero (curved-loop.js) ---- */
-.curved-loop { background: #000; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; padding-block: 0 clamp(24px, 6vh, 72px); overflow: hidden; }
+.curved-loop { position: relative; z-index: 1; background: transparent; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; padding-block: 0 clamp(6px, 1.5vh, 18px); overflow: hidden; }
 .curved-loop:active { cursor: grabbing; }
 .curved-loop__svg { display: block; inline-size: 100%; block-size: auto; overflow: visible; }
 .curved-loop__text { font: 800 64px/1 var(--font-display, "Barlow Condensed", "Arial Narrow", sans-serif); letter-spacing: .02em; text-transform: uppercase; fill: #f3eadc; }
@@ -72,9 +72,9 @@
 @media (min-width: 640px) { .lgc .sm\:text-\[17px\] { font-size: 17px; } .lgc .sm\:text-\[15px\] { font-size: 15px; } }
 
 /* ---- Big SANCHEZ marquee ---- */
-.sz-marquee { overflow: hidden; background: #090706; padding-block: clamp(24px, 6vh, 72px) clamp(40px, 8vh, 96px); }
+.sz-marquee { overflow: hidden; background: #090706; padding-block: clamp(6px, 1.5vh, 16px) clamp(8px, 2vh, 20px); }
 .sz-marquee__track { display: flex; inline-size: max-content; white-space: nowrap; will-change: transform; }
-.sz-marquee__track span { display: block; margin-inline-end: 2.5rem; font: 900 clamp(2.5rem, 1rem + 8vw, 8rem)/.9 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: -.02em; color: #2b2622; text-transform: uppercase; }
+.sz-marquee__track span { display: block; margin-inline-end: 2.5rem; font: 900 clamp(2.5rem, 1rem + 8vw, 8rem)/.74 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: -.02em; color: #2b2622; text-transform: uppercase; }
 .sz-marquee__track span:nth-child(odd) { color: transparent; -webkit-text-stroke: 1px rgb(243 234 220 / .28); }
 
 /* ---- Black wordmark hero (top of the home page) ---- */
@@ -174,8 +174,8 @@
 .wm-hero__field canvas { position: absolute; inset: 0; display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
 
 /* Hero 3: premium rings (hero-rings.js). Canvas fills the section; a soft dark pool clears space for "Custom". */
-.wm-hero--rings { position: relative; padding: 0; block-size: calc(100svh - var(--header-h, 72px)); overflow: hidden; background: #000; }
-.wm-hero__rings { position: absolute; inset: 0; display: block; inline-size: 100%; block-size: 100%; opacity: 0; transition: opacity 1.2s ease; }
+.wm-hero--rings { position: relative; padding: 0; block-size: 100svh; overflow: visible; background: #000; }
+.wm-hero__rings { position: absolute; inset: 0 0 auto 0; pointer-events: none; display: block; inline-size: 100%; block-size: 100%; opacity: 0; transition: opacity 1.2s ease; }
 .wm-hero--rings.is-ready .wm-hero__rings { opacity: 1; }
 .wm-hero__pool { position: absolute; left: 50%; top: 50%; inline-size: min(60vw, 900px); aspect-ratio: 2.2 / 1; transform: translate(-22%, 2%) rotate(-7deg); background: radial-gradient(closest-side, rgb(0 0 0 / .88), rgb(0 0 0 / .6) 55%, transparent); pointer-events: none; z-index: 1; }
 @media (max-width: 767px) { .wm-hero__pool { inline-size: 80vw; transform: translate(-30%, 6%) rotate(-7deg); } }
@@ -216,3 +216,15 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 .hero-cursor__dot { inline-size: 6px; block-size: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #c4553a; box-shadow: 0 0 0 1.5px rgb(0 0 0 / .7), 0 0 10px rgb(196 85 58 / .6); }
 @keyframes hero-cursor-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .hero-cursor__ring svg { animation: none; } }
+
+/* Workshop carousel driven by page scroll (lgc-scroll.js): a tall track, the carousel pinned inside it. 65svh of scroll per slide change. */
+.lgc-track { position: relative; block-size: calc(100svh - var(--header-h) + 5 * 65svh); background: #090706; }
+.lgc-track .lgc-section { position: sticky; inset-block-start: var(--header-h); block-size: calc(100svh - var(--header-h)); padding-block: 0; display: flex; align-items: center; }
+.lgc-track .lgc { inline-size: 100%; block-size: min(calc(100svh - var(--header-h) - 32px), 760px); }
+
+/* Paragraph shown under a focused carousel image (lgc-note.js). Text comes from each item's "note" in data-items. */
+.lgc-note { position: absolute; left: 50%; bottom: clamp(10px, 3vh, 32px); z-index: 30; inline-size: min(60ch, calc(100% - 48px)); margin: 0; transform: translate(-50%, 8px); text-align: center; pointer-events: none;
+  font: 400 clamp(.8rem, .74rem + .2vw, .95rem)/1.55 var(--font-text, Barlow, Arial, sans-serif); color: rgb(243 234 220 / .82); opacity: 0; transition: opacity .5s ease .25s, transform .5s ease .25s; }
+.lgc-note.is-on { opacity: 1; transform: translate(-50%, 0); }
+/* In the focus view the carousel lifts its title above its own box; let it show instead of being sliced by the top edge. */
+.lgc-track .lgc > div { overflow: visible; }

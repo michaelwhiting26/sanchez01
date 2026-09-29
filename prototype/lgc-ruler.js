@@ -21,7 +21,6 @@
     el("line", { class: "lgc-ruler__ink", x1: x, y1: AX, x2: x, y2: AX - (major ? 11 : half ? 7 : 4), "stroke-width": major ? 1.2 : 0.8 });
     if (major) { var lb = el("text", { class: "lgc-ruler__num", x: x, y: AX - 16, "text-anchor": "middle" }); lb.textContent = t / 4; labels.push(lb); }
   }
-  var unit = el("text", { class: "lgc-ruler__unit", x: 1 + CM * N + 3, y: AX + 14, "text-anchor": "start" }); unit.textContent = "cm";
   wrap.appendChild(svg); stage.appendChild(wrap);
 
   /* follow the pointer: the vertical line sits exactly on the hotspot */

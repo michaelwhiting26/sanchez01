@@ -7,7 +7,7 @@
   var root = document.querySelector("[data-hero-rings]"); if (!root) return;
   var cv = root.querySelector("canvas"), ctx = cv.getContext("2d");
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var MW = 0, MH = 0, N = 0, dist, pipe, letr, seed, offX, offY, bucketOf, order, counts;
+  var MW = 0, MH = 0, MHe = 0, N = 0, curExtra = -1, bd, bp, bl, dist, pipe, letr, seed, offX, offY, bucketOf, order, counts;   /* MH = map rows, MHe = rows incl. the bleed below the hero */
   var PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25;   /* 4.2s slowed by 20% */
   var CREAM = [243, 234, 220], GOLD = [201, 164, 92];
   /* dithered-logo physics, in CSS pixels */
@@ -25,9 +25,8 @@
       MW = im.width; MH = im.height; N = MW * MH;
       var t = document.createElement("canvas"); t.width = MW; t.height = MH; var tc = t.getContext("2d"); tc.drawImage(im, 0, 0);
       var px = tc.getImageData(0, 0, MW, MH).data;
-      dist = new Float32Array(N); pipe = new Uint8Array(N); letr = new Uint8Array(N); seed = new Float32Array(N);
-      offX = new Float32Array(N); offY = new Float32Array(N); bucketOf = new Int16Array(N); order = new Int32Array(N); counts = new Int32Array(NB + 1);
-      for (var i = 0; i < N; i++) { dist[i] = px[i * 4]; pipe[i] = px[i * 4 + 1] > 127; letr[i] = px[i * 4 + 2] > 127; var h = Math.sin(i * 12.9898) * 43758.5453; seed[i] = h - Math.floor(h); }
+      bd = new Float32Array(N); bp = new Uint8Array(N); bl = new Uint8Array(N);
+      for (var i = 0; i < N; i++) { bd[i] = px[i * 4]; bp[i] = px[i * 4 + 1] > 127; bl[i] = px[i * 4 + 2] > 127; }
       size(); root.classList.add("is-ready");
       if (reduce) draw(0); else requestAnimationFrame(loop);
     };
@@ -37,17 +36,32 @@
   /* cover-fit the map into the canvas; cell = one map pixel, in device pixels */
   var cell = 1, ox = 0, oy = 0, dpr = 1;
   function size() {
-    var r = root.getBoundingClientRect(); dpr = Math.min(devicePixelRatio || 1, 2);
-    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
-    cell = Math.max(cv.width / MW, cv.height / MH); ox = (cv.width - MW * cell) / 2; oy = (cv.height - MH * cell) / 2;
+    var r = root.getBoundingClientRect(), loop = document.querySelector(".curved-loop");
+    var bleed = loop ? loop.getBoundingClientRect().height : 0, heroH = r.height; dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round((heroH + bleed) * dpr); cv.style.height = (heroH + bleed) + "px";
+    cell = Math.max(cv.width / MW, heroH * dpr / MH); ox = (cv.width - MW * cell) / 2; oy = (heroH * dpr - MH * cell) / 2;   /* the map is fitted to the hero box */
+    build(Math.max(0, Math.ceil((cv.height - (oy + MH * cell)) / cell)));
     if (reduce && MW) draw(0);
   }
+  /* grid = the map plus `extra` rows below it. Distance in the extra rows keeps growing straight down from the map's last row,
+     so the rings and the pulse carry on past the hero's bottom edge instead of stopping at it. */
+  function build(extra) {
+    if (extra === curExtra && dist) return;
+    curExtra = extra; MHe = MH + extra; N = MW * MHe;
+    dist = new Float32Array(N); pipe = new Uint8Array(N); letr = new Uint8Array(N); seed = new Float32Array(N);
+    offX = new Float32Array(N); offY = new Float32Array(N); bucketOf = new Int16Array(N); order = new Int32Array(N); counts = new Int32Array(NB + 1);
+    dist.set(bd); pipe.set(bp); letr.set(bl);
+    for (var y = MH; y < MHe; y++) for (var x = 0; x < MW; x++) dist[y * MW + x] = bd[(MH - 1) * MW + x] + (y - MH + 1);
+    for (var i = 0; i < N; i++) { var h = Math.sin(i * 12.9898) * 43758.5453; seed[i] = h - Math.floor(h); }
+  }
   addEventListener("resize", function () { if (MW) size(); });
+  var loopEl = document.querySelector(".curved-loop");
+  if (loopEl && window.ResizeObserver) new ResizeObserver(function () { if (MW) size(); }).observe(loopEl);
   function local(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * dpr, y: (e.clientY - r.top) * dpr }; }
-  cv.addEventListener("pointermove", function (e) { var p = local(e); cursor.x = p.x; cursor.y = p.y; cursor.active = true; });
-  cv.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") cursor.active = false; });
-  cv.addEventListener("pointercancel", function () { cursor.active = false; });
-  cv.addEventListener("pointerup", function (e) {
+  root.addEventListener("pointermove", function (e) { var p = local(e); cursor.x = p.x; cursor.y = p.y; cursor.active = true; });
+  root.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") cursor.active = false; });
+  root.addEventListener("pointercancel", function () { cursor.active = false; });
+  root.addEventListener("pointerup", function (e) {
     var p = local(e); ripples.push({ x: p.x, y: p.y, start: performance.now() });
     if (e.pointerType !== "mouse") cursor.active = false;
   });
@@ -57,7 +71,7 @@
     for (var k = ripples.length - 1; k >= 0; k--) if (now - ripples[k].start >= RIPPLE_DURATION) ripples.splice(k, 1);
     var nr = ripples.length, mul = nr ? 1 + 0.5 * (nr - 1) : 0;
     var CR = CURSOR_RADIUS * dpr, CR2 = CR * CR, CF = CURSOR_FORCE * dpr, RW = RIPPLE_WIDTH * dpr, RF = RIPPLE_FORCE * dpr;
-    for (var y = 0, i = 0; y < MH; y++) {
+    for (var y = 0, i = 0; y < MHe; y++) {
       var by = oy + (y + 0.5) * cell;
       for (var x = 0; x < MW; x++, i++) {
         if (bucketOf[i] < 0 && offX[i] === 0 && offY[i] === 0) continue;   /* unlit and at rest: nothing to move */
