@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=1790725297">
+  <link rel="stylesheet" href="globe-hero.css?v=1790725536">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
   <script src="app.js?v=1790708958" defer></script>
@@ -183,6 +183,18 @@
     </div>
   </section>
   <script src="button-library.js?v=1790710371" defer></script>
+
+  <!-- FOLD CAROUSEL: our own three.js "folding cards" carousel (fold-carousel.js), built from the effect's public description. Placed at the bottom for now. -->
+  <section class="fold-carousel" data-fold-carousel data-cards='[{"title": "The workshop", "sub": "Pattaya", "src": "assets/carousel/clip1.jpg"}, {"title": "On the machine", "sub": "Cut and sewn by hand", "src": "assets/carousel/clip2.jpg"}, {"title": "The finished bag", "sub": "Designed in Sydney", "src": "assets/carousel/clip3.jpg"}, {"title": "Sanchez Custom", "sub": "Every panel, your colours", "src": "assets/carousel/workshop.jpg"}, {"title": "Out in the world", "sub": "Gyms we build for", "src": "assets/carousel/clip4.jpg"}, {"title": "Tools of the trade", "sub": "The bench", "src": "assets/carousel/clip5.jpg"}]' aria-roledescription="carousel" aria-label="Sanchez in pictures">
+    <div class="fold-carousel__stage" data-fold-stage tabindex="0"></div>
+    <div class="fold-carousel__bar">
+      <button class="fold-carousel__btn" type="button" data-fold-prev aria-label="Previous card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
+      <div class="fold-carousel__cap"><p class="fold-carousel__title" data-fold-title></p><p class="fold-carousel__sub" data-fold-sub></p></div>
+      <button class="fold-carousel__btn" type="button" data-fold-next aria-label="Next card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
+    </div>
+    <p class="visually-hidden" data-fold-live aria-live="polite"></p>
+  </section>
+  <script type="module" src="fold-carousel.js?v=1790725668"></script>
 
 </main>
 <script src="dna-core.js?v=1790725297" defer></script>

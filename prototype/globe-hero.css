@@ -322,3 +322,19 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 
 /* DNA core (dna-core.js): fixed at the centre of the page, above the fingerprint field, below the sections' content */
 .dna-core { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+/* Fold carousel (fold-carousel.js) */
+.fold-carousel { background: #000; padding-block: clamp(32px, 7vh, 88px) clamp(28px, 6vh, 72px); border-block-start: 1px dashed rgb(243 234 220 / .14); }
+.fold-carousel__stage { position: relative; inline-size: min(100%, 1100px); block-size: clamp(340px, 62vh, 620px); margin-inline: auto; opacity: 0; transition: opacity 1s ease; outline: none; cursor: grab; }
+.fold-carousel.is-ready .fold-carousel__stage { opacity: 1; }
+.fold-carousel__stage:active { cursor: grabbing; }
+.fold-carousel__stage:focus-visible { outline: 1px solid #c9a45c; outline-offset: 6px; }
+.fold-carousel__stage.is-fallback { opacity: 1; display: grid; place-items: center; } .fold-carousel__stage.is-fallback img { max-block-size: 100%; max-inline-size: 60%; border-radius: 18px; }
+.fold-carousel__bar { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 40px); margin-block-start: 20px; }
+.fold-carousel__cap { text-align: center; min-inline-size: min(52vw, 320px); }
+.fold-carousel__title { margin: 0; font: 500 clamp(1rem, .9rem + .5vw, 1.25rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .3em; text-indent: .3em; text-transform: uppercase; color: #f3eadc; }
+.fold-carousel__sub { margin: .8em 0 0; font: 400 .66rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .28em; text-indent: .28em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
+.fold-carousel__btn { inline-size: 44px; block-size: 44px; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; color: rgb(243 234 220 / .7); background: transparent; border: 1px solid rgb(243 234 220 / .22); transition: color .35s ease, border-color .35s ease; }
+.fold-carousel__btn svg { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: square; }
+.fold-carousel__btn:hover, .fold-carousel__btn:focus-visible { color: #f3eadc; border-color: rgb(243 234 220 / .7); outline: none; }
+.fold-carousel__btn:focus-visible { outline: 1px solid #c9a45c; outline-offset: 4px; }
