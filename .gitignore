@@ -12,3 +12,6 @@ dist/
 media-scrape
 media-assets
 prototype/media/
+
+# third-party sample artwork: keep off the public repo until the artist has agreed in writing
+prototype/assets/bag3d/portrait-sample.jpg

@@ -238,3 +238,8 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 .wip-banner h1 { font: 800 clamp(2rem, 1rem + 4vw, 3.6rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; margin: .2em 0 .4em; }
 .wip-banner p { color: rgb(243 234 220 / .72); max-inline-size: 60ch; }
 .wip-banner a { color: #c4553a; }
+
+/* "Work in progress" button block on the home page (where the removed sections used to sit) */
+.wip-cta { background: #000; text-align: center; padding-block: clamp(48px, 10vh, 112px); border-block: 1px dashed rgb(243 234 220 / .16); }
+.wip-cta .container { display: flex; flex-direction: column; align-items: center; gap: var(--space-3, 12px); }
+.wip-cta__title { font: 800 clamp(2rem, 1rem + 4vw, 3.4rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; margin-block-end: var(--space-2, 8px); }
