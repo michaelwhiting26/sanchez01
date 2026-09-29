@@ -2,6 +2,7 @@
 (function () {
   document.querySelectorAll("[data-curved-loop]").forEach(function (root) {
     var NS = "http://www.w3.org/2000/svg", text = (root.getAttribute("data-text") || "SANCHEZ ✦ ").replace(/ /g, " ");
+    var STAR = "\u2726", GAP = "\u00a0\u00a0\u00a0\u00a0", pieces = text.split(STAR); text = pieces.join(GAP);   /* the star glyph is not in our font, so each phone draws it from a different fallback with a different width; a run of spaces in our own font is the same everywhere */
     var curve = Number(root.getAttribute("data-curve") || 400), speed = Number(root.getAttribute("data-speed") || 1.6);
     var id = "cl-" + Math.random().toString(36).slice(2, 8);
     var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 1440 " + (70 + curve / 2)); svg.setAttribute("class", "curved-loop__svg"); svg.setAttribute("aria-hidden", "true");
@@ -16,23 +17,21 @@
     var spacing = 0, offset = 0, dir = -1, vel = 0, drag = false, lastX = 0;
     /* The stars: the text keeps a (transparent) star character so spacing and scrolling are unchanged, and the red 3D sparkle sprite is laid over each one,
        following the curve and its tilt. */
-    var STAR = "\u2726", SPRITE = root.getAttribute("data-star") || "assets/brand/sparkle-3d.png", FS = 64, SIZE = 66, stars = [], plen = 0;
-    /* Placement is arithmetic, not browser queries (iPhone Safari answers getStartPositionOfChar on curved text unreliably): each star's distance along the
-       curve = scroll offset + (repeat number x text width) + (width of the text before it) + half its own width, measured once on the hidden straight copy. */
+    var SPRITE = root.getAttribute("data-star") || "assets/brand/sparkle-3d.png", FS = 64, SIZE = 60, stars = [], plen = 0;
+    /* Placement is arithmetic, not browser queries: a star's distance along the curve = scroll offset + (repeat number x text width) + (width of the text
+       before its gap) + half the gap, all measured once on the hidden straight copy of the text. */
     function build(n) {
       while (tp.firstChild) tp.removeChild(tp.firstChild);
       stars.forEach(function (st) { if (st.img.parentNode) st.img.parentNode.removeChild(st.img); }); stars = [];
-      var pieces = text.split(STAR);
       for (var k = 0; k < n; k++) {
         var at = 0;
         pieces.forEach(function (piece, i) {
           if (piece) { tp.appendChild(document.createTextNode(piece)); at += piece.length; }
           if (i < pieces.length - 1) {
-            var ts = document.createElementNS(NS, "tspan"); ts.setAttribute("fill-opacity", "0"); ts.textContent = STAR; tp.appendChild(ts);
-            var before = at ? measure.getSubStringLength(0, at) : 0, adv = measure.getSubStringLength(at, 1);
+            tp.appendChild(document.createTextNode(GAP));
+            var before = at ? measure.getSubStringLength(0, at) : 0, adv = measure.getSubStringLength(at, GAP.length);
             var img = document.createElementNS(NS, "image"); img.setAttribute("href", SPRITE); img.setAttribute("width", SIZE); img.setAttribute("height", SIZE); img.style.pointerEvents = "none"; img.style.display = "none";
-            img.addEventListener("error", (function (tsp, im) { return function () { tsp.setAttribute("fill-opacity", "1"); im.remove(); }; })(ts, img));
-            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img }); at += 1;
+            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img }); at += GAP.length;
           }
         });
       }
