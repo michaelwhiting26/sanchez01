@@ -21,7 +21,7 @@
   /* ===========================================================================
      1. DATA (inlined: file:// cannot fetch local JSON)
      ======================================================================== */
-  var MEDIA = "../media-scrape/";
+  var MEDIA = "assets/site/";
   var D = (SZ.DATA = {
     logo: MEDIA + "images/3d2aa4_57957db32ff34fe8ac950b275e2e774b~mv2.webp",
     img: {
