@@ -314,3 +314,8 @@ body[data-page="home"], body[data-page="wip"] { background: transparent; }
 .button-85:focus-visible { outline: 2px solid #c9a45c; outline-offset: 4px; }
 @keyframes glowing-button-85 { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .button-85::before { animation: none; } }
+
+/* No navbar on the home page or the Work in progress page. The header is removed (footer links and the page's own buttons do the navigating),
+   and everything that sat below it (the pinned gallery, sticky bits) starts at the very top. */
+body[data-page="home"], body[data-page="wip"] { --header-h: 0px; }
+body[data-page="home"] .site-header, body[data-page="wip"] .site-header { display: none; }

@@ -17,7 +17,7 @@
     t.dispatchEvent(new KeyboardEvent("keydown", { key: dir > 0 ? "ArrowRight" : "ArrowLeft", bubbles: true, cancelable: true }));
   }
   function progress() {
-    var head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 64;
+    var head = parseFloat(getComputedStyle(track).getPropertyValue("--header-h")) || 0;   /* 0 on pages without a navbar */
     var travel = track.offsetHeight - pin.offsetHeight; if (travel <= 0) return 0;
     return Math.max(0, Math.min(1, (head - track.getBoundingClientRect().top) / travel));
   }
