@@ -87,8 +87,14 @@ def koi():
     # richer, deeper colour, like silk thread: more contrast and saturation, cool the shadows
     L = a.mean(-1, keepdims=True); a = L + (a - L) * 1.28; a = (a - 128) * 1.10 + 122
     navy = np.array([16, 40, 66], np.float32)
-    can, mask = place(a, 0.82, navy)
-    ft = feather_x(0.82); can = can * ft[..., None] + navy * (1 - ft[..., None])
+    # deeper colour: the print is pale, and on a lit bag it washes out further
+    a = 255.0 * np.power(np.clip(a, 0, 255) / 255.0, 1.28); L2 = a.mean(-1, keepdims=True); a = L2 + (a - L2) * 1.18
+    FRAC = 0.50                                        # the whole fish sits on the face you see (about half the wrap), with navy above and below
+    can, mask = place(a, FRAC, navy)
+    ft = feather_x(FRAC, 90)
+    ys = np.where(mask.any(1))[0]; y0, y1 = ys.min(), ys.max(); yy = np.arange(H)
+    fy = np.clip(np.minimum(yy - y0, y1 - yy) / 90.0, 0, 1); fy = (fy * fy * (3 - 2 * fy))[:, None]
+    ft = ft * fy; can = can * ft[..., None] + navy * (1 - ft[..., None])
     th = thread(60, 5.0, 0.10)[..., None]; can = can * th
     lum = can.mean(-1) / 255.0
     bump = 0.55 + 0.5 * (gaussian_filter(lum, 1.2) - gaussian_filter(lum, 6)) * 2.2
