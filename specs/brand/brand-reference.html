@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sanchez Custom Boxing — Brand Reference (internal, draft)</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --c-ink-950: #0e0b09;
+    --c-ink-900: #17120f;
+    --c-ink-850: #211a15;
+    --c-ink-800: #2c231d;
+    --c-leather-700: #3d2c21;
+    --c-leather-600: #5a3f2c;
+    --c-leather-500: #7d5638;
+    --c-bone-50: #f3eadc;
+    --c-bone-200: #d6c8b3;
+    --c-bone-400: #a8977f;
+    --c-rust-600: #a83e26;
+    --c-rust-700: #8c3320;
+    --c-rust-400: #e0724f;
+    --c-brass-400: #c9a45c;
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-text: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--c-ink-950);
+    color: var(--c-bone-50);
+    font-family: var(--font-text);
+    line-height: 1.5;
+    padding: 0 0 6rem;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+  .banner {
+    background: linear-gradient(180deg, var(--c-ink-900), var(--c-ink-950));
+    border-bottom: 1px solid var(--c-leather-600);
+    padding: 40px 0 28px;
+    margin-bottom: 40px;
+  }
+  .ph {
+    display: inline-block;
+    font-family: var(--font-text);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #f4d27a;
+    background: #3a2f0c;
+    border: 1px solid #6b551a;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+    margin: 0 0 6px;
+  }
+  .sub { color: var(--c-bone-400); font-size: 0.95rem; margin: 0; }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid var(--c-ink-800);
+    padding-bottom: 10px;
+    margin: 0 0 20px;
+  }
+  section { margin-bottom: 56px; }
+  .grid { display: grid; gap: 20px; }
+  .marks { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .mark-card {
+    background: var(--c-ink-900);
+    border: 1px solid var(--c-ink-800);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .mark-card.on-dark { background: var(--c-ink-950); }
+  .mark-card.on-light { background: var(--c-bone-50); }
+  .mark-card img { width: 100%; height: 130px; object-fit: contain; display: block; }
+  .mark-card .cap {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--c-bone-400);
+    text-align: center;
+  }
+  .mark-card.on-light .cap { color: #6b5c47; }
+
+  .clearspace-demo {
+    background: var(--c-ink-900);
+    border: 1px solid var(--c-ink-800);
+    border-radius: 10px;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+  }
+  .clearspace-demo .box {
+    position: relative;
+    width: 260px;
+    padding: 31px; /* ~X clear space, see copy below */
+    border: 1px dashed var(--c-rust-400);
+  }
+  .clearspace-demo img { width: 100%; display: block; }
+  .clearspace-demo .box::after {
+    content: "clear space = X";
+    position: absolute;
+    top: -22px;
+    left: 0;
+    font-size: 0.7rem;
+    color: var(--c-rust-400);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .min-sizes { display: flex; gap: 32px; align-items: flex-end; flex-wrap: wrap; }
+  .min-sizes .chip {
+    background: var(--c-ink-900);
+    border: 1px solid var(--c-ink-800);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .min-sizes img { display: block; margin: 0 auto 10px; }
+  .min-sizes .label { font-size: 0.78rem; color: var(--c-bone-400); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--c-ink-800); font-size: 0.92rem; }
+  th { color: var(--c-bone-400); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .swatch { width: 34px; height: 34px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); display: inline-block; vertical-align: middle; margin-right: 10px; }
+  code { background: var(--c-ink-800); padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+
+  .type-card { background: var(--c-ink-900); border: 1px solid var(--c-ink-800); border-radius: 10px; padding: 24px; margin-bottom: 16px; }
+  .type-card .meta { font-size: 0.82rem; color: var(--c-bone-400); margin-bottom: 14px; }
+  .type-card .meta strong { color: var(--c-bone-200); }
+  .display-spec { font-family: var(--font-display); font-weight: 700; font-size: 2.6rem; letter-spacing: 0.01em; text-transform: uppercase; }
+  .text-spec { font-family: var(--font-text); font-size: 1.05rem; max-width: 60ch; color: var(--c-bone-200); }
+
+  .dodont { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .dodont ul { margin: 0; padding-left: 20px; }
+  .dodont li { margin-bottom: 8px; font-size: 0.92rem; }
+  .do-col h3 { color: #8fd18f; }
+  .dont-col h3 { color: #e58a7e; }
+  .dodont h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; margin: 0 0 12px; letter-spacing: 0.02em; }
+
+  .origin { font-family: var(--font-display); font-size: 1.2rem; text-align: center; color: var(--c-bone-200); border-top: 1px solid var(--c-ink-800); border-bottom: 1px solid var(--c-ink-800); padding: 18px 0; margin: 40px 0; }
+  footer { color: var(--c-bone-400); font-size: 0.78rem; text-align: center; margin-top: 60px; }
+
+  @media (max-width: 640px) {
+    .dodont { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <div class="wrap">
+    <h1>Sanchez Custom Boxing <span class="ph">Internal — pending approval</span></h1>
+    <p class="sub">Brand reference v1 · Ticket P-A5 · Logo redraw + proposed colour &amp; type system · not for public/client distribution</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <h2>Brand mark</h2>
+    <div class="grid marks">
+      <div class="mark-card on-light">
+        <img src="logo-full.svg" alt="Sanchez Custom Boxing Equipment — primary mark, black">
+        <div class="cap">Primary — <code>logo-full.svg</code></div>
+      </div>
+      <div class="mark-card on-light">
+        <img src="logo-mono-black.svg" alt="Sanchez mark, black">
+        <div class="cap">Mono black — on light surfaces</div>
+      </div>
+      <div class="mark-card on-dark">
+        <img src="logo-mono-white.svg" alt="Sanchez mark, white">
+        <div class="cap">Mono white — on dark surfaces (this page)</div>
+      </div>
+      <div class="mark-card on-light">
+        <img src="favicon-mark.svg" alt="Sanchez favicon mark, simplified shield silhouette">
+        <div class="cap">Favicon / app-icon mark</div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:16px; max-width:70ch;">
+      The mark is inherently monochrome — the source badge has never had a colour version, so
+      there is no "full colour" lockup to invent. <strong style="color:var(--c-bone-200)">Use mono-white on any dark surface</strong> (contrast of black-on-ink-950 is ~1.07:1 — effectively invisible); mono-black reads at 21:1 on white/light surfaces. The favicon mark drops the wordmark and script (illegible under ~48px) and keeps only the badge's outer silhouette.
+    </p>
+  </section>
+
+  <section>
+    <h2>Clear space</h2>
+    <div class="clearspace-demo">
+      <div class="box"><img src="logo-mono-white.svg" alt=""></div>
+    </div>
+    <p class="sub" style="margin-top:16px; max-width:70ch;">
+      <strong style="color:var(--c-bone-200)">X = the cap-height of the "S" in SANCHEZ</strong> (≈ a third of the full badge's height). Keep clear space of at least <strong style="color:var(--c-bone-200)">X on every side</strong> before any text, edge or other logo touches the mark. Derived from the redrawn geometry, not an arbitrary pixel value.
+    </p>
+  </section>
+
+  <section>
+    <h2>Minimum size</h2>
+    <div class="min-sizes">
+      <div class="chip"><img src="favicon-mark.svg" width="16" height="16" alt=""><div class="label">Favicon mark<br>16px minimum</div></div>
+      <div class="chip"><img src="favicon-mark.svg" width="32" height="32" alt=""><div class="label">Favicon mark<br>32px (crisp)</div></div>
+      <div class="chip"><img src="logo-mono-black.svg" width="120" height="120" alt=""><div class="label" style="background:var(--c-bone-50); color:#3a2f22; padding:4px 6px; border-radius:4px;">Full lockup<br>120px digital minimum</div></div>
+    </div>
+    <p class="sub" style="margin-top:16px; max-width:70ch;">
+      Checked by rendering the redrawn vectors at 16 / 32 / 64 / 128 / 256px. Below ~120px the script line ("Custom Boxing Equipment") and the shield's inner double border lose legibility — use the favicon mark instead of shrinking the full lockup further. No print minimum is specified here; that needs testing against actual output methods (embroidery, screen print, leather stamp) before it's set.
+    </p>
+  </section>
+
+  <section>
+    <h2>Colour <span class="ph">Proposal — pending approval</span></h2>
+    <p class="sub" style="max-width:70ch; margin-bottom:20px;">
+      Already implemented as CSS custom properties in <code>prototype/styles.css</code> during Milestone 1 — restated here as the brand reference, not re-invented. Built from the spec's "dark, premium workshop feel" (leather, stitching, low-key light) plus the mark's own black/white, not a generic dark-UI palette.
+    </p>
+    <table>
+      <thead><tr><th>Swatch</th><th>Token</th><th>Hex</th><th>Use</th><th>Contrast</th></tr></thead>
+      <tbody>
+        <tr><td><span class="swatch" style="background:#0e0b09"></span></td><td>--c-ink-950</td><td>#0e0b09</td><td>Page background</td><td>—</td></tr>
+        <tr><td><span class="swatch" style="background:#17120f"></span></td><td>--c-ink-900</td><td>#17120f</td><td>Surface</td><td>—</td></tr>
+        <tr><td><span class="swatch" style="background:#3d2c21"></span></td><td>--c-leather-700</td><td>#3d2c21</td><td>Dark tan leather accent</td><td>—</td></tr>
+        <tr><td><span class="swatch" style="background:#f3eadc"></span></td><td>--c-bone-50</td><td>#f3eadc</td><td>Primary text</td><td>16.45:1 on ink-950</td></tr>
+        <tr><td><span class="swatch" style="background:#d6c8b3"></span></td><td>--c-bone-200</td><td>#d6c8b3</td><td>Secondary text</td><td>11.93:1 on ink-950</td></tr>
+        <tr><td><span class="swatch" style="background:#a8977f"></span></td><td>--c-bone-400</td><td>#a8977f</td><td>Muted text</td><td>6.91:1 on ink-950</td></tr>
+        <tr><td><span class="swatch" style="background:#a83e26"></span></td><td>--c-rust-600</td><td>#a83e26</td><td>Accent fill (buttons)</td><td>5.21:1 w/ bone-50 text</td></tr>
+        <tr><td><span class="swatch" style="background:#e0724f"></span></td><td>--c-rust-400</td><td>#e0724f</td><td>Accent as text/icon on dark</td><td>6.25:1 on ink-950</td></tr>
+        <tr><td><span class="swatch" style="background:#c9a45c"></span></td><td>--c-brass-400</td><td>#c9a45c</td><td>Stitching / hairline detail only</td><td>8.36:1 on ink-950</td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin-top:14px;">Contrast ratios computed independently (WCAG relative-luminance formula) against <code>--c-ink-950</code> as the base dark surface, and cross-checked against the values already commented in <code>prototype/styles.css</code> — they match. Not every accent is a body-text colour: <code>--c-brass-400</code> is documented "stitching / hairline detail only," not for running text, despite its high contrast number.</p>
+  </section>
+
+  <section>
+    <h2>Typography <span class="ph">Proposal — pending approval</span></h2>
+
+    <div class="type-card">
+      <div class="meta"><strong>Display — Barlow Condensed</strong> · Google Fonts · SIL Open Font License 1.1 · self-hosting permitted · commercial web use permitted · weights used: 600, 700</div>
+      <div class="display-spec">SANCHEZ CUSTOM BOXING</div>
+    </div>
+
+    <div class="type-card">
+      <div class="meta"><strong>Text — Barlow</strong> · Google Fonts · SIL Open Font License 1.1 · self-hosting permitted · commercial web use permitted · weights used: 400, 500, 600</div>
+      <div class="text-spec">Every glove is cut and stitched to order in Pattaya, built around the fighter's own hand tracing and the shape their coach asks for. This is the body copy face — product descriptions, navigation, forms, spec sheets, long-form journal writing.</div>
+    </div>
+
+    <p class="sub" style="max-width:70ch;">
+      Already wired up as <code>--font-display</code> / <code>--font-text</code> in <code>prototype/styles.css</code>. Both are OFL-licensed Google Fonts — free for self-hosted commercial web use, no licence risk. The logo's own hand-lettered wordmark is a separate, one-off mark; Barlow Condensed is the <em>site's</em> display face, not a replacement for the custom lettering in the badge itself.
+    </p>
+  </section>
+
+  <section>
+    <h2>Do / Don't</h2>
+    <div class="dodont">
+      <div class="do-col">
+        <h3>Do</h3>
+        <ul>
+          <li>Preserve the mark's proportions — scale uniformly only</li>
+          <li>Use mono-white on dark surfaces, mono-black on light</li>
+          <li>Keep at least one X of clear space on every side</li>
+          <li>Use the favicon mark below ~120px instead of shrinking the full lockup</li>
+          <li>Use the approved origin line exactly as written</li>
+        </ul>
+      </div>
+      <div class="dont-col">
+        <h3>Don't</h3>
+        <ul>
+          <li>Stretch, skew or rotate the mark</li>
+          <li>Recolour it outside the approved black/white variants</li>
+          <li>Add glows, drop shadows or bevels</li>
+          <li>Redraw the letters, script or gloves independently of the master file</li>
+          <li>Introduce new iconography (stars, crowns, fists, laurels…)</li>
+          <li>Describe the products as <strong>"Australian made"</strong></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="origin">Designed in Sydney. Handmade in Pattaya.</div>
+
+  <footer>
+    Internal brand reference · generated for ticket P-A5 · no reviews, stats, testimonials or brand history are claimed on this page · all colour and type decisions marked pending Jesse/Michael approval
+  </footer>
+
+</div>
+</body>
+</html>

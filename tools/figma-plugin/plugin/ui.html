@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 12px/1.45 Inter, system-ui, sans-serif; color: var(--figma-color-text, #222); background: var(--figma-color-bg, #fff); }
+  h1 { font-size: 14px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--figma-color-text-secondary, #666); }
+  .drop { border: 1.5px dashed var(--figma-color-border, #bbb); border-radius: 8px; padding: 22px 12px; text-align: center; cursor: pointer; margin-bottom: 12px; }
+  .drop.over { border-color: var(--figma-color-border-brand, #0d99ff); background: var(--figma-color-bg-brand-tertiary, rgba(13,153,255,.08)); }
+  .drop b { display: block; font-size: 13px; margin-bottom: 2px; }
+  ul { list-style: none; padding: 0; margin: 0 0 12px; max-height: 190px; overflow: auto; border: 1px solid var(--figma-color-border, #ddd); border-radius: 6px; }
+  li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--figma-color-border, #eee); }
+  li:last-child { border-bottom: 0; }
+  li span:last-child { color: var(--figma-color-text-tertiary, #999); white-space: nowrap; }
+  label.chk { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  button { width: 100%; padding: 9px 12px; border-radius: 6px; border: 0; font: 600 12px Inter, system-ui, sans-serif; color: #fff; background: var(--figma-color-bg-brand, #0d99ff); cursor: pointer; }
+  button:disabled { opacity: .4; cursor: default; }
+  .bar { height: 4px; border-radius: 2px; background: var(--figma-color-bg-secondary, #eee); margin: 12px 0 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--figma-color-bg-brand, #0d99ff); transition: width .2s; }
+  pre { margin: 8px 0 0; padding: 8px; max-height: 150px; overflow: auto; white-space: pre-wrap; font: 11px/1.4 ui-monospace, Menlo, monospace; background: var(--figma-color-bg-secondary, #f5f5f5); border-radius: 6px; }
+  .hint { font-size: 11px; }
+</style>
+</head>
+<body>
+  <h1>Sanchez prototype → Figma</h1>
+  <p>Rebuilds the HTML prototype as editable layers. Pick the exported <code>.json</code> page files (one per page and size).</p>
+
+  <div class="drop" id="drop"><b>Choose or drop page files</b>from <code>tools/figma-plugin/plugin/data/</code><input id="file" type="file" accept=".json,application/json" multiple hidden></div>
+  <ul id="list"></ul>
+  <label class="chk"><input type="checkbox" id="tokens" checked> Also create colour styles and a swatch board</label>
+  <button id="go" disabled>Build in Figma</button>
+  <div class="bar"><i id="bar"></i></div>
+  <div id="status" class="hint"></div>
+  <pre id="log" hidden></pre>
+
+<script>
+  const drop = document.getElementById("drop"), file = document.getElementById("file"), list = document.getElementById("list");
+  const go = document.getElementById("go"), status = document.getElementById("status"), logEl = document.getElementById("log"), bar = document.getElementById("bar");
+  let pages = [];
+  const order = ["index", "product", "configure", "review", "checkout"];
+  const say = (t) => { status.textContent = t; };
+  const log = (t) => { logEl.hidden = false; logEl.textContent += t + "\n"; logEl.scrollTop = 1e9; };
+
+  drop.onclick = () => file.click();
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); load(e.dataTransfer.files); };
+  file.onchange = () => load(file.files);
+
+  async function load(files) {
+    say("Reading files…"); pages = [];
+    for (const f of files) {
+      if (!/\.json$/i.test(f.name)) continue;
+      try { const d = JSON.parse(await f.text()); if (d.tree && d.width) pages.push(d); else log("Not a page file: " + f.name); }
+      catch (e) { log("Could not read " + f.name + ": " + e.message); }
+    }
+    pages.sort((a, b) => (order.indexOf(a.id) < 0 ? 99 : order.indexOf(a.id)) - (order.indexOf(b.id) < 0 ? 99 : order.indexOf(b.id)) || a.id.localeCompare(b.id) || a.vp.localeCompare(b.vp));
+    list.innerHTML = pages.map((p) => `<li><span>${p.id} · ${p.vp}</span><span>${p.width}×${p.height}</span></li>`).join("");
+    go.disabled = !pages.length;
+    say(pages.length ? pages.length + " page(s) ready." : "No valid page files found.");
+  }
+  go.onclick = () => {
+    go.disabled = true; logEl.textContent = ""; bar.style.width = "2%"; say("Building…");
+    parent.postMessage({ pluginMessage: { type: "build", pages, tokens: document.getElementById("tokens").checked } }, "*");
+  };
+  onmessage = (e) => {
+    const m = e.data.pluginMessage; if (!m) return;
+    if (m.type === "progress") { bar.style.width = Math.round(((m.i + 0.5) / m.n) * 100) + "%"; say("Building " + m.label + " (" + (m.i + 1) + "/" + m.n + ")"); }
+    if (m.type === "log") log(m.text);
+    if (m.type === "done") {
+      bar.style.width = "100%"; go.disabled = false;
+      say("Done: " + m.pages + " frame(s), " + m.stats.frames + " boxes, " + m.stats.texts + " text layers, " + m.stats.icons + " icons, " + m.stats.images + " images" + (m.tokenStyles ? ", " + m.tokenStyles + " colour styles" : "") + ".");
+      if (m.warnings.length) log("Notes:\n- " + m.warnings.join("\n- "));
+    }
+    if (m.type === "error") { go.disabled = false; bar.style.width = "0"; say("Stopped: " + m.text); log(m.text); }
+  };
+</script>
+</body>
+</html>

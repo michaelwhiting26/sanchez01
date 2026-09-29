@@ -388,6 +388,8 @@ hr { border: 0; border-block-start: 1px solid var(--color-border); margin: var(-
 .site-footer { background: var(--color-surface); border-block-start: 1px solid var(--color-border); padding-block: var(--space-8) var(--space-6); margin-block-start: auto; }
 .footer-top { display: grid; gap: var(--space-6); }
 .footer-brand { display: flex; flex-direction: column; gap: var(--space-3); max-inline-size: 22rem; }
+.footer-cities { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); list-style: none; margin: 0; padding: 0; font-family: var(--font-display); font-weight: var(--fw-semibold); font-size: var(--fs-sm); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--color-text-2); }
+.footer-cities li + li::before { content: "·"; margin-inline-end: var(--space-3); color: var(--color-accent-text); }
 .footer-brand img { inline-size: 96px; block-size: auto; aspect-ratio: 728 / 631; }
 .footer-cols { display: grid; gap: var(--space-5); grid-template-columns: repeat(2, 1fr); }
 .footer-col h2 { font-size: var(--fs-md); letter-spacing: var(--tracking-caps); color: var(--color-text-muted); margin-block-end: var(--space-2); }
@@ -421,6 +423,12 @@ hr { border: 0; border-block-start: 1px solid var(--color-border); margin: var(-
 .hero__toggle { position: absolute; inset-block-start: var(--space-4); inset-inline-end: var(--space-4); z-index: var(--z-raised); background: rgb(14 11 9 / 0.7); }
 @media (min-width: 480px) { .hero__actions { flex-direction: row; } }
 
+/* WORDMARK BANNER: static SANCHEZ lockup above the hero. Sized to the
+   site's standard .container width (var(--container), same as every
+   other section) rather than raw viewport width, so it lines up with
+   the rest of the page instead of overshooting it edge to edge. */
+.wordmark-banner { padding-block: clamp(var(--space-6), 6vh, var(--space-9)); background: var(--c-bone-50); }
+.wordmark-banner img { display: block; inline-size: 100%; block-size: auto; }
 /* ---------------------------------------------------------------------------
    11. MEDIA + CARDS
    ------------------------------------------------------------------------ */
@@ -764,6 +772,21 @@ dialog::backdrop { background: var(--color-overlay); }
 .cfg > .cfg__preview { position: sticky; inset-block-start: var(--header-h); z-index: var(--z-raised); display: flex; align-items: center; justify-content: center; overflow: hidden; block-size: 38svh; min-block-size: 15rem; padding-block: var(--space-7) var(--space-2); }
 .cfg > .cfg__preview .cfg__stage { inline-size: auto; block-size: 100%; }
 .cfg__stage svg { inline-size: 100%; block-size: 100%; }
+/* Sanchez Custom presets: small rounded-square colour pills */
+.presets { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-3); border-block: 1px solid var(--color-border); }
+.presets__grid { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.preset { display: grid; justify-items: center; gap: var(--space-1); background: none; border: 0; padding: 0; color: var(--color-text-muted); font: inherit; font-size: var(--fs-xs); cursor: pointer; }
+.preset__chip { display: flex; inline-size: 2.75rem; block-size: 2.75rem; border-radius: 0.75rem; overflow: hidden; border: 1px solid var(--color-border); transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out); }
+.preset__chip i { flex: 1; }
+.preset:hover .preset__chip { transform: translateY(-2px); }
+.preset[aria-pressed="true"] { color: var(--color-text); }
+.preset[aria-pressed="true"] .preset__chip { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent); }
+.preset:focus-visible { outline: none; }
+.preset:focus-visible .preset__chip { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-text); }
+/* Real-time 3D preview fills the preview panel; the canvas is the stage */
+.cfg > .cfg__preview .cfg__stage[data-3d], .cfg__stage[data-3d] { position: absolute; inset: 0; inline-size: auto; block-size: auto; aspect-ratio: auto; }
+.bag3d-hint { position: absolute; inset-inline: 0; inset-block-end: var(--space-3); text-align: center; font-size: var(--fs-xs); color: var(--color-text-muted); pointer-events: none; transition: opacity var(--dur-3, .4s) var(--ease-out); }
+.bag3d-hint.is-hidden { opacity: 0; }
 .cfg__stage svg * { transition: fill var(--dur-2) var(--ease-out), stroke var(--dur-2) var(--ease-out); }
 .cfg__preview-label { position: absolute; inset-block-start: var(--space-3); inset-inline-start: var(--space-3); inset-inline-end: var(--space-3); display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; font-size: var(--fs-xs); color: var(--color-text-muted); }
 .cfg__view-toggle { position: absolute; inset-block-end: var(--space-3); inset-inline-end: var(--space-3); }

@@ -1,0 +1,105 @@
+/* ==========================================================================
+   HOME HERO INTRO: lake reflection, 3D tumble, Custom drop.  (spec 05)
+   One shared 5.9 s timeline: every element uses the SAME duration and its own
+   keyframes, so the sequence can never drift and "skip" is just "jump to end".
+   Default (no .is-playing) = the finished state, so no-JS and reduced motion
+   always see SANCHEZ + Custom.  Cream stage: the black word must stay visible.
+   Only transform / opacity / mask variable are animated. */
+@property --m0 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+.intro {
+  --intro-d: 5.9s;
+  --hdr: 72px; --pad: 16px; --zarc: 220px;
+  position: relative; overflow: hidden; background: var(--c-bone-50);
+  padding: var(--pad) var(--space-4);
+  min-block-size: calc(100svh - var(--hdr));
+  display: grid; place-items: center;
+}
+.intro.is-wait .intro__stage { opacity: 0; }
+.intro__stage {
+  position: relative; container-type: size; perspective: 1400px;
+  inline-size: min(100%, calc((100svh - var(--hdr) - 2 * var(--pad)) * 1.14));
+  aspect-ratio: 1140 / 1000;
+}
+.intro__stage img { display: block; inline-size: 100%; block-size: 100%; }
+.intro__a, .intro__b { position: absolute; inset-inline: 0; block-size: 44.1cqh; }
+.intro__a { top: 0; transform: translateY(20.1cqh); }                       /* final: centred group */
+.intro__lake { position: absolute; inset-inline: 0; top: 50cqh; block-size: 2px; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgb(14 11 9 / .55) 18%, rgb(14 11 9 / .55) 82%, transparent); transform-origin: left center; }
+.intro__b { top: 55.9cqh; transform-style: preserve-3d; pointer-events: none; }
+.intro__bz, .intro__br { position: absolute; inset: 0; transform-style: preserve-3d; }
+.intro__br { transform: rotateX(720deg); }
+.intro__bin { position: absolute; inset: 0; opacity: 0;
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / var(--m0)) 0%, #000 72%);
+          mask-image: linear-gradient(to bottom, rgb(0 0 0 / var(--m0)) 0%, #000 72%); }
+.intro__custom { position: absolute; inset-inline-start: 10cqw; top: 39cqw; inline-size: 80cqw; aspect-ratio: 1200 / 500;
+  transform: rotate(-3deg); transform-origin: 50% 100%;
+  filter: drop-shadow(0 .5cqw 1cqw rgb(14 11 9 / .38)); }
+.intro__replay { position: absolute; inset-inline-end: var(--space-4); inset-block-end: var(--space-3); z-index: 3;
+  font: 600 var(--fs-xs)/1 var(--font-text); letter-spacing: .12em; text-transform: uppercase; color: var(--c-ink-800);
+  background: transparent; border: 1px solid rgb(14 11 9 / .25); border-radius: 999px; padding: .55rem .9rem; cursor: pointer; opacity: .7; }
+.intro__replay:hover, .intro__replay:focus-visible { opacity: 1; }
+
+/* ---- the timeline ---- */
+.intro.is-playing .intro__a, .intro.is-playing .intro__lake, .intro.is-playing .intro__b,
+.intro.is-playing .intro__bz, .intro.is-playing .intro__br, .intro.is-playing .intro__bin, .intro.is-playing .intro__custom {
+  animation-duration: var(--intro-d); animation-fill-mode: both; animation-timing-function: linear; }
+.intro.is-playing .intro__a    { animation-name: a-seq; }
+.intro.is-playing .intro__lake { animation-name: lake-seq; }
+.intro.is-playing .intro__b    { animation-name: b-rise; }
+.intro.is-playing .intro__bz   { animation-name: b-z; }
+.intro.is-playing .intro__br   { animation-name: b-rot; }
+.intro.is-playing .intro__bin  { animation-name: b-fade; }
+.intro.is-playing .intro__custom { animation-name: custom-drop; }
+
+@keyframes a-seq {
+  0%            { opacity: 0; transform: translateY(12px); animation-timing-function: cubic-bezier(.2,.7,.2,1); }
+  8.475%       { opacity: 1; transform: translateY(0); }
+  74.576%      { opacity: 1; transform: translateY(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  84.746%      { transform: translateY(20.1cqh); }
+  93.136%    { transform: translateY(20.1cqh); }
+  94.576%     { transform: translateY(calc(20.1cqh + 2px)); }
+  96.949%,100% { transform: translateY(20.1cqh); }
+}
+@keyframes lake-seq {
+  0%, 5.932%  { opacity: 0; transform: scaleX(0); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  16.102%      { opacity: 1; transform: scaleX(1); }
+  33.898%      { opacity: 1; transform: scaleX(1); animation-timing-function: ease-in; }
+  40.678%,100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes b-rise {           /* B starts under the lake, ends exactly on A's start position */
+  0%, 33.898%  { transform: translate3d(0, 0, 0); animation-timing-function: cubic-bezier(.76,0,.24,1); }
+  74.576%      { transform: translate3d(0, -55.9cqh, 0); }
+  74.578%, 100% { transform: translate3d(0, -55.9cqh, 0); }
+}
+@keyframes b-z {              /* comes toward the viewer while crossing A, then settles */
+  0%, 33.898%  { transform: translateZ(0); animation-timing-function: cubic-bezier(.37,0,.63,1); }
+  54.237%      { transform: translateZ(var(--zarc)); animation-timing-function: cubic-bezier(.37,0,.63,1); }
+  74.576%, 100% { transform: translateZ(0); }
+}
+@keyframes b-rot {            /* 180 deg (mirrored) -> 720 deg (1.5 turns, ends upright) */
+  0%, 33.898%  { transform: rotateX(180deg); animation-timing-function: cubic-bezier(.76,0,.24,1); }
+  74.576%, 100% { transform: rotateX(720deg); }
+}
+@keyframes b-fade {           /* reflection: invisible -> 35% -> solid; fade mask relaxes as it lands */
+  0%, 11.864%   { opacity: 0; --m0: 0; animation-timing-function: cubic-bezier(.2,.7,.2,1); }
+  22.034%      { opacity: .35; --m0: 0; }
+  61.017%      { opacity: .35; --m0: 0; animation-timing-function: linear; }
+  74.576%      { opacity: 1; --m0: 1; }
+  74.578%, 100% { opacity: 0; --m0: 1; }
+}
+@keyframes custom-drop {      /* gravity fall, small impact squash, settle */
+  0%, 84.576% { opacity: 0; transform: translateY(-100cqw) rotate(-8deg); animation-timing-function: cubic-bezier(.5,0,.9,.45); }
+  84.746%      { opacity: 1; transform: translateY(-100cqw) rotate(-8deg); animation-timing-function: cubic-bezier(.5,0,.9,.45); }
+  93.136%    { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1, 1); filter: drop-shadow(0 .5cqw 1cqw rgb(14 11 9 / .38)); animation-timing-function: ease-out; }
+  95.424%     { transform: translateY(.9cqw) rotate(-3deg) scale(1.012, .96); filter: drop-shadow(0 .15cqw .3cqw rgb(14 11 9 / .45)); animation-timing-function: cubic-bezier(.65,0,.35,1); }
+  100%          { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1, 1); filter: drop-shadow(0 .5cqw 1cqw rgb(14 11 9 / .38)); }
+}
+
+/* skip / reduced motion / repeat visit: finished state, no motion */
+.intro.is-final .intro__b, .intro.is-final .intro__lake { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .intro .intro__b, .intro .intro__lake { display: none; }
+  .intro .intro__a, .intro .intro__bz, .intro .intro__br, .intro .intro__bin, .intro .intro__custom { animation: none !important; }
+}
+@media (max-width: 767px) { .intro { --pad: 28px; --zarc: 100px; min-block-size: auto; } .intro__stage { perspective: 900px; } }

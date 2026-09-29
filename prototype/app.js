@@ -214,6 +214,7 @@
         '<div class="footer-top">' +
         '<div class="footer-brand"><img src="' + D.logo + '" alt="Sanchez Custom Boxing Equipment" width="96" height="83" loading="lazy">' +
         '<p class="origin-line">' + D.origin + "</p>" +
+        '<ul class="footer-cities" aria-label="Where we work">' + ["London", "Dubai", "Thailand", "Sydney"].map(function (c) { return "<li>" + c + "</li>"; }).join("") + "</ul>" +
         '<ul class="social-links" aria-label="Instagram">' + D.socials.map(function (s) {
           return '<li><a href="' + s.href + '" rel="noopener" target="_blank">' + ic("instagram") + s.handle + '<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>';
         }).join("") + "</ul></div>" +
@@ -721,6 +722,8 @@
       var blocks = [[0, 0, 0.5, 0.3], [0.5, 0, 0.5, 0.45], [0, 0.3, 0.35, 0.4], [0.35, 0.3, 0.65, 0.25], [0.35, 0.55, 0.65, 0.45], [0, 0.7, 0.35, 0.3]];
       blocks.forEach(function (b, i) { s += rect(x0 + b[0] * w, y0 + b[1] * h, b[2] * w + 0.5, b[3] * h + 0.5, pal[i % pal.length]); });
     }
+    if (it.art === "tigerfull") s += '<image href="assets/bag3d/tiger.png" x="' + (x0 + w * 0.05) + '" y="' + (y0 + h * 0.1) + '" width="' + (w * 0.9) + '" height="' + (h * 0.8) + '" preserveAspectRatio="xMidYMid meet"/>';
+    else if (it.art && window.SZ_ART) s += '<image href="' + SZ_ART.url(it.art, 900, 450) + '" x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid slice"/>';
     /* caps */
     if (d.shape === "cyl" || d.shape === "angle") {
       s += rect(x0, y0, w, 16, R(it.capTop)) + seamH(x0, y0 + 16, w, stitch);
@@ -797,6 +800,39 @@
     }
     return out;
   };
+  /* Real-time 3D preview (heavy bag). Geometry is the Blender template exported to glTF (assets/bag3d/viewer.js).
+     Other bag types, other layouts and the size step (person for scale) fall back to the SVG drawing. */
+  BAG.has3d = function (cfg, opts) {
+    var it = cfg.item;
+    return it.type === "heavy" && !(opts && opts.human) && (it.layout === "single" || it.layout === "2tone-vertical" || !it.layout) && /^[345]ft$/.test(it.length) && !!window.WebGLRenderingContext;
+  };
+  BAG.state3d = function (cfg) {
+    var it = cfg.item, b = cfg.brand, split = it.layout === "2tone-vertical";
+    /* nothing is coloured until the customer picks a colour: unset brand colours stay plain vinyl */
+    var R = function (t) { return t && t.indexOf("brand:") === 0 && !cfg.brand[t.slice(6)] ? null : BAG.resolve(cfg, t); };
+    var left = R(it.panels[0]), right = R(split ? it.panels[1] : it.panels[0]);
+    var fg = b.logoVariant === "white" ? "#ffffff" : b.logoVariant === "black" ? "#111111" : (left ? (b.accent || "#f3eadc") : "#2a2a2a");
+    var debossed = it.method === "debossed";
+    var words = (b.name || "YOUR LOGO").toUpperCase().trim().split(/\s+/);
+    var lines = (words.length <= 3 ? words : [words[0], words[1], words.slice(2).join(" ")]).map(function (l) { return l.slice(0, 14); });
+    var logoData = b.logo || SZ._logoCache || null, img = null;
+    if (logoData && !b.noLogo && /^data:image\/(png|jpe?g|svg|webp|gif)/.test(logoData)) {
+      img = SZ._logoImg && SZ._logoImg.src === logoData ? SZ._logoImg : (SZ._logoImg = new Image());
+      if (img.src !== logoData) { img.onload = function () { if (SZ._redraw3d) SZ._redraw3d(); }; img.src = logoData; }
+    }
+    var lc = left || "#b4b4b4";
+    return {
+      length: it.length, left: left, right: right, top: R(it.capTop), bottom: R(it.capBottom), split: split,
+      finish: it.finish, brandPrimary: cfg.brand.primary || null, art: it.art || null,
+      decal: {
+        placement: it.placement || "front", size: it.logoSize, frac: { S: 0.34, M: 0.5, L: 0.68, full: 0.9 }[it.logoSize] || 0.5,
+        fg: fg, img: img, variant: b.logoVariant, lines: lines, debossed: debossed, method: it.method,
+        patchFill: shade(lc, lum(lc) > 0.5 ? -0.15 : 0.1),
+        fam: b.noLogo ? FONT_FAMILY[b.wordmarkFont] || FONT_FAMILY["font-1"] : FONT_FAMILY["font-1"],
+        text: it.text ? it.text.toUpperCase() : "", textFam: FONT_FAMILY[it.textFont] || FONT_FAMILY["font-1"]
+      }
+    };
+  };
   BAG.describe = function (cfg, view) {
     var it = cfg.item;
     var t = OPT.types.filter(function (x) { return x.v === it.type; })[0];
@@ -809,13 +845,13 @@
      ======================================================================== */
   var CFG_KEY = "sz.config.v1";
   var CONFIG = (SZ.config = {});
-  CONFIG.schemaVersion = "bag@0.1.0-prototype";
+  CONFIG.schemaVersion = "bag@0.1.1-prototype";
   CONFIG.defaults = function () {
     return {
       schemaVersion: CONFIG.schemaVersion,
       configId: "CFG-PROTO-" + Math.random().toString(36).slice(2, 8).toUpperCase(),
       step: 0, reached: 0, touched: {}, updatedAt: null,
-      brand: { name: "", noLogo: false, wordmarkFont: "font-1", logo: null, logoName: "", logoWidth: null, logoVariant: "full", primary: "", secondary: "#111111", accent: "#f3eadc", pantone: "", vibe: "oldschool" },
+      brand: { name: "", noLogo: false, wordmarkFont: "font-1", logo: null, logoName: "", logoWidth: null, logoVariant: "full", primary: "", secondary: "", accent: "#f3eadc", pantone: "", vibe: "oldschool" },
       buyer: { type: "", country: "" },
       item: {
         product: "bag", type: "heavy", length: "4ft", fill: "filled", fillType: "shredded", material: "vinyl",
@@ -979,7 +1015,7 @@
       o = o || {};
       var id = fieldId(name);
       return '<div class="field"><label class="field__label" for="' + id + '-hex">' + lbl + (o.required ? ' <span class="req" aria-hidden="true">*</span>' : "") + "</label>" +
-        '<div class="color-field"><input type="color" id="' + id + '" value="' + (val || "#a83e26") + '" data-color-for="' + name + '" aria-label="' + esc(lbl) + ' picker">' +
+        '<div class="color-field"><input type="color" id="' + id + '" value="' + (val || "#b4b4b4") + '" data-color-for="' + name + '" aria-label="' + esc(lbl) + ' picker">' +
         '<input class="input mono" id="' + id + '-hex" name="' + name + '" type="text" value="' + esc(val) + '" placeholder="#RRGGBB" pattern="^#[0-9a-fA-F]{6}$" title="Use a 6-digit HEX code like #A83E26" maxlength="7" spellcheck="false" autocomplete="off"' + (o.required ? ' required data-error="Choose your primary brand colour (HEX like #A83E26)"' : "") + "></div></div>";
     }
   };
@@ -1099,8 +1135,56 @@
     if (hashStep && +hashStep[1] <= c.reached) c.step = +hashStep[1];
 
     function visibleSteps() { return STEPS.map(function (s, i) { return i; }).filter(function (i) { return !CONFIG.isSkipped(c, STEPS[i]); }); }
+    /* Sanchez Custom: off-the-shelf colourways, sampled from Sanchez's own finished bags */
+    var PRESETS = [
+      { id: "royal-blue", name: "Royal Blue", layout: "single", a: "#0b6fe8", caps: "#f7f7f2" },
+      { id: "fight-red", name: "Fight Red", layout: "single", a: "#ef2a12", caps: "#f7f7f2" },
+      { id: "gold-black", name: "Gold & Black", layout: "2tone-vertical", a: "#e2b10a", b: "#0d0f12", caps: "#f7f7f2" },
+      { id: "green-red", name: "Green & Red", layout: "2tone-vertical", a: "#1f5c3a", b: "#dc3a22", caps: "#f7f7f2" },
+      { id: "tigerfull", name: "Tiger Full", layout: "single", a: "#f7f7f2", b: "#b4402e", caps: "#7a1f16", art: "tigerfull" },
+      { id: "fractal", name: "Fractal", layout: "single", a: "#e11d0c", caps: "#0b0b18", art: "hex" }
+    ];
+    var presetBox = $("[data-cfg-presets]", root);
+    function presetOn(pr) {
+      var it = c.item, lo = function (x) { return (x || "").toLowerCase(); };
+      return (it.art || null) === (pr.art || null) && it.layout === pr.layout && lo(it.panels[0]) === pr.a && (pr.layout === "single" || lo(it.panels[1]) === pr.b) && lo(it.capTop) === pr.caps && lo(it.capBottom) === pr.caps;
+    }
+    function renderPresets() {
+      if (!presetBox) return;
+      presetBox.innerHTML = '<p class="eyebrow">Sanchez Custom</p><p class="xsmall muted">Off-the-shelf bags. Tap one to try it on the preview.</p>' +
+        '<div class="presets__grid" role="group" aria-label="Sanchez Custom colourways">' + PRESETS.map(function (pr) {
+          return '<button class="preset" type="button" data-preset="' + pr.id + '" aria-pressed="' + presetOn(pr) + '" title="' + esc(pr.name) + '">' +
+            '<span class="preset__chip" aria-hidden="true">' + (pr.art === "tigerfull" ? '<i style="background:#f7f7f2"></i><i style="background:#b4402e url(assets/bag3d/tiger.png) center/cover"></i>' : pr.art && window.SZ_ART ? '<i style="background:url(' + SZ_ART.url(pr.art, 160, 80) + ') center/cover"></i>' : '<i style="background:' + pr.a + '"></i>' + (pr.b ? '<i style="background:' + pr.b + '"></i>' : "")) + "</span>" +
+            '<span class="preset__name">' + esc(pr.name) + "</span></button>";
+        }).join("") + "</div>";
+    }
+    if (presetBox) presetBox.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-preset]"); if (!b) return;
+      var pr = PRESETS.filter(function (x) { return x.id === b.getAttribute("data-preset"); })[0];
+      c.item.layout = pr.layout; c.item.panels = [pr.a, pr.b || pr.a, c.item.panels[2]];
+      c.item.capTop = pr.caps; c.item.capBottom = pr.caps; c.item.art = pr.art || null;
+      CONFIG.save(c); renderStep(false);
+    });
     function renderPreview() {
-      stage.innerHTML = BAG.render(c, { view: view, human: STEPS[c.step].id === "size" });
+      renderPresets();
+      var ro = { view: view, human: STEPS[c.step].id === "size" }, is3d = BAG.has3d(c, ro);
+      var toggle = $(".cfg__view-toggle", root);
+      if (is3d) {
+        if (toggle) toggle.hidden = true;
+        stage.setAttribute("data-3d", ""); stage.style.aspectRatio = "";
+        if (!stage.__viewer) {
+          stage.innerHTML = ""; stage.__viewer = "pending";
+          import("./assets/bag3d/viewer.js").then(function (m) {
+            try { stage.__viewer = m.createBagViewer(stage); SZ._redraw3d = function () { if (stage.__viewer && stage.__viewer.update) stage.__viewer.update(BAG.state3d(c)); }; SZ._redraw3d(); }
+            catch (err) { stage.__viewer = null; stage.removeAttribute("data-3d"); if (toggle) toggle.hidden = false; stage.innerHTML = BAG.render(c, ro); }
+          }).catch(function () { stage.__viewer = null; stage.removeAttribute("data-3d"); if (toggle) toggle.hidden = false; stage.innerHTML = BAG.render(c, ro); });
+        } else if (stage.__viewer.update) stage.__viewer.update(BAG.state3d(c));
+      } else {
+        if (stage.__viewer && stage.__viewer.dispose) stage.__viewer.dispose();
+        stage.__viewer = null; stage.removeAttribute("data-3d"); if (toggle) toggle.hidden = false;
+        stage.innerHTML = BAG.render(c, ro); stage.style.aspectRatio = "";
+      }
+      var lbl = $("[data-cfg-preview-label]", root); if (lbl) lbl.textContent = is3d ? "3D preview. Drag to rotate, scroll to zoom" : "2D preview";
       preview.setAttribute("data-vibe", c.brand.vibe);
     }
     function renderNav() {
@@ -1405,4 +1489,50 @@
     document.documentElement.classList.add("js");
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+})();
+
+/* ---- Smooth scrolling (Lenis, vendored in assets/vendor/lenis, MIT) --------------------------
+   Loaded from here so every page gets it without editing each HTML file. Off for reduced motion
+   and on touch devices (native scrolling is better there). 3D stages, dialogs and drawers keep their
+   own wheel handling via `prevent`, so orbit-zoom on the bags still works. */
+(function () {
+  if (window.__szLenis) return; window.__szLenis = true;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var touch = window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  if (reduce || touch) return;
+  var cur = document.currentScript && document.currentScript.src, base = cur ? cur.replace(/app\.js.*$/, "") : "";
+  var css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + "assets/vendor/lenis/lenis.css"; document.head.appendChild(css);
+  var s = document.createElement("script"); s.src = base + "assets/vendor/lenis/lenis.min.js";
+  s.onload = function () {
+    if (!window.Lenis) return;
+    var lenis = new window.Lenis({
+      duration: 1.15,
+      easing: function (t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); },   /* expo-out, the same family as the hero's ease */
+      smoothWheel: true, wheelMultiplier: 0.95, anchors: { offset: -80 },
+      prevent: function (node) { return !!(node.closest && node.closest("[data-cfg-stage], [data-pb-view], canvas, dialog, .drawer, .modal, [data-lenis-prevent]")); }
+    });
+    function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+    window.SZ = window.SZ || {}; window.SZ.lenis = lenis;
+  };
+  document.head.appendChild(s);
+})();
+
+/* ---- GSAP (vendored in assets/vendor/gsap, v3.15, GSAP Standard "no charge" licence) --------------------
+   Loads the core + ScrollTrigger on every page and registers them, so any page can use window.gsap.
+   Other plugins (SplitText, DrawSVG, Flip, CustomEase...) are in the same folder: add them the same way. */
+(function () {
+  if (window.__szGsap) return; window.__szGsap = true;
+  var cur = document.currentScript && document.currentScript.src, base = cur ? cur.replace(/app\.js.*$/, "") : "";
+  function load(src, cb) { var s = document.createElement("script"); s.src = base + "assets/vendor/gsap/" + src; s.onload = cb; document.head.appendChild(s); }
+  load("gsap.min.js", function () {
+    load("ScrollTrigger.min.js", function () {
+      if (!window.gsap || !window.ScrollTrigger) return;
+      gsap.registerPlugin(ScrollTrigger);
+      /* keep ScrollTrigger in sync with Lenis smooth scrolling */
+      var hook = function () { if (window.SZ && SZ.lenis) { SZ.lenis.on("scroll", ScrollTrigger.update); return true; } return false; };
+      if (!hook()) { var n = 0, t = setInterval(function () { if (hook() || ++n > 40) clearInterval(t); }, 150); }
+      document.dispatchEvent(new CustomEvent("sz:gsap-ready"));
+    });
+  });
 })();

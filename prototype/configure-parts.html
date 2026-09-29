@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Build by parts | Sanchez Custom Boxing Equipment</title>
+  <meta name="description" content="Design a bag part by part: both sides, the four straps, the waistbands, the badge, the stitching and the hardware, in 3D.">
+  <meta name="theme-color" content="#0e0b09">
+  <link rel="icon" href="../media-scrape/other/3d2aa4_667e005177ab4313add5e21aa0bdfd69~mv2.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="parts.css">
+  <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
+  <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
+  <script src="app.js" defer></script>
+</head>
+<body data-page="configure-parts">
+<header class="site-header" data-chrome="header"></header>
+
+<main id="main" tabindex="-1">
+  <div class="pb">
+    <section class="pb__stage" aria-label="3D bag">
+      <div class="pb__badge">3D · click a part or pick it from the list</div>
+      <div class="pb__view" data-pb-view></div>
+      <div class="pb__fallback" data-pb-fallback hidden>
+        <p><strong>3D preview needs WebGL.</strong> Your browser can't show it. You can still choose every part on the right, and the choices are saved.</p>
+      </div>
+      <div class="pb__tools">
+        <button type="button" class="pb__pill" data-pb-explode aria-pressed="false">Pull apart</button>
+        <button type="button" class="pb__pill" data-pb-recentre>Reset view</button>
+      </div>
+    </section>
+
+    <section class="pb__panel" aria-label="Part controls">
+      <div class="pb__head">
+        <p class="pb__eyebrow">Build by parts</p>
+        <div class="pb__progress"><span data-pb-count>Part 1 of 13</span><span class="pb__link"><a href="configure.html">Quick colourways instead</a></span></div>
+        <div class="pb__bar" aria-hidden="true"><i data-pb-bar></i></div>
+      </div>
+
+      <div class="pb__card" data-pb-card aria-live="polite"></div>
+
+      <nav aria-label="Bag parts" class="pb__nav" data-pb-nav></nav>
+
+      <div class="pb__row">
+        <div class="pb__label">Bag length</div>
+        <div class="pb__seg" role="group" aria-label="Bag length" data-pb-length>
+          <button type="button" data-ft="3" aria-pressed="false">3 ft</button>
+          <button type="button" data-ft="4" aria-pressed="true">4 ft</button>
+          <button type="button" data-ft="5" aria-pressed="false">5 ft</button>
+        </div>
+      </div>
+
+      <div class="pb__row">
+        <div class="pb__label">Start from a colourway <span class="pb__hint">(sets every part, then change any you like)</span></div>
+        <div class="pb__presets" data-pb-presets></div>
+      </div>
+
+      <div class="pb__foot">
+        <button type="button" class="pb__ghost" data-pb-reset>Start over</button>
+        <button type="button" class="pb__ghost" data-pb-copy>Copy spec</button>
+        <span class="pb__status" data-pb-status role="status"></span>
+      </div>
+    </section>
+  </div>
+
+  <div class="pb__bar-sticky" role="region" aria-label="Steps">
+    <div class="pb__summary" data-pb-summary></div>
+    <div class="pb__steps">
+      <button type="button" class="pb__btn pb__btn--sec" data-pb-prev aria-label="Previous part">&larr;</button>
+      <button type="button" class="pb__btn" data-pb-next>Next part &rarr;</button>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer" data-chrome="footer"></footer>
+<script type="module" src="parts.js"></script>
+</body>
+</html>

@@ -11,7 +11,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="configure-premium.css">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
+  <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
+  <script src="assets/bag3d/art.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body data-page="configure">
@@ -26,7 +29,7 @@
       <form class="cfg" novalidate aria-label="Bag configurator">
         <div class="cfg__preview" data-cfg-preview data-vibe="oldschool">
           <div class="cfg__preview-label">
-            <span class="badge">3D preview (production: React Three Fiber). 2D fallback shown</span>
+            <span class="badge" data-cfg-preview-label>3D render preview</span>
           </div>
           <div class="cfg__stage" data-cfg-stage></div>
           <div class="cfg__view-toggle cluster" role="group" aria-label="Preview side" style="--cluster-gap:var(--space-1)">
@@ -50,6 +53,7 @@
               <button class="btn btn--ghost btn--sm" type="button" data-cfg-reset><svg class="icon" aria-hidden="true"><use href="#i-rotate"></use></svg>Start over</button>
             </span>
           </div>
+          <div class="presets" data-cfg-presets></div>
           <div data-cfg-panel></div>
         </div>
       </form>
