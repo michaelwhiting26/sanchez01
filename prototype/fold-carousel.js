@@ -78,10 +78,10 @@ function start(root) {
     const a = Math.abs(o), s = o < 0 ? -1 : 1, fold = sm(0, 1, a), phi = FOLD_MAX * fold;             /* hinge angle: 0 flat .. ~115 degrees (back showing) */
     const hinge = s * (-ASPECT / 2 + Math.min(a, 1) * (ASPECT + GAP)) + s * Math.max(0, a - 1) * PITCH;   /* the card's inner edge (the door hinge): under the centre card at a=0, one slot out at a=1 */
     const along = ASPECT / 2, cosP = Math.cos(phi), sinP = Math.sin(phi);
-    m.position.set(hinge + s * along * cosP, 0, -along * sinP + Math.max(0, a - 1) * 0.42);          /* swings about the inner edge; deeper cards curl back toward the lens */
+    m.position.set(hinge + s * along * cosP, 0, -along * sinP + Math.max(0, a - 1) * 0.3);          /* swings about the inner edge; deeper cards curl back toward the lens */
     m.rotation.y = s * phi;
-    const u = m.material.uniforms; u.uFold.value = fold; u.uSide.value = s; u.uOpacity.value = 1 - 0.55 * sm(2.2, 3.4, a);
-    m.renderOrder = -Math.round(a * 10); m.visible = a < 3.6;
+    const u = m.material.uniforms; u.uFold.value = fold; u.uSide.value = s; u.uOpacity.value = 1 - sm(1.7, 2.5, a);
+    m.renderOrder = -Math.round(a * 10); m.visible = a < 2.6;                                                   /* the deepest card fades out before it can grow past the frame */
   }
 
   /* ---- state: pos is the (fractional) index at the centre; an exact critically damped spring settles it on the target ---- */
