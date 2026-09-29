@@ -16,31 +16,37 @@
     var spacing = 0, offset = 0, dir = -1, vel = 0, drag = false, lastX = 0;
     /* The stars: the text keeps a (transparent) star character so spacing and scrolling are unchanged, and the red 3D sparkle sprite is laid over each one,
        following the curve and its tilt. */
-    var STAR = "\u2726", SPRITE = root.getAttribute("data-star") || "assets/brand/sparkle-3d.png", FS = 64, SIZE = 60, stars = [];
+    var STAR = "\u2726", SPRITE = root.getAttribute("data-star") || "assets/brand/sparkle-3d.png", FS = 64, SIZE = 66, stars = [], plen = 0;
+    /* Placement is arithmetic, not browser queries (iPhone Safari answers getStartPositionOfChar on curved text unreliably): each star's distance along the
+       curve = scroll offset + (repeat number x text width) + (width of the text before it) + half its own width, measured once on the hidden straight copy. */
     function build(n) {
       while (tp.firstChild) tp.removeChild(tp.firstChild);
       stars.forEach(function (st) { if (st.img.parentNode) st.img.parentNode.removeChild(st.img); }); stars = [];
-      var idx = 0;
-      for (var k = 0; k < n; k++) text.split(STAR).forEach(function (piece, i, arr) {
-        if (piece) { tp.appendChild(document.createTextNode(piece)); idx += piece.length; }
-        if (i < arr.length - 1) {
-          var ts = document.createElementNS(NS, "tspan"); ts.setAttribute("fill-opacity", "0"); ts.textContent = STAR; tp.appendChild(ts);
-          var img = document.createElementNS(NS, "image"); img.setAttribute("href", SPRITE); img.setAttribute("width", SIZE); img.setAttribute("height", SIZE); img.style.pointerEvents = "none"; img.style.display = "none";
-          img.addEventListener("error", (function (tsp, im) { return function () { tsp.setAttribute("fill-opacity", "1"); im.remove(); }; })(ts, img));
-          svg.appendChild(img); stars.push({ idx: idx, img: img }); idx += 1;
-        }
-      });
+      var pieces = text.split(STAR);
+      for (var k = 0; k < n; k++) {
+        var at = 0;
+        pieces.forEach(function (piece, i) {
+          if (piece) { tp.appendChild(document.createTextNode(piece)); at += piece.length; }
+          if (i < pieces.length - 1) {
+            var ts = document.createElementNS(NS, "tspan"); ts.setAttribute("fill-opacity", "0"); ts.textContent = STAR; tp.appendChild(ts);
+            var before = at ? measure.getSubStringLength(0, at) : 0, adv = measure.getSubStringLength(at, 1);
+            var img = document.createElementNS(NS, "image"); img.setAttribute("href", SPRITE); img.setAttribute("width", SIZE); img.setAttribute("height", SIZE); img.style.pointerEvents = "none"; img.style.display = "none";
+            img.addEventListener("error", (function (tsp, im) { return function () { tsp.setAttribute("fill-opacity", "1"); im.remove(); }; })(ts, img));
+            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img }); at += 1;
+          }
+        });
+      }
+      plen = path.getTotalLength();
     }
     function place() {
       for (var i = 0; i < stars.length; i++) {
-        var st = stars[i];
-        try {
-          var sp = tp.getStartPositionOfChar(st.idx), rot = tp.getRotationOfChar(st.idx), adv = tp.getSubStringLength(st.idx, 1);
-          if (sp.x < -80 || sp.x > 1520) { st.img.style.display = "none"; continue; }
-          var r = rot * Math.PI / 180, dx = adv / 2, dy = -0.34 * FS;                       /* centre of the glyph: half its advance along the baseline, a third of an em above it */
-          var cx = sp.x + dx * Math.cos(r) - dy * Math.sin(r), cy = sp.y + dx * Math.sin(r) + dy * Math.cos(r);
-          st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ") rotate(" + rot.toFixed(2) + ") translate(" + (-SIZE / 2) + " " + (-SIZE / 2) + ")"); st.img.style.display = "";
-        } catch (e) { st.img.style.display = "none"; }
+        var st = stars[i], d = offset + st.d0;
+        if (d < 0 || d > plen) { st.img.style.display = "none"; continue; }
+        var p0 = path.getPointAtLength(d), pa = path.getPointAtLength(Math.max(0, d - 2)), pb = path.getPointAtLength(Math.min(plen, d + 2));
+        var rot = Math.atan2(pb.y - pa.y, pb.x - pa.x), c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
+        var cx = p0.x + up * sn, cy = p0.y - up * c;
+        if (cx < -80 || cx > 1520) { st.img.style.display = "none"; continue; }
+        st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ") rotate(" + (rot * 180 / Math.PI).toFixed(2) + ") translate(" + (-SIZE / 2) + " " + (-SIZE / 2) + ")"); st.img.style.display = "";
       }
     }
     function setup() {
