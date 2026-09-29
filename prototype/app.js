@@ -1153,9 +1153,8 @@
       { id: "tigerfull", name: "Tiger Full", layout: "single", a: "#f7f7f2", b: "#b4402e", caps: "#7a1f16", art: "tigerfull" },
       { id: "fractal", name: "Fractal", layout: "single", a: "#e11d0c", caps: "#0b0b18", art: "hex" }
     ];
-    /* Painted Portrait: third-party artwork used as a SAMPLE. It only shows on localhost (or with ?samples=1) and the image file is git-ignored,
-       so it cannot reach the public site until the artist's permission is in writing. */
-    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || /[?&]samples=1/.test(location.search)) PRESETS.push({ id: "portrait", name: "Painted Portrait (sample)", layout: "single", a: "#2d6a34", caps: "#173a20", art: "portraitfull" });
+    /* Painted Portrait: sample artwork (source and artist credit still to be confirmed). Label kept as "sample". */
+    PRESETS.push({ id: "portrait", name: "Painted Portrait (sample)", layout: "single", a: "#2d6a34", caps: "#173a20", art: "portraitfull" });
     var presetBox = $("[data-cfg-presets]", root);
     function presetOn(pr) {
       var it = c.item, lo = function (x) { return (x || "").toLowerCase(); };

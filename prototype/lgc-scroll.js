@@ -25,6 +25,7 @@
   function tick(now) {
     if (!live) return;
     var n = total(), cur = current();
+    if (n > 1 && track.__steps !== n) { track.__steps = n; track.style.setProperty("--lgc-steps", n - 1); }   /* track length follows the slide count */
     if (n > 1 && cur >= 0 && !hold) {
       var want = Math.min(n - 1, Math.round(Math.min(1, progress() / REACH) * (n - 1)));
       if (want !== cur && now - lastPress > GAP) { press(want > cur ? 1 : -1); lastPress = now; }

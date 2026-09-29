@@ -5,7 +5,8 @@
   if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
   var host = document.querySelector("[data-lgc]"); if (!host) return;
   var stage = host.parentElement;   /* the carousel re-renders its own box, so the ruler lives on the section around it */
-  var NS = "http://www.w3.org/2000/svg", CM = 36, N = 6, W = CM * N + 36, H = 54, AX = 38;   /* AX = axis y inside the svg */
+  function itemCount() { try { return JSON.parse(host.getAttribute("data-items")).length || 6; } catch (e) { return 6; } }
+  var NS = "http://www.w3.org/2000/svg", CM = 36, N = itemCount(), W = CM * N + 36, H = 54, AX = 38;   /* AX = axis y inside the svg */
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var wrap = document.createElement("div"); wrap.className = "lgc-ruler"; wrap.setAttribute("aria-hidden", "true");
