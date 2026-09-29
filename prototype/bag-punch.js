@@ -52,9 +52,9 @@ function start(root) {
   }
   /* ---- products: the slots the left / right buttons cycle through. Add a product here and it appears in the switcher. ---- */
   const PRODUCTS = [
-    { id: "tiger", name: "Tiger", sub: "Heavy bag", kind: "bag", art: "tigerfull", trim: 0xffffff, bump: 1.4 },
-    { id: "portrait", name: "Painted Portrait", sub: "Heavy bag · sample", kind: "bag", art: "portraitfull", trim: 0x1f4d2b, bump: 0.5 },
-    { id: "glove", name: "Glove", sub: "Placeholder", kind: "glove", mid: 0.86 }
+    { id: "tiger", name: "Tiger", sub: "Heavy bag", kind: "bag", art: "tigerfull", trim: 0xffffff, bump: 1.4, order: ["Order this bag", "product.html"], build: "configure.html?preset=tigerfull" },
+    { id: "portrait", name: "Painted Portrait", sub: "Heavy bag · sample", kind: "bag", art: "portraitfull", trim: 0x1f4d2b, bump: 0.5, order: ["Order this bag", "product.html"], build: "configure.html?preset=portrait" },
+    { id: "glove", name: "Glove", sub: "Placeholder", kind: "glove", mid: 0.86, order: ["Ask about gloves", "contact.html"], build: "contact.html" }
   ];
   let cur = 0;
 
@@ -151,7 +151,8 @@ function start(root) {
   }
   const go = (d) => show((cur + d + PRODUCTS.length) % PRODUCTS.length);
   /* the buttons, name and dots */
-  const ui = (i) => { if (nameEl) nameEl.textContent = PRODUCTS[i].name; if (subEl) subEl.textContent = PRODUCTS[i].sub; dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false")); };
+  const orderEl = root.querySelector("[data-product-order]"), buildEl = root.querySelector("[data-product-build]");
+  const ui = (i) => { const P = PRODUCTS[i]; if (orderEl) { orderEl.textContent = P.order[0]; orderEl.setAttribute("href", P.order[1]); } if (buildEl) { buildEl.setAttribute("href", P.build); buildEl.textContent = P.kind === "bag" ? "Build yourself" : "Design a glove"; } if (nameEl) nameEl.textContent = PRODUCTS[i].name; if (subEl) subEl.textContent = PRODUCTS[i].sub; dots.forEach((d, k) => d.setAttribute("aria-current", k === i ? "true" : "false")); };
   const nameEl = root.querySelector("[data-product-name]"), subEl = root.querySelector("[data-product-sub]"), dots = [...root.querySelectorAll("[data-product-dot]")];
   root.querySelector("[data-product-prev]")?.addEventListener("click", () => go(-1));
   root.querySelector("[data-product-next]")?.addEventListener("click", () => go(1));

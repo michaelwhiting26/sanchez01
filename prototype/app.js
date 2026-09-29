@@ -1346,6 +1346,9 @@
     $("[data-cfg-id]", root).textContent = c.configId;
     document.addEventListener("sz:currency", renderBar);
     if (CONFIG.isSkipped(c, STEPS[c.step])) c.step = 0;
+    /* ?preset=<id> (from the home page "Build yourself" button): start the configurator from that bag */
+    (function () { var q = param("preset"); var pr = q && PRESETS.filter(function (x) { return x.id === q; })[0]; if (!pr) return;
+      c.item.layout = pr.layout; c.item.panels = [pr.a, pr.b || pr.a, c.item.panels[2]]; c.item.capTop = pr.caps; c.item.capBottom = pr.caps; c.item.art = pr.art || null; CONFIG.save(c); })();
     renderStep(false);
     if (c.brand.logoSessionOnly && !SZ._logoCache) SZ.toast("Your large logo file was kept for the last session only. Please upload it again.", "warning", 6000);
   }

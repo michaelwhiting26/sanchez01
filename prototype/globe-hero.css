@@ -263,3 +263,9 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 .bag-punch__dots button[aria-current="true"] { background: #c4553a; border-color: #c4553a; transform: scale(1.25); }
 .bag-punch__hint { inset-block-end: clamp(14px, 3vh, 30px) !important; }
 @media (max-width: 600px) { .bag-punch__arrow { inline-size: 44px; block-size: 44px; } }
+
+/* Order / Build buttons under the product name (they follow the product on screen) */
+.bag-punch__cta { display: flex; justify-content: center; gap: 12px; margin-block-start: 18px; pointer-events: auto; flex-wrap: wrap; }
+.bag-punch__cta .btn { min-inline-size: 9.5rem; }
+.bag-punch__label { inset-block-end: clamp(58px, 10vh, 100px); }
+.bag-punch__hint { display: none; }
