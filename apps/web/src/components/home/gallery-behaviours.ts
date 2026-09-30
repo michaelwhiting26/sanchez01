@@ -109,6 +109,17 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     e.preventDefault();
     push(260, e.key === "ArrowUp" || e.key === "PageUp" || e.key === "Home" ? -1 : 1);
   };
+  // The Skip button (bottom left while the page is held) fires this: release the page and carry on past the gallery.
+  const skipNow = (): void => {
+    if (auto !== "running") return;
+    skip = true;
+    unlock();
+    auto = "done";
+    window.dispatchEvent(new CustomEvent("gallery:autoplay-done", { detail: { skipped: true } }));
+    const trackBottom = track.getBoundingClientRect().bottom + window.scrollY;
+    window.scrollTo({ top: Math.max(0, trackBottom - window.innerHeight * 0.55), behavior: "smooth" });
+  };
+  window.addEventListener("gallery:skip", skipNow);
   const holdPos = (): void => {
     if (Math.abs(window.scrollY - lockY) > 1) window.scrollTo(0, lockY);
   };
@@ -228,6 +239,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
   window.addEventListener("scroll", release, { passive: true });
   return () => {
     dead = true;
+    window.removeEventListener("gallery:skip", skipNow);
     unlock();
     live = false;
     cancelAnimationFrame(raf);

@@ -606,7 +606,7 @@ html.gallery-locked { overscroll-behavior: none; }
 .globe-slot { display: none; }
 @media (min-width: 0px) {
   .globe-slot { display: flex; flex-direction: column; align-items: center; margin-block: 28px 8px; --bag-h: 300px; }
-  .globe-slot .footer-globe { position: relative; z-index: 2; }
+  .globe-slot .footer-globe { position: relative; z-index: 2; margin-inline: auto; }   /* centred above the bag (the base rule pushes it right on wide screens) */
   .globe-bag { display: block; block-size: var(--bag-h); inline-size: auto; margin-block-start: calc(var(--bag-h) * -0.173); position: relative; z-index: 1; pointer-events: none; user-select: none; filter: drop-shadow(0 18px 26px rgb(0 0 0 / .5)); }
   .rise__bag { display: none; }
 }
@@ -672,3 +672,19 @@ html.gallery-locked { overscroll-behavior: none; }
 .bag-punch__cta { margin-block-start: 30px; }
 .bag-punch__cta--again { margin-block-start: 20px; }
 @media (max-width: 600px) { .bag-punch { --cta-zone: 440px; } }
+
+/* Skip: bottom left, shown only while the gallery holds the page (html.gallery-locked) */
+.gallery-skip { display: none; position: fixed; z-index: 70; inset-inline-start: clamp(16px, 3vw, 36px); inset-block-end: clamp(16px, 3vh, 34px); align-items: center; gap: 10px; padding: 14px 24px; border: 1px solid rgb(243 234 220 / .35); border-radius: 999px; background: rgb(14 11 9 / .6); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #f3eadc; cursor: pointer; font: 500 .8rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .24em; text-indent: .24em; text-transform: uppercase; transition: background .3s ease, color .3s ease, border-color .3s ease; }
+.gallery-skip::after { content: ""; inline-size: 7px; block-size: 7px; border-block-start: 1.5px solid currentColor; border-inline-end: 1.5px solid currentColor; transform: rotate(45deg); margin-inline-start: -4px; }
+html.gallery-locked .gallery-skip { display: inline-flex; }
+.gallery-skip:hover, .gallery-skip:focus-visible { background: #f3eadc; color: #0e0b09; border-color: #f3eadc; outline: none; }
+
+/* Bag section text block: lifted up off the bottom edge, with room to breathe between every line and button */
+.bag-punch { --cta-zone: 500px; }
+.bag-punch__label { inset-block-end: clamp(120px, 18vh, 190px); }
+.bag-punch__name { margin-block-end: 10px; }
+.bag-punch__price { margin-block: 16px 0; }
+.bag-punch__dots { margin-block-start: 24px; }
+.bag-punch__cta { margin-block-start: 38px; gap: 22px; }
+.bag-punch__cta--again { margin-block-start: 26px; }
+@media (max-width: 600px) { .bag-punch { --cta-zone: 560px; } }

@@ -69,6 +69,9 @@ export function WorkshopGallery() {
 
   return (
     <div className="lgc-track" data-lgc-track ref={trackRef}>
+      <button className="gallery-skip" type="button" onClick={() => window.dispatchEvent(new CustomEvent("gallery:skip"))}>
+        Skip
+      </button>
       <section className="lgc-section" aria-label="From the workshop" ref={pinRef}>
         <div
           className="lgc"
