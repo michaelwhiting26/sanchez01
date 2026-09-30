@@ -66,3 +66,17 @@
   .bd__bar { inset-inline-start: 0; }
   .bd__caption { font-size: 18px; inset-block-end: 40px; }
 }
+
+/* More from Sanchez carousel (product page) */
+.pg__more { margin-block-start: 44px; min-inline-size: 0; }
+.pg__more-title { margin: 0 0 16px; font: 700 12px/1 var(--nf-text, Barlow, sans-serif); letter-spacing: .3em; text-transform: uppercase; color: #e8a85a; }
+.pg__rail { list-style: none; margin: 0 -24px; padding: 4px 24px 12px; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 24px; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+.pg__card { flex: 0 0 70vw; max-inline-size: 300px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid rgb(243 234 220 / .2); background: rgb(243 234 220 / .03); }
+.pg__card-media { display: grid; place-items: center; aspect-ratio: 1; background: rgb(243 234 220 / .05); overflow: hidden; font: 800 28px/1 var(--nf-display, "Barlow Condensed", sans-serif); letter-spacing: .04em; text-transform: uppercase; color: rgb(243 234 220 / .35); }
+.pg__card-media img { inline-size: 100%; block-size: 100%; object-fit: contain; }
+.pg__card-name { margin: 6px 0 0; font: 700 22px/1.1 var(--nf-display, "Barlow Condensed", sans-serif); letter-spacing: .04em; text-transform: uppercase; }
+.pg__card-sub { margin: 0; font-size: 13px; line-height: 1.4; color: rgb(243 234 220 / .6); }
+.pg__card-price { margin: 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
+.pg__card-btn { margin-block-start: auto; min-block-size: 48px; padding-inline: 16px; text-align: center; }
+.pg__rail:focus-visible, .pg__card-btn:focus-visible, .pg__btn:focus-visible { outline: 2px solid #e8a85a; outline-offset: 3px; }
+.pg__sr { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

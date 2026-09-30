@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { PageShell } from "@/components/pages/PageShell";
+import { MoreFromSanchez } from "@/components/pages/MoreFromSanchez";
 import { BAG_PRODUCTS, priceLabel } from "@/lib/bag/products";
 
 export const metadata = { title: "The bag | Sanchez Custom Boxing" };
 
-/** The bag: what it is, its price line (marked placeholder until confirmed), and the way onward (build it, or join the waitlist). */
+/** The bag: what it is, its price line (marked placeholder until confirmed), and the way onward (build it), and the rest of the range. */
 export default function ProductPage() {
   const first = BAG_PRODUCTS[0];
   const price = priceLabel(first?.price ?? null);
@@ -17,10 +18,8 @@ export default function ProductPage() {
         <Link className="pg__btn" href="/configure">
           Build yourself
         </Link>
-        <Link className="pg__btn pg__btn--ghost" href="/#waitlist">
-          Join the waitlist
-        </Link>
       </div>
+      <MoreFromSanchez />
     </PageShell>
   );
 }
