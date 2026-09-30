@@ -19,3 +19,6 @@ Steps: 1 timeline.ts+tests (?heroT freeze) 2 reorder clouds [CP1] 3 runner atlas
 
 ## Added 30 Sep 2026: DNA spine (after the hero intro)
 8. Site as one 3D space built around a DNA helix on the page's centre axis, start to finish; existing elements attach to its turn. Candidates: Lenis (smooth scroll, ~/Code/libraries/lenis) + GSAP ScrollTrigger + three.js. Proof of concept first (2 sections), then attach the rest.
+
+## Clarification 30 Sep 2026: items 7 + 8 are ONE system
+The hero->page-2 flow (left to the arch horizon, left edge, then down) is the front-on view of everything orbiting the DNA centre axis in 3D. Build the seam and the DNA spine together: extend the field's existing orbit (ORBIT.axis, shared flow P) from the gallery to the whole stretch, helix on the same centre line. Tan waves keep their look; only the path changes.
