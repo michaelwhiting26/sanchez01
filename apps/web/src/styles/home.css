@@ -656,3 +656,6 @@ html.gallery-locked { overscroll-behavior: none; }
 
 /* the film flows on down through the gallery's entry: the section's backdrop is see-through (slides stay above, at z-index 2), so the film and hero field carry on below the old hard edge */
 .lgc-track .lgc-section { background: transparent !important; }
+
+/* the second, centred order button on its own row */
+.bag-punch__cta--again { margin-block-start: 16px; }

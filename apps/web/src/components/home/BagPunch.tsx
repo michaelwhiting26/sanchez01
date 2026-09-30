@@ -140,6 +140,11 @@ export function BagPunch() {
             {build.label}
           </a>
         </div>
+        <div className="bag-punch__cta bag-punch__cta--again">
+          <a className="bag-punch__btn" href={order.href}>
+            Seriously, order the {still ? still.name.toLowerCase() : "bag"}
+          </a>
+        </div>
       </div>
       {isBags && (
         <p className="bag-punch__hint" aria-hidden="true">
