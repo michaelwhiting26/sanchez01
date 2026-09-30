@@ -48,7 +48,7 @@ export function BagPunch() {
   const optionsRef = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(0);
   const [fallback, setFallback] = useState(false);
-  const [category, setCategory] = useState<CategoryId>("bags");
+  const [category, setCategory] = useState<CategoryId | null>(null); // nothing chosen until the visitor picks: "Choose a product" leads
 
   useEffect(() => {
     const root = rootRef.current;
@@ -182,22 +182,32 @@ export function BagPunch() {
 
   const product = BAG_PRODUCTS[index] ?? BAG_PRODUCTS[0];
   if (!product) return null;
+  const chosen = category !== null;
   const isBags = category === "bags";
-  const still = isBags ? null : STILLS[category];
+  const still = category && category !== "bags" ? STILLS[category] : null;
+  // picking a product reveals it and carries the visitor down to it (the spiral runs on into the bag)
+  const choose = (id: CategoryId): void => {
+    const first = category === null;
+    setCategory(id);
+    if (first && rootRef.current) {
+      const top = rootRef.current.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+  };
   const name = still ? still.name : product.name;
   const sub = still ? still.sub : product.sub;
   const order = still ? still.order : product.order;
   const build = still ? still.build : product.build;
-  const catIndex = CATEGORIES.findIndex((c) => c.id === category);
+  const catIndex = chosen ? CATEGORIES.findIndex((c) => c.id === category) : 0;
 
   return (
     <>
       <section className="sz-options" aria-label="Choose a product" ref={optionsRef}>
         <p className="sz-options__label">Choose a product</p>
         <div className="sz-options__rail">
-          <div className="bag-punch__cats" role="tablist" aria-label="Product type" style={{ "--i": catIndex, "--n": CATEGORIES.length } as CSSProperties}>
+          <div className="bag-punch__cats" role="tablist" aria-label="Product type" data-empty={chosen ? undefined : ""} style={{ "--i": catIndex, "--n": CATEGORIES.length } as CSSProperties}>
             {CATEGORIES.map((c) => (
-              <button key={c.id} type="button" role="tab" aria-selected={c.id === category} onClick={() => setCategory(c.id)}>
+              <button key={c.id} type="button" role="tab" aria-selected={c.id === category} onClick={() => choose(c.id)}>
                 {c.label}
               </button>
             ))}
@@ -206,7 +216,10 @@ export function BagPunch() {
       </section>
       <div className="sz-handoff" aria-hidden="true" data-handoff="" />
     <section
-      className={`bag-punch${fallback ? " is-fallback" : ""}${isBags ? "" : " is-still"}`}
+      className="bag-punch" /* constant: the engine and the reveal observer add their own classes (is-ready, is-revealed, was-hit), which a changing className would wipe */
+      data-fallback={fallback ? "" : undefined}
+      data-unchosen={chosen ? undefined : ""}
+      data-still={still ? "" : undefined}
       data-bag-punch=""
       aria-label="Punch the bag"
       ref={rootRef}
@@ -222,6 +235,11 @@ export function BagPunch() {
       }}
     >
       <div className="bag-punch__view" data-bag-view="" ref={hostRef} />
+      {!chosen && (
+        <button type="button" className="bag-punch__pick" onClick={() => document.querySelector(".sz-options")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+          Choose a product above
+        </button>
+      )}
       {still && (
         <div className="bag-punch__still" key={category}>
           {still.image ? <img src={still.image.src} alt={still.image.alt} width={1400} height={1000} decoding="async" /> : <p>PLACEHOLDER: {still.name.toLowerCase()} render to come</p>}
