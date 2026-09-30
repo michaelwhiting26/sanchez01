@@ -65,6 +65,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
   let lastBump = 0;
   let touchY = 0;
   let skip = false;
+  let ff = false; // the Skip button is fast-forwarding to the last slide: hold the page until it gets there
   const bump = (dir: number, k: number): void => {
     const d = 5 + 30 * Math.min(1, k);
     pin.style.transition = "transform 70ms ease-out";
@@ -109,15 +110,28 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     e.preventDefault();
     push(260, e.key === "ArrowUp" || e.key === "PageUp" || e.key === "Home" ? -1 : 1);
   };
-  // The Skip button (bottom left while the page is held) fires this: release the page and carry on past the gallery.
+  // The Skip button (bottom right, from slide 2 on, while the page is held): run quickly through the remaining slides to the end of the last one,
+  // hold it for a beat, then release the page and carry on past the gallery.
   const skipNow = (): void => {
-    if (auto !== "running") return;
-    skip = true;
-    unlock();
-    auto = "done";
-    window.dispatchEvent(new CustomEvent("gallery:autoplay-done", { detail: { skipped: true } }));
-    const trackBottom = track.getBoundingClientRect().bottom + window.scrollY;
-    window.scrollTo({ top: Math.max(0, trackBottom - window.innerHeight * 0.55), behavior: "smooth" });
+    if (auto !== "running" || ff) return;
+    ff = true;
+    skip = true; // stops the slow autoplay loop; the page stays locked until the fast run is done
+    void (async () => {
+      const n = total();
+      const t0 = performance.now();
+      while (!dead && current() < n - 1 && performance.now() - t0 < 7000) {
+        const before = current();
+        press(1);
+        for (let w = 0; w < 14 && current() === before; w++) await sleep(45); // wait for the carousel to take the step
+        await sleep(110);
+      }
+      await sleep(600); // a beat on the last slide
+      unlock();
+      auto = "done";
+      window.dispatchEvent(new CustomEvent("gallery:autoplay-done", { detail: { skipped: true } }));
+      const trackBottom = track.getBoundingClientRect().bottom + window.scrollY;
+      window.scrollTo({ top: Math.max(0, trackBottom - window.innerHeight * 0.55), behavior: "smooth" });
+    })();
   };
   window.addEventListener("gallery:skip", skipNow);
   const holdPos = (): void => {
@@ -137,7 +151,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     window.removeEventListener("touchmove", onTouchMove);
     window.removeEventListener("keydown", onKey);
     window.removeEventListener("scroll", holdPos);
-    document.documentElement.classList.remove("gallery-locked");
+    document.documentElement.classList.remove("gallery-locked", "gallery-skippable");
   };
   const sleep = (ms: number): Promise<void> => new Promise((r) => window.setTimeout(r, ms));
   // The film plays live in the gallery itself: when it is first reached the page locks (however hard someone scrolls), the carousel runs the six slides in
@@ -161,7 +175,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
         await sleep(1000); // the carousel's own move to the next slide
       }
     }
-    unlock();
+    if (!ff) unlock();
     if (dead || skip) return; // the reader pushed through: they carry on from wherever they are
     auto = "done";
     window.dispatchEvent(new CustomEvent("gallery:autoplay-done", { detail: { skipped: false } }));
@@ -175,6 +189,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     const cur = current();
     if (auto === "idle" && n > 1 && cur >= 0 && progress() > 0.001) void runAutoplay();
     if (auto === "running") {
+      document.documentElement.classList.toggle("gallery-skippable", cur >= 1 && !ff); // Skip only appears from slide 2
       raf = requestAnimationFrame(tick);
       return;
     }
