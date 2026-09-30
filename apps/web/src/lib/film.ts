@@ -197,29 +197,35 @@ export class FilmHelix {
     const W = w;
     const H = h;
     const unit = Math.min(W, H);
-    // two strips: [start, control, control, end] in screen fractions, and the film's half-width
+    // the pill (the egg) is a tilted ellipse; two strips cradle it. One flows straight down from the top-right corner, hugging its right side and sweeping
+    // under it; the other rises from the bottom-left corner up its left side. Their radius grows toward the ends so they cover the empty corners.
+    const PHI = (-24 * Math.PI) / 180;
+    const cxE = W / 2;
+    const cyE = H / 2;
+    const aE = W * 0.47;
+    const bE = H * 0.36;
     const strips = [
-      { p: [[-0.06, 1.06], [0.16, 0.86], [0.03, 0.6], [0.22, 0.38]] as const, hw: unit * 0.075, ph: 0, dir: 1 },
-      { p: [[1.06, -0.06], [0.82, 0.14], [0.97, 0.36], [0.78, 0.6]] as const, hw: unit * 0.075, ph: 2.1, dir: -1 },
+      { th0: -82, th1: 112, rad: (u: number) => 1.1 + 0.62 * (1 - u) ** 2, hw: unit * 0.075, ph: 0, dir: 1 },
+      { th0: 98, th1: 292, rad: (u: number) => 1.1 + 0.62 * u * u, hw: unit * 0.075, ph: 2.1, dir: -1 },
     ];
     ctx.globalAlpha = k * 0.96;
     for (const st of strips) {
-      const wob = (i: number): { x: number; y: number } => ({
-        x: (st.p[i]?.[0] ?? 0) * W + Math.sin(t * 0.35 + st.ph + i) * unit * 0.018,
-        y: (st.p[i]?.[1] ?? 0) * H + Math.cos(t * 0.3 + st.ph + i * 1.7) * unit * 0.018,
-      });
-      const P0 = wob(0);
-      const P1 = wob(1);
-      const P2 = wob(2);
-      const P3 = wob(3);
       const at = (u: number): { x: number; y: number; tx: number; ty: number } => {
-        const m = 1 - u;
-        const x = m * m * m * P0.x + 3 * m * m * u * P1.x + 3 * m * u * u * P2.x + u * u * u * P3.x;
-        const y = m * m * m * P0.y + 3 * m * m * u * P1.y + 3 * m * u * u * P2.y + u * u * u * P3.y;
-        const tx = 3 * m * m * (P1.x - P0.x) + 6 * m * u * (P2.x - P1.x) + 3 * u * u * (P3.x - P2.x);
-        const ty = 3 * m * m * (P1.y - P0.y) + 6 * m * u * (P2.y - P1.y) + 3 * u * u * (P3.y - P2.y);
+        const th = ((st.th0 + (st.th1 - st.th0) * u) * Math.PI) / 180;
+        const wob = 1 + 0.012 * Math.sin(t * 0.4 + st.ph + u * 6); // the film breathes a little
+        const r = st.rad(u) * wob;
+        const dr = (st.rad(u + 0.001) - st.rad(u - 0.001)) / 0.002;
+        const dth = ((st.th1 - st.th0) * Math.PI) / 180;
+        const lx = aE * r * Math.cos(th);
+        const ly = bE * r * Math.sin(th);
+        const dx = dth * -aE * r * Math.sin(th) + dr * aE * Math.cos(th);
+        const dy = dth * bE * r * Math.cos(th) + dr * bE * Math.sin(th);
+        const cs = Math.cos(PHI);
+        const sn = Math.sin(PHI);
+        const tx = dx * cs - dy * sn;
+        const ty = dx * sn + dy * cs;
         const l = Math.hypot(tx, ty) || 1;
-        return { x, y, tx: tx / l, ty: ty / l };
+        return { x: cxE + lx * cs - ly * sn, y: cyE + lx * sn + ly * cs, tx: tx / l, ty: ty / l };
       };
       const N = 110;
       const run = (scroll * 0.9 * dpr + t * 26 * dpr) * st.dir; // the film runs along its path as you scroll and slowly on its own
