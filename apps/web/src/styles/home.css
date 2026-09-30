@@ -265,15 +265,15 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 .bag-punch__dots button::after { content: ""; position: absolute; inset: -12px; }
 .bag-punch__dots button:hover { background: rgb(243 234 220 / .6); }
 .bag-punch__dots button[aria-current="true"] { inline-size: 22px; border-radius: 3px; background: #c9a45c; }
-.bag-punch__cta { display: flex; justify-content: center; gap: 14px; margin-block-start: 26px; pointer-events: auto; flex-wrap: wrap; }
-.bag-punch__btn { display: inline-flex; align-items: center; justify-content: center; min-block-size: 46px; padding: 0 30px; border: 1px solid #f3eadc; border-radius: 0; background: #f3eadc; color: #0e0b09; text-decoration: none; cursor: pointer;
-  font: 500 .7rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .26em; text-indent: .26em; text-transform: uppercase; transition: background .35s ease, color .35s ease, border-color .35s ease; }
+.bag-punch__cta { display: flex; justify-content: center; gap: 18px; margin-block-start: 26px; pointer-events: auto; flex-wrap: wrap; }
+.bag-punch__btn { display: inline-flex; align-items: center; justify-content: center; min-block-size: 68px; padding: 0 52px; border: 1px solid #f3eadc; border-radius: 0; background: #f3eadc; color: #0e0b09; text-decoration: none; cursor: pointer;
+  font: 500 .95rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .26em; text-indent: .26em; text-transform: uppercase; transition: background .35s ease, color .35s ease, border-color .35s ease; }
 .bag-punch__btn:hover, .bag-punch__btn:focus-visible { background: transparent; color: #f3eadc; outline: none; }
 .bag-punch__btn--ghost { background: transparent; color: #f3eadc; border-color: rgb(243 234 220 / .34); }
 .bag-punch__btn--ghost:hover, .bag-punch__btn--ghost:focus-visible { border-color: #f3eadc; background: rgb(243 234 220 / .06); }
 .bag-punch__btn:focus-visible { outline: 1px solid #c9a45c; outline-offset: 4px; }
 .bag-punch__hint { display: none; }
-@media (max-width: 600px) { .bag-punch__arrow { inline-size: 38px; block-size: 38px; } .bag-punch__btn { padding: 0 22px; min-block-size: 44px; } .bag-punch__cta { gap: 10px; } }
+@media (max-width: 600px) { .bag-punch__arrow { inline-size: 38px; block-size: 38px; } .bag-punch__btn { padding: 0 30px; min-block-size: 60px; font-size: .82rem; } .bag-punch__cta { gap: 10px; } }
 @media (prefers-reduced-motion: reduce) { .bag-punch__arrow, .bag-punch__arrow svg, .bag-punch__btn, .bag-punch__dots button { transition: none; } }
 
 /* The fingerprint field is one fixed canvas BEHIND the page (hero-rings.js). The top sections are transparent so it flows through the hero,
@@ -623,3 +623,22 @@ html.gallery-locked { overscroll-behavior: none; }
 .gallery-spot { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0; overflow: hidden; }
 .gallery-spot::before { content: ""; position: absolute; inset: -45%; background: radial-gradient(ellipse 44% 33% at 50% 50%, rgb(0 0 0 / 0) 56%, rgb(0 0 0 / .6) 76%, rgb(0 0 0 / .96) 96%); transform: rotate(-24deg); }
 .lgc-track .lgc-section { z-index: 2; }
+
+/* product-type bar: a sleek sliding pill (Bags / Gloves / Mitts) */
+.bag-punch__cats { position: absolute; z-index: 5; inset-block-start: clamp(16px, 3.5vh, 34px); inset-inline-start: 50%; transform: translateX(-50%); display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); padding: 5px; border-radius: 999px; border: 1px solid rgb(243 234 220 / .16); background: rgb(14 11 9 / .55); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 8px 30px rgb(0 0 0 / .45); }
+.bag-punch__cats::before { content: ""; position: absolute; inset-block: 5px; inset-inline-start: 5px; inline-size: calc((100% - 10px) / var(--n, 3)); border-radius: 999px; background: #f3eadc; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform .45s cubic-bezier(.3, 1.3, .4, 1); }
+.bag-punch__cats button { position: relative; z-index: 1; min-inline-size: clamp(84px, 11vw, 130px); padding: 13px 22px; border: 0; border-radius: 999px; background: transparent; color: rgb(243 234 220 / .7); cursor: pointer; font: 500 .8rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .22em; text-indent: .22em; text-transform: uppercase; transition: color .3s ease; }
+.bag-punch__cats button[aria-selected="true"] { color: #0e0b09; }
+.bag-punch__cats button:hover:not([aria-selected="true"]) { color: #f3eadc; }
+.bag-punch__cats button:focus-visible { outline: 1px solid #c9a45c; outline-offset: 3px; }
+@media (max-width: 600px) { .bag-punch__cats button { min-inline-size: 76px; padding: 12px 14px; font-size: .72rem; } }
+/* still renders (mitts, gloves): shown in place of the 3D bag */
+.bag-punch.is-still .bag-punch__view { visibility: hidden; pointer-events: none; }
+.bag-punch__still { position: absolute; inset-inline: 0; inset-block-start: clamp(70px, 12vh, 120px); inset-block-end: clamp(250px, 38vh, 340px); display: grid; place-items: center; z-index: 2; pointer-events: none; animation: bp-still-in .6s cubic-bezier(.2, .9, .3, 1) both; }
+.bag-punch__still img { max-inline-size: min(86vw, 900px); max-block-size: 100%; inline-size: auto; block-size: auto; object-fit: contain; filter: drop-shadow(0 26px 34px rgb(0 0 0 / .55)); }
+.bag-punch__still p { margin: 0; padding: 26px 34px; border: 1px dashed rgb(201 164 92 / .5); color: #c9a45c; font: 500 .8rem/1.4 var(--font-text, Barlow, sans-serif); letter-spacing: .22em; text-transform: uppercase; text-align: center; }
+@keyframes bp-still-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bag-punch__still { animation: none; } .bag-punch__cats::before { transition: none; } }
+
+/* "Waitlist" heading: the same heavy, slightly condensed Mona Sans in red as the mr-2 "Killer Kelly" button text (red = the site's accent) */
+.waitlist__title { font-family: "Mona Sans", var(--font-display), Arial, sans-serif; font-weight: 800; font-variation-settings: "wdth" 86; letter-spacing: 0; color: var(--color-accent-text, #c4553a); }
