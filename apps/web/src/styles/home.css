@@ -938,3 +938,6 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 /* Ribbon figure = the hero runner (ribbon-sneak.ts): the same amber edge light the canvas runner has, so the hand-off does not change his look */
 .ribbon-sneak { filter: drop-shadow(0 0 4px rgb(232 168 90 / .5)); }
 .ribbon-sneak__sheet { transform-origin: 0 0; }
+
+/* no sideways scrolling on phones: decorative layers (the hero pool etc.) may bleed past the edge, the page must not. clip, not hidden, so sticky sections keep working */
+html, body { overflow-x: clip; }
