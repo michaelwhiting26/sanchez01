@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BagEngine } from "@/lib/bag/engine";
+import { BagEngine, type FocusPart } from "@/lib/bag/engine";
 import { BAG_PRODUCTS, plain, type BagProduct } from "@/lib/bag/products";
 import { COLOURS, type BagConfig } from "@/lib/configurator/schema";
 
@@ -15,7 +15,7 @@ export function lookFor(cfg: BagConfig): BagProduct {
 }
 
 /** The interactive 3D bag, always on screen while building: drag to spin, tap to hit it. It follows every choice. */
-export function BagPreview({ cfg, caption }: { cfg: BagConfig; caption: string }) {
+export function BagPreview({ cfg, focus = "whole" }: { cfg: BagConfig; focus?: FocusPart }) {
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const engine = useRef<BagEngine | null>(null);
@@ -41,12 +41,18 @@ export function BagPreview({ cfg, caption }: { cfg: BagConfig; caption: string }
     engine.current?.preview(lookFor(cfg));
   }, [cfg]);
 
+  useEffect(() => {
+    // the engine may still be loading its model: try now and once more shortly (focus needs the model's part boxes)
+    engine.current?.focus(focus);
+    const t = window.setTimeout(() => engine.current?.focus(focus), 900);
+    return () => window.clearTimeout(t);
+  }, [focus]);
+
   return (
     <div className="bd__bag" ref={root}>
       <div className="bd__bag-host" ref={host} />
       {fallback && <img className="bd__bag-still" src="/assets/brand/bag-footer.webp" alt="A Sanchez heavy bag" width={400} height={600} />}
-      <p className="bd__caption">{caption}</p>
-      <p className="bd__bag-hint" aria-hidden="true">Drag to spin · tap to hit</p>
+
     </div>
   );
 }

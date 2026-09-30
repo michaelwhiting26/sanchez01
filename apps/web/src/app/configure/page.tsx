@@ -1,5 +1,4 @@
-import { BuildShell } from "@/components/pages/PageShell";
-import { Builder } from "@/components/build/Builder";
+import { Cockpit } from "@/components/build/Cockpit";
 import { PRESETS, type Preset } from "@/lib/configurator/schema";
 
 export const metadata = { title: "Build your bag | Sanchez Custom Boxing" };
@@ -9,8 +8,6 @@ export default async function ConfigurePage({ searchParams }: { searchParams: Pr
   const { preset } = await searchParams;
   const initial: Preset = (PRESETS as readonly string[]).includes(preset ?? "") ? (preset as Preset) : "plain";
   return (
-    <BuildShell>
-      <Builder initialPreset={initial} />
-    </BuildShell>
+    <Cockpit initialPreset={initial} />
   );
 }

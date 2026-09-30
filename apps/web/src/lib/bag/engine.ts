@@ -30,6 +30,9 @@ export interface BagEngineOptions {
   onProduct(index: number): void;
 }
 
+/** The parts the camera can fly to. */
+export type FocusPart = "whole" | "body" | "top" | "bottom" | "patch" | "hardware";
+
 const isBody = (n: string): boolean => /^(body|crown)/.test(n);
 
 type AnyMesh = THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
@@ -77,6 +80,13 @@ export class BagEngine {
   private timers: number[] = [];
   /** When set (by the builder), this look is applied instead of the current product's, so any colours or artwork can be previewed. */
   private override: BagProduct | null = null;
+  private readonly partBoxes = new Map<FocusPart, THREE.Box3>();
+  private focusPart: FocusPart = "whole";
+  private readonly home = { pos: new THREE.Vector3(0.35, 0.9, 4), look: new THREE.Vector3(0, 0.66, 0) };
+  private readonly camGoal = { pos: new THREE.Vector3(0.35, 0.9, 4), look: new THREE.Vector3(0, 0.66, 0) };
+  private readonly camLook = new THREE.Vector3(0, 0.66, 0);
+  private spinGoal: number | null = null;
+  private lastFrame = performance.now();
 
   constructor(o: BagEngineOptions) {
     this.root = o.root;
@@ -210,6 +220,16 @@ export class BagEngine {
     this.spinGroup.add(model);
     this.model = model;
     this.spinGroup.updateWorldMatrix(true, true);
+    const partOf = (n: string): FocusPart | null => (/^(crown|band_top)/.test(n) ? "top" : /^band_bottom/.test(n) ? "bottom" : /^patch/.test(n) ? "patch" : /^metal/.test(n) ? "hardware" : /^body/.test(n) ? "body" : null);
+    model.traverse((o) => {
+      const m = asMesh(o);
+      const part = m ? partOf(m.name) : null;
+      if (!m || !part) return;
+      const b = new THREE.Box3().setFromObject(m);
+      const acc = this.partBoxes.get(part);
+      if (acc) acc.union(b);
+      else this.partBoxes.set(part, b);
+    });
     this.aspect = this.cylindricalUV(model);
   }
 
@@ -320,6 +340,38 @@ export class BagEngine {
 
   // ----------------------------------------------------------------- camera
 
+  /** Fly the camera in on a part of the bag (and, for the patch, turn the bag to face it), or back out to the whole bag. */
+  focus(part: FocusPart): void {
+    this.focusPart = part;
+    this.aim(false);
+  }
+
+  private aim(instant: boolean): void {
+    const g = this.camGoal;
+    const box = this.focusPart === "whole" ? null : this.partBoxes.get(this.focusPart);
+    if (!box) {
+      g.pos.copy(this.home.pos);
+      g.look.copy(this.home.look);
+      this.spinGoal = null;
+    } else {
+      const size = box.getSize(new THREE.Vector3());
+      const ctr = box.getCenter(new THREE.Vector3());
+      const f = THREE.MathUtils.degToRad(this.cam.fov);
+      const fitH = size.y / 2 / Math.tan(f / 2);
+      const fitW = Math.max(size.x, size.z) / 2 / (Math.tan(f / 2) * this.cam.aspect);
+      const dist = Math.min(this.home.pos.z, Math.max(fitH, fitW) * 1.7 + 0.35);
+      g.look.copy(ctr);
+      g.pos.set(ctr.x + 0.12, ctr.y + size.y * 0.18, ctr.z + dist);
+      // the patch sits on one side of the bag: turn the bag so it faces the camera
+      this.spinGoal = this.focusPart === "patch" ? -Math.atan2(ctr.x, ctr.z) : null;
+    }
+    if (instant) {
+      this.cam.position.copy(g.pos);
+      this.camLook.copy(g.look);
+      this.cam.lookAt(this.camLook);
+    }
+  }
+
   private fit(): void {
     const w = this.host.clientWidth || 1;
     const h = this.host.clientHeight || 1;
@@ -329,8 +381,9 @@ export class BagEngine {
     const f = THREE.MathUtils.degToRad(this.cam.fov);
     const half = 1.42;
     const d = Math.max(half / Math.tan(f / 2), 0.55 / (Math.tan(f / 2) * this.cam.aspect));
-    this.cam.position.set(0.35, 0.9, d);
-    this.cam.lookAt(0, 0.66, 0); // looks a little low, so the product sits high and the name has room below it
+    this.home.pos.set(0.35, 0.9, d);
+    this.home.look.set(0, 0.66, 0); // looks a little low, so the product sits high and the name has room below it
+    this.aim(true);
   }
 
   // ----------------------------------------------------------------- motion
@@ -375,7 +428,7 @@ export class BagEngine {
     el.addEventListener(
       "pointerdown",
       (e) => {
-        this.pointer = { x: e.clientX, lx: e.clientX, moved: false, id: e.pointerId };
+        this.spinGoal = null; this.pointer = { x: e.clientX, lx: e.clientX, moved: false, id: e.pointerId };
         this.spinVel = 0;
         this.resumeAt = performance.now() + 3500;
       },
@@ -446,6 +499,19 @@ export class BagEngine {
       const vh = window.innerHeight || 1;
       const k = Math.max(0, (r.top + r.height / 2 - vh / 2) / vh);
       entry = -((DNA_RATE * vh) / 2) * k * k;
+    }
+    const nowMs = performance.now();
+    const dt = Math.min(0.05, (nowMs - this.lastFrame) / 1000);
+    this.lastFrame = nowMs;
+    const kk = 1 - Math.exp(-dt * (this.reduce ? 40 : 4.2)); // an eased fly-in: fast at first, settling softly
+    this.cam.position.lerp(this.camGoal.pos, kk);
+    this.camLook.lerp(this.camGoal.look, kk);
+    this.cam.lookAt(this.camLook);
+    if (this.spinGoal !== null && !this.pointer) {
+      const twoPi = Math.PI * 2;
+      const diff = ((((this.spinGoal - this.spin) % twoPi) + Math.PI * 3) % twoPi) - Math.PI; // the shortest way round
+      this.spin += diff * kk;
+      this.spinVel = 0;
     }
     this.spinGroup.rotation.y = this.spin + entry;
     const S = this.state;
