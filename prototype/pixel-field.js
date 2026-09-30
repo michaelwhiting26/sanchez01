@@ -1,8 +1,7 @@
-/* Fingerprint stitch: the Sanchez identity, drawn on each depth card in running stitch, ONLY while someone is touching or hovering the card. Dormant cards are clean.
-   A dense fingerprint whorl of hairline gold thread (ridges sewn as short dashes, gaps, the odd missing stitch) is sewn in outward from the point of contact.
-   It is gently alive (the ridges slowly breathe and the stitches slowly travel along them) and the pointer or finger is a real focal point: the print re-centres on it,
-   ridges pinch and swirl around it, moving it sends ripples out through the thread, and the stitches near it glow. Leaving cuts the thread off fast.
-   One WebGL quad + one fragment shader per card; each stitch keeps a permanent brightness and moment of arrival. Reduced motion: no wave, no drift. */
+/* Running-stitch thread: on each depth card, ONLY while someone is touching or hovering it, long soft lines of hairline gold running stitch (dashes, gaps, the odd missing stitch)
+   flow across the card like thread on a bench. The lines and the stitches drift softly on their own, and the pointer or finger is a real focal point: the thread bends around it,
+   ripples when it moves, and glows near it. Sewn in outward from the point of contact; cut off fast when it leaves. One WebGL quad + one fragment shader per card.
+   Reduced motion: no wave, no drift. */
 (function () {
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, touch = matchMedia("(hover: none)").matches;
 
@@ -15,9 +14,9 @@
     feather: 0.14, roughness: 0.34,
     activateMs: 800, deactivateMs: 300, deactivateTouchMs: 520,
     shimmer: 0.07,
-    breathe: 0.022, drift: 0.09,    /* gentle life: how fast the ridges breathe and the stitches travel */
+    breathe: 0.035, drift: 12,    /* gentle life: how fast the ridges breathe and the stitches travel */
     lens: 1.7, swirl: 0.07, sigma: 96,   /* the pointer's pull on the print */
-    warp: 1.5,            /* how far the fixed noise bends the ridges out of perfect circles */
+    warp: 1.0,            /* how far the fixed noise bends the ridges out of perfect circles */
     origin: [0.5, 0.47]    /* where the whorl sits when nothing has touched the card */
   };
 
@@ -29,34 +28,33 @@
     "float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), f.x), f.y); }",
     "void main(){",
     "  vec2 px = vec2(vUv.x, 1.0 - vUv.y) * uSize;                              /* css pixels, top-left origin */",
-    "  vec2 o = uOrigin * uSize; vec2 pp = px - o; pp.y *= 1.12;                 /* a whorl a little taller than wide, like a real print */",
-    "  float r = length(pp);",
     "  vec2 dF = px - uFocus; float df = length(dF), fall = exp(-(df * df) / (uSigma * uSigma));",
-    "  float warp = (vn(px * 0.011 + vec2(uTime * uBreathe, -uTime * uBreathe * 0.7)) - 0.5) * 2.0 * uWarp + (vn(px * 0.027 + 5.0 - vec2(uTime * uBreathe * 1.6, 0.0)) - 0.5) * 0.7 * uWarp;   /* low-frequency bend that very slowly breathes */",
-    "  float ripple = uEnergy * 0.3 * sin(df * 0.11 - uTime * 5.0) * exp(-df / 150.0);                /* moving the pointer sends ripples out through the thread */",
-    "  float phase = r / uSpacing + warp + uLens * fall + ripple;                                      /* the pointer pinches the ridges toward itself */",
+    "  float ang = uSwirl * 6.2831853 * fall; vec2 q = uFocus + mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * dF;   /* thread turns a little around the pointer */",
+    "  float A = -0.34; vec2 dirv = vec2(cos(A), sin(A)), nrm = vec2(-sin(A), cos(A));       /* long lines running gently uphill */",
+    "  float along = dot(q, dirv), across = dot(q, nrm);",
+    "  float warp = (vn(q * 0.0055 + vec2(uTime * uBreathe, -uTime * uBreathe * 0.6)) - 0.5) * 2.0 * uWarp * 3.4 + (vn(q * 0.013 + 5.0 - vec2(uTime * uBreathe * 1.5, 0.0)) - 0.5) * uWarp;   /* soft waves in the thread that slowly move on their own */",
+    "  float ripple = uEnergy * 0.3 * sin(df * 0.11 - uTime * 5.0) * exp(-df / 150.0);                /* moving the pointer sends ripples through the thread */",
+    "  float phase = across / uSpacing + warp + uLens * fall + ripple + uTime * uBreathe * 0.9;       /* the whole field also drifts very slowly sideways */",
     "  float ridge = floor(phase), f = fract(phase);",
-    "  float dPx = abs(f - 0.5) * uSpacing;                                      /* distance to the ridge centre, in css px */",
+    "  float dPx = abs(f - 0.5) * uSpacing;",
     "  float line = 1.0 - smoothstep(uThick * 0.5 - 0.5, uThick * 0.5 + 0.5, dPx);   /* hairline, 1px anti-aliasing */",
-    "  float ringR = max((ridge + 0.5 - warp) * uSpacing, uSpacing);",
-    "  float nDash = max(5.0, floor(6.2831853 * ringR / (uDash + uGap)));         /* whole number of stitches per ridge: no seam */",
-    "  float th = atan(pp.y, pp.x) / 6.2831853 + 0.5 + uSwirl * fall;                 /* the print swirls a little around the pointer */",
-    "  float dirn = mod(ridge, 2.0) * 2.0 - 1.0;",
-    "  float u = th * nDash + uTime * uDrift * 6.0 * dirn, cellS = floor(u), fu = fract(u);   /* stitches slowly travel along their ridge, alternate ridges the other way */",
-    "  float dashFrac = uDash / (uDash + uGap), aa = 1.0 / (uDash + uGap);",
+    "  float period = uDash + uGap, dirn = mod(ridge, 2.0) * 2.0 - 1.0;",
+    "  float s = along + h21(vec2(ridge, 1.3)) * period * 6.0 + uTime * uDrift * dirn;   /* stitches slowly travel along their line; alternate lines the other way */",
+    "  float cellS = floor(s / period), fu = fract(s / period);",
+    "  float dashFrac = uDash / period, aa = 1.0 / period;",
     "  float dash = smoothstep(0.0, aa, fu) * (1.0 - smoothstep(dashFrac - aa, dashFrac, fu));",
     "  vec2 id = vec2(cellS, ridge);",
     "  float hh = h21(id + 3.7);",
     "  float keep = step(uMissing, h21(id + 11.3));                              /* the odd missing stitch */",
-    "  float maxR = length(vec2(max(uOrigin.x, 1.0 - uOrigin.x) * uSize.x, max(uOrigin.y, 1.0 - uOrigin.y) * uSize.y * 1.12));",
-    "  float d = ringR / maxR;",
-    "  float radius = uReveal * 1.3;",
+    "  vec2 c = q + dirv * ((cellS + 0.5) * period - s);                          /* centre of this stitch */",
+    "  float d = length(c - uOrigin * uSize) / length(uSize);",
+    "  float radius = uReveal * 1.25;",
     "  float local = radius + (h21(id + 7.7) - 0.5) * uRough;                     /* every stitch has its own moment: a broken, granular edge */",
     "  float reveal = 1.0 - smoothstep(local - uFeather, local, d);",
-    "  float core = 1.0 - d * 0.45;",
-    "  float shimmer = 1.0 - uShimmer + uShimmer * sin(uTime * 0.8 + hh * 6.2831853);",
-    "  float eDist = min(min(px.x, uSize.x - px.x), min(px.y, uSize.y - px.y));           /* keep the sewn border clean: the print fades out toward the card edge */",
+    "  float core = 1.0 - d * 0.35;",
+    "  float eDist = min(min(px.x, uSize.x - px.x), min(px.y, uSize.y - px.y));           /* keep the sewn border clean */",
     "  float edgeFade = 0.1 + 0.9 * smoothstep(8.0, 52.0, eDist);",
+    "  float shimmer = 1.0 - uShimmer + uShimmer * sin(uTime * 0.8 + hh * 6.2831853);",
     "  float glow = 1.0 + 0.9 * exp(-(df * df) / (uSigma * uSigma * 1.3));                            /* stitches near the pointer glow */",
     "  float a = line * dash * keep * reveal * (0.22 + 0.6 * hh) * core * edgeFade * shimmer * glow * uPower;",
     "  vec3 gold = vec3(0.79, 0.64, 0.36), cream = vec3(0.96, 0.91, 0.80);",
@@ -150,6 +148,6 @@
     config: CONFIG, fields: fields,
     activate: function (i) { pick(i).forEach(function (f) { f.held = false; f.activate(); }); },
     deactivate: function (i) { pick(i).forEach(function (f) { f.held = false; f.deactivate(); }); },
-    setReveal: function (v, i) { pick(i).forEach(function (f) { f.held = true; f.reveal = v; f.power = 1; f.dirty = true; render(f, 0); }); }   /* freezes at a chosen radius, for screenshot matching */
+    setReveal: function (v, i, t) { pick(i).forEach(function (f) { f.held = true; f.reveal = v; f.power = 1; f.dirty = true; render(f, t || 0); }); }   /* freezes at a chosen radius, for screenshot matching */
   };
 })();
