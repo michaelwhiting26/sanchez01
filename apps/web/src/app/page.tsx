@@ -1,7 +1,7 @@
-import { AutoTour } from "@/components/home/AutoTour";
 import { BagPunch } from "@/components/home/BagPunch";
 import { CurvedLoop } from "@/components/home/CurvedLoop";
 import { DnaCore } from "@/components/home/DnaCore";
+import { BagHit } from "@/components/home/BagHit";
 import { FooterMin } from "@/components/home/FooterMin";
 import { Hero } from "@/components/home/Hero";
 import { Marquee } from "@/components/home/Marquee";
@@ -19,7 +19,6 @@ export default function HomePage() {
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <AutoTour />
       <main id="main" tabIndex={-1}>
         <Hero />
         <DnaCore />
@@ -31,7 +30,7 @@ export default function HomePage() {
         <RisePanel>
           <Waitlist />
           <div className="globe-slot" data-globe-slot="">
-            <img className="globe-bag" src="/assets/brand/bag-footer.webp" alt="" aria-hidden="true" width="800" height="1200" decoding="async" />
+            <BagHit />
           </div>
           <FooterMin />
         </RisePanel>
