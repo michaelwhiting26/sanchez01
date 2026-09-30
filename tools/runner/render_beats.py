@@ -4,10 +4,17 @@ Same material, camera (ortho 2.35, cam at (-8,0,0.98)), 180 deg turn and goggle 
 size and ground baseline (footY = 293.4 px at size 320) as the live run sheet. Then assemble_beats.py packs frames into WebP + JSON + contact sheets.
 
   B=/Applications/Blender.app/Contents/MacOS/Blender; R=tools/runner; S=<scratch>/frames
-  for b in walk look sneak reach; do $B -b -P $R/render_beats.py -- --beat $b --out $S/$b --size 320; done
-  python3 $R/assemble_beats.py --frames $S --out apps/web/public/assets/runner --sheets <scratch>/sheets
+  for b in walk look sneak reach crouch crouchlook crouchpeek; do
+    $B -b -P $R/render_beats.py -- --beat $b --out $S/sil/$b --size 320                    # silhouette (default look)
+    $B -b -P $R/render_beats.py -- --beat $b --out $S/sh/$b  --size 320 --look shaded      # shaded look (Vanguard's own materials, night-graffiti lights)
+  done
+  # run cycle (live args reverse-fitted to the live meta.json nozzle track, max 3.8 px off):
+  $B -b -P $R/render_runner.py -- --model soldier --size 320 --frames 24 --arm 83,29.1,-27.4 --fore -23.9,-44.1,-16.9 [--look shaded] --out $S/sh/run
+  python3 $R/assemble_beats.py --frames $S/sh  --out apps/web/public/assets/runner --sheets <scratch>/sheets --suffix _shaded --beats run,walk,look,sneak,reach,crouch,crouchlook,crouchpeek
+  python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --beats crouch,crouchlook,crouchpeek   # NEW silhouettes only; never re-run for walk/look/sneak/reach (live files)
+  python3 $R/contact.py <frames_dir> <out_prefix> <cols> [x,y,w,h]   # labelled 2-background contact sheets / 2x zoom crops
 
-Flags: --beat walk|look|sneak|reach  --size 320  --slim 0.16 (slims the waist/belt/torso depth via skin weights, 0 = off)  --test (1 frame)
+Flags: --beat walk|look|sneak|reach|crouch|crouchlook|crouchpeek  --look silhouette|shaded  --size 320  --slim 0.16 (slims the waist/belt/torso depth via skin weights, 0 = off)  --test (1 frame)
 """
 import bpy, sys, os, json, math
 import numpy as np
@@ -16,7 +23,7 @@ from bpy_extras.object_utils import world_to_camera_view
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 def opt(n, d): return argv[argv.index(n) + 1] if n in argv else d
-BEAT = opt("--beat", "walk"); OUT = opt("--out", "/tmp/beat"); SIZE = int(opt("--size", "320")); SLIM = float(opt("--slim", "0.22")); TEST = "--test" in argv
+BEAT = opt("--beat", "walk"); OUT = opt("--out", "/tmp/beat"); SIZE = int(opt("--size", "320")); SLIM = float(opt("--slim", "0.22")); LOOK = opt("--look", "silhouette"); TEST = "--test" in argv
 os.makedirs(OUT, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -49,7 +56,7 @@ if SLIM > 0:
             d += -(wp.y - yc - 0.12) * 0.75
         v.co[axis] += d / k
 
-# ---- material (identical to render_runner.py)
+# ---- material (identical to render_runner.py); --look shaded keeps the glb materials instead
 mat = bpy.data.materials.new("silhouette"); mat.use_nodes = True; nt = mat.node_tree; nt.nodes.clear()
 lw = nt.nodes.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.5
 ramp = nt.nodes.new("ShaderNodeValToRGB")
@@ -57,8 +64,9 @@ ramp.color_ramp.elements[0].position = 0.34; ramp.color_ramp.elements[0].color =
 ramp.color_ramp.elements[1].position = 0.62; ramp.color_ramp.elements[1].color = (0.62, 0.45, 0.26, 1)
 em = nt.nodes.new("ShaderNodeEmission"); out = nt.nodes.new("ShaderNodeOutputMaterial")
 nt.links.new(lw.outputs["Fresnel"], ramp.inputs["Fac"]); nt.links.new(ramp.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
-for o in bpy.data.objects:
-    if o.type == "MESH": o.data.materials.clear(); o.data.materials.append(mat)
+if LOOK != "shaded":
+    for o in bpy.data.objects:
+        if o.type == "MESH": o.data.materials.clear(); o.data.materials.append(mat)
 bpy.ops.mesh.primitive_cylinder_add(radius=0.05, depth=0.2, location=(0, 0, 0))
 can = bpy.context.active_object; can.name = "can"; can.data.materials.append(mat); can.rotation_mode = "QUATERNION"
 
@@ -69,6 +77,8 @@ scene.render.engine = "BLENDER_EEVEE"; scene.render.film_transparent = True
 scene.render.resolution_x = scene.render.resolution_y = SIZE; scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = "PNG"; scene.render.image_settings.color_mode = "RGBA"
 scene.view_settings.view_transform = "Standard"; scene.render.filter_size = 1.0
+if LOOK == "shaded":
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import shaded_look; shaded_look.setup(scene, can)
 
 PB = lambda n: arm.pose.bones["mixamorig:" + n]
 def upd(): bpy.context.view_layer.update()
@@ -237,9 +247,101 @@ def run_reach():
             i += 1
     meta.update({"cols": 5, "rows": 3, "poses": poses})
 
+# ---------------------------------------------------------------- crouch family (crouch / crouchlook / crouchpeek)
+def head_px():
+    h = wpos("Head"); u = (h - wpos("Neck")).normalized(); return px(h + u * 0.10)   # centre of the skull (~10 cm above the head bone)
+def sstep(t): t = max(0.0, min(1.0, t)); return t * t * (3 - 2 * t)
+def bone_len(a, b): return (wpos(a) - wpos(b)).length
+
+CR = {}
+def crouch_refs(a, IF):
+    """standing reference: idle frame, neutral legs, grounded. Toe / ankle world points stay planted for the whole crouch family"""
+    at(a, IF); arm.location = (0, 0, 0); upd(); neutral_legs(); ground()
+    CR["off"] = arm.location.z; CR["a"] = a; CR["IF"] = IF
+    CR["T"] = {s: wpos(s + "ToeBase") for s in ("Left", "Right")}; CR["A"] = {s: wpos(s + "Foot") for s in ("Left", "Right")}
+    CR["H0"] = wpos("Hips").copy()
+    CR["L1"] = {s: bone_len(s + "UpLeg", s + "Leg") for s in ("Left", "Right")}; CR["L2"] = {s: bone_len(s + "Leg", s + "Foot") for s in ("Left", "Right")}
+    CR["hangL"] = None
+    # standing left-hand rest position (arm aimed like the right one)
+    aim("LeftArm", unit_yz(172)); aim("LeftForeArm", unit_yz(128)); aim("LeftHand", unit_yz(115)); CR["P0"] = wpos("LeftHand").copy()
+
+def ik2(p0, tgt, L1, L2, bend):
+    """2 bone IK in the sagittal (Y-Z) plane. bend=-1 knee/elbow forward (-Y), +1 back. returns (mid joint, end) world points"""
+    v = Vector((0, tgt.y - p0.y, tgt.z - p0.z)); dist = max(min(v.length, L1 + L2 - 1e-3), abs(L1 - L2) + 1e-3)
+    ang = math.acos(max(-1, min(1, (L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist))))
+    base = math.atan2(-v.y, v.z)                      # angle from up toward forward
+    th = base + bend * ang
+    mid = Vector((0, p0.y, p0.z)) + Vector((0, -math.sin(th), math.cos(th))) * L1
+    end = Vector((0, p0.y, p0.z)) + v.normalized() * dist
+    return mid, end
+
+def crouch_pose(c, yaw=0.0, pitch=0.0, peek_pitch=0.0):
+    """c: 0 standing .. 1 deep crouch. yaw (deg, total, 0 = forward .. ~150 = looking back over the shoulder), pitch (deg, + = chin up)"""
+    a = CR["a"]; at(a, CR["IF"]); arm.location = (0, 0, 0); upd(); neutral_legs()
+    w = sstep(c)
+    arm.location = (0, 0.16 * w, CR["off"] - 0.56 * w); upd()
+    # pelvis tilts forward, back rounds: hips + 3 spine bones, then the head is brought back up to look ahead
+    rot_axis("Hips", X, -8 * w); rot_axis("Spine", X, -9 * w); rot_axis("Spine1", X, -8 * w); rot_axis("Spine2", X, -7 * w)   # -X = lean forward (as the sneak / reach beats)
+    rot_axis("Neck", X, 28 * w); rot_axis("Head", X, 22 * w)
+    # torso twist about each spine bone's own axis (shoulders rotate), then neck + head yaw about vertical
+    e = yaw / 152.0
+    for n, d in (("Spine", 18), ("Spine1", 18), ("Spine2", 20)):
+        b = PB(n); ax = R3 @ (b.tail - b.head)
+        rot_world(n, Quaternion(-ax.normalized(), math.radians(d * e)))     # sign chosen so it matches the world-Z (0,0,-1) look sheet (turns back toward screen-left)
+    rot_axis("Neck", Z, 46 * e); rot_axis("Head", Z, 76 * e)
+    pit = pitch + peek_pitch
+    rot_axis("Neck", X, 0.45 * pit); rot_axis("Head", X, 0.55 * pit)   # +X = chin up
+    # legs: toes planted, heels raised, knees forward
+    phi = math.radians(52 * w)
+    for s in ("Left", "Right"):
+        T = CR["T"][s]; A = CR["A"][s]; v = A - T; th = math.atan2(v.z, v.y) + phi; Lv = math.hypot(v.y, v.z)
+        A2 = Vector((A.x, T.y + Lv * math.cos(th), T.z + Lv * math.sin(th)))
+        p0 = wpos(s + "UpLeg"); knee, ank = ik2(p0, A2, CR["L1"][s], CR["L2"][s], -1)
+        aim(s + "UpLeg", (knee - Vector((0, p0.y, p0.z)))); aim(s + "Leg", (ank - knee)); aim(s + "Foot", (T - wpos(s + "Foot")) if False else (T - A2)); aim(s + "ToeBase", unit_yz(92))
+    # left hand: fingertips on the ground just ahead of the front foot; right hand: can hanging low by the knee
+    G = Vector((0, min(CR["T"]["Left"].y, CR["T"]["Right"].y) - 0.02, 0.22))
+    tgt = CR["P0"] * (1 - w) + G * w
+    sh = wpos("LeftArm"); L1 = bone_len("LeftArm", "LeftForeArm"); L2 = bone_len("LeftForeArm", "LeftHand")
+    el, hd = ik2(sh, tgt, L1, L2, +1)
+    aim("LeftArm", el - Vector((0, sh.y, sh.z))); aim("LeftForeArm", hd - el); aim("LeftHand", unit_yz(160 - 40 * w))
+    upd(); arm.location.z -= mesh_minz(); upd()      # rigid drop so the lowest sole point sits exactly on the ground (footY 293.4); toe pivot is above the sole
+    hang_arm(-30 * w)
+    # (the can is re-set after the pose; keeps it in the fist)
+    upd()
+
+def crouch_render(i, c, yaw=0.0, pitch=0.0, peek_pitch=0.0):
+    crouch_pose(c, yaw, pitch, peek_pitch); render(i)
+    return {"hips": px(wpos("Hips")), "head": head_px(), "minz": round(mesh_minz(), 3)}
+
+def run_crouch():
+    a = cyc_action("Idle"); free_right_arm(a); crouch_refs(a, idle_frame(a)); N = 10; hips = []; head = []; mz = []
+    for i in range(1 if TEST else N):
+        c = sstep(i / (N - 1)); r = crouch_render(i, c); hips.append(r["hips"]); head.append(r["head"]); mz.append(r["minz"])
+    meta.update({"frames": N, "cols": 5, "hips": hips, "head": head, "minz": mz})
+
+def run_crouchlook():
+    a = cyc_action("Idle"); free_right_arm(a); crouch_refs(a, idle_frame(a)); N = 12
+    Y = [0, 18, 48, 82, 116, 142, 156, 156, 132, 92, 46, 12]            # forward -> back over the shoulder -> half way home (loops)
+    P = [0, 0, 4, 10, 16, 8, 0, 14, 20, 10, 2, 0]                         # chin lifts / peeks up on some frames
+    hips = []; head = []; mz = []
+    for i in range(1 if TEST else N):
+        r = crouch_render(i, 1.0, Y[i], P[i]); head.append(r["head"]); mz.append(r["minz"])
+    meta.update({"frames": N, "cols": 4, "yawDeg": Y, "pitchDeg": P, "head": head, "minz": mz})
+
+def run_crouchpeek():
+    a = cyc_action("Idle"); free_right_arm(a); crouch_refs(a, idle_frame(a)); N = 8; hips = []; head = []; mz = []
+    C = [1.0, 0.80, 0.58, 0.42, 0.40, 0.55, 0.80, 0.96]; PK = [0, 0, 6, 12, 14, 8, 0, 0]
+    for i in range(1 if TEST else N):
+        r = crouch_render(i, C[i], 0, 0, PK[i]); hips.append(r["hips"]); head.append(r["head"]); mz.append(r["minz"])
+    meta.update({"frames": N, "cols": 4, "hips": hips, "head": head, "minz": mz})
+
+
 if BEAT == "walk": run_cycle(16, "Walk", False)
 elif BEAT == "sneak": run_cycle(12, "Walk", True)
 elif BEAT == "look": run_look()
 elif BEAT == "reach": run_reach()
+elif BEAT == "crouch": run_crouch()
+elif BEAT == "crouchlook": run_crouchlook()
+elif BEAT == "crouchpeek": run_crouchpeek()
 json.dump(meta, open(os.path.join(OUT, "raw.json"), "w"), indent=1)
 print("DONE", BEAT, {k: v for k, v in meta.items() if k not in ("poses",)})

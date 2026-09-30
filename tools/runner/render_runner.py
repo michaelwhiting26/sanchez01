@@ -1,7 +1,8 @@
 """
 Render a black-silhouette running character as a transparent sprite sheet, with a spray can in the raised arm and the can nozzle's position per frame.
 
-  Blender -b -P render_runner.py -- --out <dir> [--frames 24] [--size 512] [--arm x,y,z] [--fore x,y,z] [--test]
+  Blender -b -P render_runner.py -- --out <dir> [--frames 24] [--size 512] [--arm x,y,z] [--fore x,y,z] [--test] [--look silhouette|shaded]
+  live sheet args: --model soldier --size 320 --frames 24 --arm 83,29.1,-27.4 --fore -23.9,-44.1,-16.9   (reverse-fitted; nozzle track within 3.8 px of the live meta.json)
 
 Source: Xbot.glb (three.js examples, Mixamo "X Bot" mannequin with the stock run cycle). Output is only a rendered silhouette, no rig or mesh is shipped.
 The runner faces screen-RIGHT. Frame size is square; the sheet is `cols` x `rows` frames left-to-right, top-to-bottom.
@@ -18,6 +19,7 @@ N = int(opt("--frames", "24"))
 SIZE = int(opt("--size", "512"))
 ARM = [float(v) for v in opt("--arm", "0,0,-100").split(",")]     # degrees, bone-local euler for RightArm
 FORE = [float(v) for v in opt("--fore", "0,0,0").split(",")]      # degrees, bone-local euler for RightForeArm
+LOOK = opt("--look", "silhouette")
 TEST = "--test" in argv
 JESSE = "--jesse" in argv
 MODEL = opt("--model", "xbot")   # xbot: the Mixamo mannequin; soldier: the Mixamo "Vanguard" (a real clothed human: jacket, trousers, boots, short hair)   # Jesse: a stockier build and short cropped hair, from the workshop footage
@@ -74,9 +76,10 @@ ramp.color_ramp.elements[1].position = 0.62; ramp.color_ramp.elements[1].color =
 em = nt.nodes.new("ShaderNodeEmission")
 out = nt.nodes.new("ShaderNodeOutputMaterial")
 nt.links.new(lw.outputs["Fresnel"], ramp.inputs["Fac"]); nt.links.new(ramp.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
-for o in bpy.data.objects:
-    if o.type == "MESH":
-        o.data.materials.clear(); o.data.materials.append(mat)
+if LOOK != "shaded":
+    for o in bpy.data.objects:
+        if o.type == "MESH":
+            o.data.materials.clear(); o.data.materials.append(mat)
 
 # spray can: placed each frame from the right hand bone (head -> tail direction), plus the nozzle point at its top
 bpy.ops.mesh.primitive_cylinder_add(radius=0.05, depth=0.2, location=(0, 0, 0))
@@ -142,6 +145,8 @@ scene.render.image_settings.file_format = "PNG"
 scene.render.image_settings.color_mode = "RGBA"
 scene.view_settings.view_transform = "Standard"
 scene.render.filter_size = 1.0
+if LOOK == "shaded":
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import shaded_look; shaded_look.setup(scene, can)
 
 frames = []
 nozzles = []
