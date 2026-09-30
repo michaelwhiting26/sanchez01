@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1152" viewBox="0 0 2048 1152">
+    <style>
+    /* the stitch flows along each ridge: the path stays put, the dashes travel (pattern length 60) */
+    .st { animation: stitch 9s linear infinite; }
+    .st-a { animation-duration: 12s; animation-direction: reverse; }
+    .st-c { animation-duration: 7s; }
+    @keyframes stitch { to { stroke-dashoffset: -60; } }
+    @media (prefers-reduced-motion: reduce) { .st { animation: none; } }
+  </style>
+  <defs>
+    <radialGradient id="cardFill" cx="50%" cy="18%" r="100%">
+      <stop offset="0" stop-color="#26282E"/>
+      <stop offset="0.55" stop-color="#181A1F"/>
+      <stop offset="1" stop-color="#0A0B0D"/>
+    </radialGradient>
+    <radialGradient id="redVignette" cx="50%" cy="92%" r="52%">
+      <stop offset="0" stop-color="#F32231" stop-opacity="0.23"/>
+      <stop offset="0.46" stop-color="#F32231" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#F32231" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="cardClip"><path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z"/></clipPath>
+  </defs>
+  <!-- Card fill is UNCONDITIONAL: it must not depend on a referenced SVG filter.
+       Safari (WebKit) can drop a `filter="url(#…)"` on an <img>-loaded SVG, and
+       per spec a failed filter means the element isn't painted at all — which
+       made this entire opaque surface disappear, letting the gallery show
+       through. The decorative drop shadow now lives in CSS (see .cf__grain). -->
+  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="url(#cardFill)"/>
+  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="none" stroke="#F3EADC" stroke-opacity="0.55" stroke-width="2"/>
+  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="none" stroke="#C4553A" stroke-opacity="0.6" stroke-width="1.2"/>
+  <g clip-path="url(#cardClip)">
+    <rect x="20" y="128" width="2008" height="1004" fill="url(#redVignette)"/>
+    <g class="st st-a" transform="translate(0 -22)" fill="none" stroke="#C9A45C" stroke-opacity="0.07" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="8 4 8 4 8 4 8 16">
+      <path d="M-80 236 C120 80 270 275 440 220 C590 171 610 138 731 189 C850 240 790 342 935 349 C1120 360 1170 154 1305 204 C1435 253 1370 335 1515 365 C1665 399 1780 306 2120 350"/>
+      <path d="M-60 640 C120 705 154 508 286 563 C403 613 324 684 515 668 C725 651 725 580 863 604 C1038 634 1096 716 1275 660 C1445 607 1490 540 1635 605 C1775 667 1790 742 2110 640"/>
+      <path d="M90 1052 C145 940 258 945 348 997 C486 1078 582 1027 610 895 C650 704 778 690 905 796 C1048 915 1186 893 1280 759 C1384 612 1482 594 1548 719 C1625 864 1510 1022 1696 1058 C1840 1087 1906 974 2098 995"/>
+      <path d="M1650 42 C1535 166 1636 250 1810 264 C1950 275 1990 175 2085 87"/>
+      <path d="M964 -30 C1014 100 1074 125 1158 -8"/>
+      <path d="M-50 856 C90 755 190 766 270 856 C345 941 391 875 480 902 C575 932 611 1040 523 1175"/>
+      <path d="M1400 1133 C1330 991 1263 922 1330 824 C1400 722 1525 760 1513 884 C1498 1045 1625 1064 1697 946 C1786 800 1964 878 2058 816"/>
+      <path d="M310 -30 C260 136 333 180 504 153 C686 124 697 265 679 408 C660 566 752 600 882 560 C1008 522 1050 449 1168 520 C1296 596 1226 759 1100 753 C950 744 895 630 760 704 C600 791 585 957 590 1168"/>
+    </g>
+    <g class="st" transform="translate(0 0)" fill="none" stroke="#C9A45C" stroke-opacity="0.16" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="8 4 8 4 8 4 8 16">
+      <path d="M-80 236 C120 80 270 275 440 220 C590 171 610 138 731 189 C850 240 790 342 935 349 C1120 360 1170 154 1305 204 C1435 253 1370 335 1515 365 C1665 399 1780 306 2120 350"/>
+      <path d="M-60 640 C120 705 154 508 286 563 C403 613 324 684 515 668 C725 651 725 580 863 604 C1038 634 1096 716 1275 660 C1445 607 1490 540 1635 605 C1775 667 1790 742 2110 640"/>
+      <path d="M90 1052 C145 940 258 945 348 997 C486 1078 582 1027 610 895 C650 704 778 690 905 796 C1048 915 1186 893 1280 759 C1384 612 1482 594 1548 719 C1625 864 1510 1022 1696 1058 C1840 1087 1906 974 2098 995"/>
+      <path d="M1650 42 C1535 166 1636 250 1810 264 C1950 275 1990 175 2085 87"/>
+      <path d="M964 -30 C1014 100 1074 125 1158 -8"/>
+      <path d="M-50 856 C90 755 190 766 270 856 C345 941 391 875 480 902 C575 932 611 1040 523 1175"/>
+      <path d="M1400 1133 C1330 991 1263 922 1330 824 C1400 722 1525 760 1513 884 C1498 1045 1625 1064 1697 946 C1786 800 1964 878 2058 816"/>
+      <path d="M310 -30 C260 136 333 180 504 153 C686 124 697 265 679 408 C660 566 752 600 882 560 C1008 522 1050 449 1168 520 C1296 596 1226 759 1100 753 C950 744 895 630 760 704 C600 791 585 957 590 1168"/>
+    </g>
+    <g class="st st-c" transform="translate(0 22)" fill="none" stroke="#C9A45C" stroke-opacity="0.07" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="8 4 8 4 8 4 8 16">
+      <path d="M-80 236 C120 80 270 275 440 220 C590 171 610 138 731 189 C850 240 790 342 935 349 C1120 360 1170 154 1305 204 C1435 253 1370 335 1515 365 C1665 399 1780 306 2120 350"/>
+      <path d="M-60 640 C120 705 154 508 286 563 C403 613 324 684 515 668 C725 651 725 580 863 604 C1038 634 1096 716 1275 660 C1445 607 1490 540 1635 605 C1775 667 1790 742 2110 640"/>
+      <path d="M90 1052 C145 940 258 945 348 997 C486 1078 582 1027 610 895 C650 704 778 690 905 796 C1048 915 1186 893 1280 759 C1384 612 1482 594 1548 719 C1625 864 1510 1022 1696 1058 C1840 1087 1906 974 2098 995"/>
+      <path d="M1650 42 C1535 166 1636 250 1810 264 C1950 275 1990 175 2085 87"/>
+      <path d="M964 -30 C1014 100 1074 125 1158 -8"/>
+      <path d="M-50 856 C90 755 190 766 270 856 C345 941 391 875 480 902 C575 932 611 1040 523 1175"/>
+      <path d="M1400 1133 C1330 991 1263 922 1330 824 C1400 722 1525 760 1513 884 C1498 1045 1625 1064 1697 946 C1786 800 1964 878 2058 816"/>
+      <path d="M310 -30 C260 136 333 180 504 153 C686 124 697 265 679 408 C660 566 752 600 882 560 C1008 522 1050 449 1168 520 C1296 596 1226 759 1100 753 C950 744 895 630 760 704 C600 791 585 957 590 1168"/>
+    </g>
+    <g fill="none" stroke="#F32231" stroke-opacity="0.055" stroke-width="1.2">
+      <path d="M270 1128 C455 1046 608 1001 826 1044 C1027 1084 1160 1102 1310 1027 C1490 937 1618 930 1828 1038"/>
+      <path d="M860 138 C933 185 1014 185 1093 138"/>
+    </g>
+    <rect x="20" y="1018" width="2008" height="134" fill="#050506" fill-opacity="0.26"/>
+    <line x1="42" y1="1018" x2="2006" y2="1018" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  </g>
+</svg>
