@@ -85,6 +85,24 @@ export async function settle(page: Page, opts: { heroMs?: number | "end"; ms?: n
   }
 }
 
+/**
+ * After something changes the page's height (choosing another product swaps the bag for a still and the section shrinks), resize observers and their 120 ms
+ * debounce timers re-measure the pinned scenes. The observers fire in real time, the timers in page time, so a single `settle` can land before or after them.
+ * Keep stepping until the document height and the scroll position stop changing for two rounds in a row.
+ */
+export async function settleLayout(page: Page, opts: { heroMs?: number | "end"; ms?: number } = {}): Promise<void> {
+  const read = (): Promise<string> => page.evaluate(() => `${document.scrollingElement?.scrollHeight}|${Math.round(window.scrollY)}|${document.querySelector(".lgc-track")?.getBoundingClientRect().height}`);
+  let previous = "";
+  let stable = 0;
+  for (let i = 0; i < 12 && stable < 2; i++) {
+    await settle(page, { ...opts, ms: opts.ms ?? 300 });
+    const now = await read();
+    stable = now === previous ? stable + 1 : 0;
+    previous = now;
+  }
+  expect(stable, "layout never settled").toBeGreaterThanOrEqual(2);
+}
+
 /** Scroll instantly (the site sets smooth scrolling on html) and settle. */
 export async function scrollToY(page: Page, y: number, opts: { heroMs?: number | "end"; ms?: number } = {}): Promise<void> {
   await page.evaluate((top) => window.scrollTo({ top, left: 0, behavior: "instant" }), y);
@@ -146,19 +164,18 @@ export async function owner(page: Page): Promise<JesseOwner> {
   return page.evaluate(() => window.__sz?.owner() ?? "none");
 }
 
-/** Jesse figures actually visible right now, by kind. Read from the DOM (what the visitor sees), not from the owner state. */
-export async function visibleJesse(page: Page): Promise<{ ribbon: boolean; gallery: boolean; hero: boolean }> {
+/** Jesse figures actually visible right now, counted per kind over every matching element (so a duplicate is counted). Read from the DOM: what the visitor sees, not the owner state. */
+export async function visibleJesse(page: Page): Promise<{ ribbon: number; gallery: number; hero: number }> {
   return page.evaluate(() => {
-    const vis = (sel: string): boolean => {
-      const el = document.querySelector<HTMLElement>(sel);
-      if (!el) return false;
-      const cs = getComputedStyle(el);
-      if (cs.visibility === "hidden" || cs.display === "none" || parseFloat(cs.opacity) < 0.05) return false;
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
-    };
+    const count = (sel: string): number =>
+      Array.from(document.querySelectorAll<HTMLElement>(sel)).filter((el) => {
+        const cs = getComputedStyle(el);
+        if (cs.visibility === "hidden" || cs.display === "none" || parseFloat(cs.opacity) < 0.05) return false;
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+      }).length;
     // the hero's canvas runner is drawn only while the hand-off owner is "hero" and the hero is on screen (the engine stops drawing past its field)
-    const heroOnScreen = document.querySelector("[data-hero-rings]")?.getBoundingClientRect().bottom ?? 0;
-    return { ribbon: vis(".ribbon-sneak"), gallery: vis(".pg-abseil__actor"), hero: window.__sz?.owner() === "hero" && heroOnScreen > 0 };
+    const heroOnScreen = (document.querySelector("[data-hero-rings]")?.getBoundingClientRect().bottom ?? 0) > 0;
+    return { ribbon: count(".ribbon-sneak"), gallery: count(".pg-abseil__actor"), hero: window.__sz?.owner() === "hero" && heroOnScreen ? 1 : 0 };
   });
 }

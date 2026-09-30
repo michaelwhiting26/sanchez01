@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { boot, centred, galleryY, readLayout, scrollToY, settle, waitForViewportImages, type Layout } from "./support";
+import { boot, centred, galleryY, readLayout, scrollToY, settle, settleLayout, waitForViewportImages, type Layout } from "./support";
 
 /**
  * Homepage checkpoints. Each one: (1) scroll to a position computed from element geometry, (2) put every scene in a known state through the window.__sz hooks
@@ -127,7 +127,10 @@ test.describe("options and bag", () => {
   test("options band, Gloves chosen (still placeholder)", async ({ page }) => {
     await scrollToY(page, centred(layout.options, layout.vh), { heroMs: "end" });
     await page.getByRole("tab", { name: "Gloves" }).click();
-    await settle(page);
+    await settleLayout(page, { heroMs: "end" });
+    // the section above shrank (still instead of bag): where the click left the scroll depends on the browser's anchoring, so put the band back in the middle explicitly
+    const after = await readLayout(page);
+    await scrollToY(page, centred(after.options, after.vh), { heroMs: "end" });
     await expect(page.locator(".bag-punch")).toHaveAttribute("data-still", "");
     await shot(page, "options-gloves");
   });
