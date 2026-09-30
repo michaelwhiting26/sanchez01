@@ -97,7 +97,7 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 
 /** The bag silhouettes and the two runners, drawn on top of the field. All motion is a pure function of time, so a frozen time gives a frozen frame. */
 export class IntroSprites {
-  private runner: (Atlas & { nozzleX: number; nozzleY: number }) | null = null;
+  private runner: (Atlas & { nozzleX: number; nozzleY: number; nozzles: Array<{ x: number; y: number }> }) | null = null;
   private bag: Atlas | null = null;
   private letters: LetterBox[] = [];
 
@@ -114,7 +114,7 @@ export class IntroSprites {
     // the can bobs with the arm; the body should not, so the sprite is anchored on the mean nozzle position
     const nozzleX = rMeta.nozzle.reduce((a, p) => a + p.x, 0) / n;
     const nozzleY = rMeta.nozzle.reduce((a, p) => a + p.y, 0) / n;
-    this.runner = { img: rImg, frames: rMeta.frames, cols: rMeta.cols, w: rMeta.size, h: rMeta.size, nozzleX, nozzleY };
+    this.runner = { img: rImg, frames: rMeta.frames, cols: rMeta.cols, w: rMeta.size, h: rMeta.size, nozzleX, nozzleY, nozzles: rMeta.nozzle };
     this.bag = { img: bImg, frames: bMeta.frames, cols: bMeta.cols, w: bMeta.w, h: bMeta.h };
     return true;
   }
@@ -129,12 +129,32 @@ export class IntroSprites {
     return clamp01((ti - INTRO.returnArriveMs) / INTRO.customPassMs);
   }
 
+  /**
+   * How far the spray-can nozzle sits from the sprite's anchor (the mean nozzle) at canvas x `xPx`, in canvas px: the arm's natural bob for the run-cycle frame he is in.
+   * Writes into `out` (no allocation). Returns false (and zeros) until the sprite is loaded.
+   */
+  nozzleOffset(xPx: number, g: Pick<IntroGeom, "cell" | "mh" | "ch">, out: { x: number; y: number }): boolean {
+    const r = this.runner;
+    out.x = 0;
+    out.y = 0;
+    if (!r || !r.nozzles.length) return false;
+    const spriteS = Math.max(this.letterHeightPx(g) * INTRO.runnerScale, g.ch * INTRO.runnerMinShare);
+    const raw = Math.floor((xPx / (spriteS * 0.95)) * r.frames);
+    const frame = ((raw % r.frames) + r.frames) % r.frames;
+    const nz = r.nozzles[frame] ?? r.nozzles[0];
+    if (!nz) return false;
+    const k = spriteS / r.w;
+    out.x = (nz.x - r.nozzleX) * k;
+    out.y = (nz.y - r.nozzleY) * k;
+    return true;
+  }
+
   draw(ctx: CanvasRenderingContext2D, ti: number, g: IntroGeom): void {
     this.drawBags(ctx, ti, g);
     this.drawRunners(ctx, ti, g);
   }
 
-  private letterHeightPx(g: IntroGeom): number {
+  private letterHeightPx(g: Pick<IntroGeom, "cell" | "mh">): number {
     let top = g.mh;
     let bottom = 0;
     for (const l of this.letters) {

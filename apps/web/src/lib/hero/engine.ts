@@ -33,6 +33,23 @@ import { createWaveTables, fillWaveTables, hash1 } from "./waves";
 /** Typed-array reads return `number | undefined` under noUncheckedIndexedAccess; in the hot loops every index is bounds-checked by construction, so 0 is a safe default. */
 const at = (a: ArrayLike<number>, i: number): number => a[i] ?? 0;
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+/** The runner's pace along the word (the same shaping as in intro.ts, which places him): the nozzle x follows this. */
+const eOut = (v: number): number => {
+  const c = clamp01(v);
+  return c * c * (3 - 2 * c) * 0.35 + c * 0.65;
+};
+const smooth01 = (v: number): number => {
+  const c = clamp01(v);
+  return c * c * (3 - 2 * c);
+};
+/** Cheap deterministic integer hash of two numbers, in [0, 1). No allocation. */
+const h32 = (a: number, b: number): number => {
+  let h = Math.imul(a | 0, 0x9e3779b1) ^ Math.imul((b | 0) + 0x7f4a7c15, 0x85ebca6b);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x2c1b3c6d);
+  h ^= h >>> 12;
+  return (h >>> 0) / 4294967296;
+};
 
 export interface HeroOverrides {
   /** Replace window.scrollY (dev and screenshots). */
@@ -129,6 +146,20 @@ export class HeroEngine {
   private sigLens: number[] = [];
   private sigTotal = 0;
   private waveCells: Array<[number, number]> = [];
+  // the writer's hand: paint dose per map cell, deposited by a fixed-step simulation of the nozzle (see advanceSpray)
+  private sprayAmt = new Float32Array(0);
+  private simStep = -1;
+  private simPhase = 0;
+  private readonly noz = { x: 0, y: 0, r: 0 };
+  private readonly nozBob = { x: 0, y: 0 };
+  private readonly nozGeom = { cell: 1, mh: 0, ch: 0 };
+  /** Letter x-runs as [start, end] pairs, ink height per column (share of the letter height), letter top row and height, and drips as [x, y0, len] triples. */
+  private letRuns = new Int32Array(0);
+  private colInk = new Float32Array(0);
+  private letTop = 0;
+  private letSpan = 1;
+  private drips = new Int32Array(0);
+  private dripHead = new Int32Array(0);
   private lastIntroTi = -1;
   private lastT = 0;
   private readonly stats = { letters: 0, coat: 0, halo: 0 };
@@ -288,6 +319,151 @@ export class HeroEngine {
     this.sx1 = hi;
     this.waveCells = [];
     for (let y = 0; y < mh; y += 2) for (let x = 0; x < mw; x += 2) if (this.mapLetters[y * mw + x]) this.waveCells.push([x, y]);
+    this.buildSprayMap();
+  }
+
+  /** Reads the letter mask for the hand: where each letter starts and ends along x, how thick the ink is per column, and where a few drips can run. Runs once per map. */
+  private buildSprayMap(): void {
+    const { mw, mh } = this;
+    const letters = this.mapLetters;
+    this.sprayAmt = new Float32Array(mw * mh);
+    this.simStep = -1;
+    this.simPhase = 0;
+    const cols = new Float32Array(mw);
+    let top = mh;
+    let bot = -1;
+    for (let y = 0; y < mh; y++) {
+      for (let x = 0; x < mw; x++) {
+        if (!letters[y * mw + x]) continue;
+        cols[x] = (cols[x] ?? 0) + 1;
+        if (y < top) top = y;
+        if (y > bot) bot = y;
+      }
+    }
+    this.letTop = bot >= 0 ? top : 0;
+    this.letSpan = Math.max(1, bot - top);
+    this.colInk = cols.map((c) => Math.min(1, c / this.letSpan));
+    const runs: number[] = [];
+    let start = -1;
+    for (let x = 0; x <= mw; x++) {
+      const on = x < mw && (cols[x] ?? 0) > 0;
+      if (on && start < 0) start = x;
+      if (!on && start >= 0) {
+        const n = runs.length;
+        if (n && start - (runs[n - 1] ?? 0) < 3) runs[n - 1] = x - 1; // small gaps inside a letter do not split it
+        else runs.push(start, x - 1);
+        start = -1;
+      }
+    }
+    this.letRuns = Int32Array.from(runs);
+    const nr = runs.length / 2;
+    const drips: number[] = [];
+    for (let k = 0; nr > 0 && k < SPRAY.dripCount; k++) {
+      const ri = Math.min(nr - 1, Math.floor(((k + 0.2 + 0.6 * hash1(k * 9.7 + 1.3)) / SPRAY.dripCount) * nr));
+      const a = runs[ri * 2] ?? 0;
+      const b = runs[ri * 2 + 1] ?? a;
+      const x = a + Math.floor((0.2 + 0.6 * hash1(k * 4.1 + 2.2)) * (b - a));
+      let yb = bot;
+      while (yb > top && !letters[yb * mw + x]) yb--;
+      const want = SPRAY.dripMin + Math.floor(hash1(k * 6.3 + 0.7) * (SPRAY.dripMax - SPRAY.dripMin + 1));
+      const y0 = Math.max(Math.ceil((top + bot) / 2), yb - want - Math.floor(hash1(k * 2.9) * 3));
+      let len = 0;
+      while (len < want && y0 + len < mh && letters[(y0 + len) * mw + x]) len++;
+      if (len >= 2) drips.push(x, y0, len);
+    }
+    this.drips = Int32Array.from(drips);
+    this.dripHead = new Int32Array(drips.length / 3);
+  }
+
+  /**
+   * Advance the hand to `tpMs` into the pass, in fixed steps (so a scrubbed or frozen time is deterministic: the paint is a pure function of time; going backwards replays from 0).
+   * Each step the nozzle sits where the runner's can is (x from the same curve that places him, y from the run cycle's bob plus a quick up/down arm stroke) and lays a soft cone of paint.
+   */
+  private advanceSpray(tpMs: number): void {
+    if (this.sprayAmt.length !== this.mw * this.mh || !this.letRuns.length) return;
+    const last = Math.max(-1, Math.floor(Math.min(tpMs, SPRAY.durationMs) / SPRAY.stepMs));
+    if (last < this.simStep) {
+      this.sprayAmt.fill(0);
+      this.simStep = -1;
+      this.simPhase = 0;
+    }
+    this.nozGeom.cell = this.cell;
+    this.nozGeom.mh = this.mh;
+    this.nozGeom.ch = this.ch;
+    for (let s = this.simStep + 1; s <= last; s++) this.sprayStep(s);
+    this.simStep = last;
+  }
+
+  private sprayStep(s: number): void {
+    const { mw, mh, sx0, sx1, cell, ox } = this;
+    const amt = this.sprayAmt;
+    const sps = clamp01((s * SPRAY.stepMs) / SPRAY.durationMs);
+    const psmax = sx1 - sx0 + Math.abs(SPRAY.slope) * mh;
+    const span = this.letSpan;
+    const row = this.letTop + INTRO.row * span; // the runner's row
+    const cx = sx0 - 8 + (psmax + 24) * eOut(sps) - SPRAY.slope * row; // his nozzle, in cells: the same curve that places the sprite
+    let bx = 0;
+    let by = 0;
+    if (this.intro?.nozzleOffset(ox + (cx + 0.5) * cell, this.nozGeom, this.nozBob)) {
+      bx = this.nozBob.x / cell;
+      by = this.nozBob.y / cell;
+    }
+    const nx = cx + bx;
+    // which letter is he in, and where in it
+    const runs = this.letRuns;
+    let inRun = false;
+    let u = 1;
+    for (let i = 0; i + 1 < runs.length; i += 2) {
+      const a = runs[i] ?? 0;
+      const b = runs[i + 1] ?? 0;
+      if (cx >= a - 1 && cx <= b + 1) {
+        inRun = true;
+        u = (cx - a) / (b - a + 1);
+        break;
+      }
+    }
+    const thick = at(this.colInk, Math.min(mw - 1, Math.max(0, Math.round(cx))));
+    const hesitate = inRun && u < SPRAY.hesitateShare;
+    const flourish = sps > 1 - SPRAY.flourishShare;
+    const n1 = 0.6 * Math.sin(s * 0.037 + 1.7) + 0.4 * Math.sin(s * 0.0113 + 0.4);
+    const n2 = 0.5 * Math.sin(s * 0.021 + 3.1) + 0.5 * Math.sin(s * 0.0517);
+    // stroke tempo: quick hops across gaps, slower on thick strokes, a flick at the end
+    const rate = SPRAY.strokeHz * (1 + SPRAY.strokeNoise * 0.5 * n1) * (inRun ? 1 - 0.25 * thick : SPRAY.gapRate) * (flourish ? SPRAY.flourishRate : 1);
+    this.simPhase += (6.2832 * rate * SPRAY.stepMs) / 1000;
+    const wave = 0.85 * Math.sin(this.simPhase) + 0.15 * Math.sin(this.simPhase * 2.3 + 1);
+    const amp = 0.5 * SPRAY.strokeAmp * span * (1 + SPRAY.strokeNoise * n2) * (hesitate ? SPRAY.hesitateAmp : 1) * (inRun ? 1 : 0.8) * (flourish ? SPRAY.flourishAmp : 1);
+    const ny = row + by + wave * amp;
+    const dose = (inRun ? 0.7 + SPRAY.thickBoost * thick : SPRAY.gapDose) * (hesitate ? SPRAY.hesitateDose : 1) * (flourish ? 1.2 : 1) * smooth01(sps / SPRAY.easeInShare);
+    const R = Math.max(SPRAY.coneMinCells, SPRAY.coneR * span) * (1 + 0.08 * n2);
+    this.noz.x = nx;
+    this.noz.y = ny;
+    this.noz.r = R;
+    if (dose <= 0.001) return;
+    const reach = R * SPRAY.spatterReach;
+    const R2 = R * R;
+    const S2 = reach * reach;
+    const x0 = Math.max(0, Math.floor(nx - reach));
+    const x1 = Math.min(mw - 1, Math.ceil(nx + reach));
+    const y0 = Math.max(0, Math.floor(ny - reach));
+    const y1 = Math.min(mh - 1, Math.ceil(ny + reach));
+    for (let y = y0; y <= y1; y++) {
+      const dy = y - ny;
+      for (let x = x0; x <= x1; x++) {
+        const dx = x - nx;
+        const d2 = dx * dx + dy * dy;
+        if (d2 >= S2) continue;
+        const i = y * mw + x;
+        const h = h32(i, s);
+        if (d2 <= R2) {
+          // full strength at the core, partial at the edge, speckled by a per-cell, per-step wobble
+          const t = smooth01((Math.sqrt(d2) / R - SPRAY.coneCore) / (1 - SPRAY.coneCore));
+          const prof = 1 - (1 - SPRAY.edgeDose) * t;
+          amt[i] = Math.min(2, at(amt, i) + dose * SPRAY.doseRate * prof * (0.7 + 0.6 * h));
+        } else if (h < SPRAY.spatterShare * dose * (1 - (Math.sqrt(d2) - R) / (reach - R))) {
+          amt[i] = Math.min(2, at(amt, i) + 1.5); // a fleck of overspray
+        }
+      }
+    }
   }
 
   private attach(): void {
@@ -537,14 +713,26 @@ export class HeroEngine {
       const b2 = (mm - hy2) * 1.5;
       return Math.min(1, hI * Math.exp(-(a1 * a1 + b1 * b1) / (hR * hR)) + 0.7 * Math.exp(-(a2 * a2 + b2 * b2) / (hR2 * hR2)) + 0.18 + 0.16 * Math.sin(xx * 0.11 + mm * 0.07 + tn * 0.4));
     };
-    const eOut = (v: number): number => {
-      const c = clamp01(v);
-      return c * c * (3 - 2 * c) * 0.35 + c * 0.65;
-    };
     const SLOPE = SPRAY.slope;
     const PSMAX = sx1 - sx0 + Math.abs(SLOPE) * mh;
     const FF = sp >= 1 ? PSMAX + 40 : -8 + (PSMAX + 24) * eOut(sp);
-    const FF2 = sp >= 1 ? PSMAX + 40 : FF - SPRAY.secondCoatLag;
+    // touch-up net: cells far behind the nozzle are guaranteed painted, and that lag closes to 0 as the pass ends so the final state is complete
+    const catchE = sp >= 1 ? 1 : smooth01((sp - SPRAY.catchFrom) / (1 - SPRAY.catchFrom));
+    const FFc = FF - SPRAY.catchLag * (1 - catchE);
+    const FF2 = sp >= 1 ? PSMAX + 40 : FFc - SPRAY.secondCoatLag * (1 - catchE);
+    const tpEff = sprayOverride !== undefined ? sp * SPRAY.durationMs : tp;
+    if (sweeping) this.advanceSpray(tpEff);
+    const amt = this.sprayAmt;
+    // drips: a few lit trickles run down inside the lower half of the letters after the pass, then dry into the final state
+    const nDrips = this.dripHead.length;
+    let dripLive = false;
+    for (let k = 0; k < nDrips; k++) {
+      const t0 = SPRAY.durationMs * SPRAY.dripStart + k * 450;
+      const e = clamp01((tpEff - t0) / SPRAY.dripMs);
+      const alive = !reduce && sp > 0 && tpEff >= t0 && tpEff < t0 + SPRAY.dripMs + SPRAY.dripHoldMs;
+      this.dripHead[k] = alive ? Math.ceil((1 - (1 - e) * (1 - e)) * (this.drips[k * 3 + 2] ?? 0)) : 0;
+      if (alive) dripLive = true;
+    }
     const span = Math.max(1, sx1 - sx0);
 
     // ---- wave sets (one per quarter) and the smooth noise flow
@@ -637,7 +825,7 @@ export class HeroEngine {
             // the outline: pure tan, then one more coat of spray over it
             b = nb0 + NEON;
             const ps2 = x - sx0 + SLOPE * m;
-            if (sp >= 1 || FF2 - ps2 + (ps0 - 0.5) * 6 > 0) {
+            if (sp >= 1 || at(amt, m * mw + x) >= SPRAY.touchUpBase + SPRAY.touchUpSpan * ((ps0 * 1913.7) % 1) || FF2 - ps2 + (ps0 - 0.5) * 6 > 0) {
               const h3 = (ps0 * 3571.7) % 1;
               const d3 = densAt(x, m);
               if (h3 < SPRAY.outlineCoat * (0.6 + 0.8 * d3)) {
@@ -649,17 +837,22 @@ export class HeroEngine {
           } else if (inMap && this.mapLetters[m * mw + x]) {
             // the black inside the letters: spray paint
             const ps = x - sx0 + SLOPE * m;
-            const agep = FF - ps + (ps0 - 0.5) * 6;
-            if (agep > 0 || sp >= 1) {
+            // the hand has been here when the nozzle's cone left enough paint on this cell (edges speckle in, overlaps fill), or the touch-up net has reached it
+            if (sp >= 1 || at(amt, m * mw + x) >= SPRAY.thrMin + SPRAY.thrSpan * ((ps0 * 2749.3) % 1) || FFc - ps + (ps0 - 0.5) * 6 > 0) {
               const h2 = (ps0 * 7919.13) % 1;
               const dens = densAt(x, m);
-              const covp = sp >= 1 ? 1 : Math.min(1, agep / 18);
-              if (ps0 < (SPRAY.coverage + (1 - SPRAY.coverage) * dens) * covp) {
+              let drip = false;
+              if (dripLive) {
+                for (let k = 0; k < nDrips; k++) {
+                  if (x === this.drips[k * 3] && m >= (this.drips[k * 3 + 1] ?? 0) && m < (this.drips[k * 3 + 1] ?? 0) + (this.dripHead[k] ?? 0)) drip = true;
+                }
+              }
+              if (drip || ps0 < SPRAY.coverage + (1 - SPRAY.coverage) * dens) {
                 // at least 84% of the letters are always sprayed; the hand only changes how dense and bright
                 const sl = flag.at((x - sx0) / span + (h2 - 0.5) * 0.006, m / mh + (ps0 - 0.5) * 0.018);
                 stats.letters++;
                 // wet paint: travelling swells whose crests sharpen to a head (lit, with a flash of foam), troughs sit dim
-                b = h2 < 0.22 + 0.78 * dens ? nb0 + sl : nb0 + NEON + 1 + sl;
+                b = drip || h2 < 0.22 + 0.78 * dens ? nb0 + sl : nb0 + NEON + 1 + sl;
                 // Hokusai's wave: now and then a peak stands up out of the paint, a dark body with a white curling lip and clawed foam fingers
                 if (waves.length) {
                   for (let wi = 0; wi < waves.length; wi++) {
@@ -757,7 +950,7 @@ export class HeroEngine {
             }
             // the overspray halo just outside the outline
             let halo = -1;
-            if (cf < 1 && dw > CLOUDS.innerCells && dw < CLOUDS.innerCells + SPRAY.haloReach && (sp >= 1 || FF2 - (x - sx0 + SLOPE * m) > 0)) {
+            if (cf < 1 && dw > CLOUDS.innerCells && dw < CLOUDS.innerCells + SPRAY.haloReach && (sp >= 1 || (inMap && at(amt, m * mw + x) >= SPRAY.touchUpBase + SPRAY.touchUpSpan * ((ps0 * 1913.7) % 1)) || FF2 - (x - sx0 + SLOPE * m) > 0)) {
               const hd = densAt(x, m);
               const hh3 = (ps0 * 5813.3) % 1;
               if (hh3 < (1 - (dw - CLOUDS.innerCells) / SPRAY.haloReach) * SPRAY.haloShare * (0.5 + hd)) {
@@ -831,7 +1024,7 @@ export class HeroEngine {
         start[bk] = s + 1;
       }
     }
-    this.paint(sp, cf, sweeping, { hx, hy, hI, hR, FF, SLOPE, PSMAX, span, sy0 });
+    this.paint(sp, cf, sweeping, { hx, hy, hI, hR, span, sy0 });
     this.lastT = t;
     this.drawIntro(ti, sy0, PSMAX, SLOPE);
   }
@@ -948,7 +1141,7 @@ export class HeroEngine {
     sp: number,
     _cf: number,
     sweeping: boolean,
-    hand: { hx: number; hy: number; hI: number; hR: number; FF: number; SLOPE: number; PSMAX: number; span: number; sy0: number },
+    hand: { hx: number; hy: number; hI: number; hR: number; span: number; sy0: number },
   ): void {
     const { ctx, cell, dpr, sub, ox, mw, mh, r0, sx0, sx1, nb0 } = this;
     const NEON = FLAG_PALETTE.length;
@@ -984,7 +1177,7 @@ export class HeroEngine {
     }
     ctx.globalAlpha = 1;
     if (sx1 <= sx0) return;
-    const { hx, hy, hI, hR, FF, SLOPE, PSMAX, span, sy0 } = hand;
+    const { hx, hy, hI, hR, span, sy0 } = hand;
     // spray mist may only land on the lettering: nothing of the front (or the hand's overspray) is left floating over the background
     const overLetters = (px: number, py: number): boolean => {
       const gx = Math.round((px - ox) / cell - 0.5);
@@ -1009,25 +1202,31 @@ export class HeroEngine {
         ctx.fillRect(hxp, hyp, sz, sz);
       }
     }
-    if (sweeping) {
-      // the spray front: a fine mist and a few larger flecks along the nozzle line
-      const mc = colourAt(clamp01(FF / PSMAX), 0.5);
-      for (let k = 0; k < 240; k++) {
-        const mrow = Math.random() * (mh + 4) - 2;
-        const mx = ox + (sx0 + FF - SLOPE * mrow + 0.5 + (Math.random() + Math.random() - 1) * 9) * cell;
-        const my = (r0 + mrow) * cell - sy0;
+    if (sweeping && this.noz.r > 0) {
+      // the nozzle's own mist: a faint glow and fine flecks inside the spray cone, only over the lettering
+      const { x: nx, y: ny, r: nr } = this.noz;
+      const cxp = ox + (nx + 0.5) * cell;
+      const cyp = (r0 + ny) * cell - sy0;
+      const rp = nr * cell;
+      const mc = colourAt(clamp01((nx - sx0) / span), clamp01(ny / mh));
+      const glow = ctx.createRadialGradient(cxp, cyp, 0, cxp, cyp, rp * 0.95);
+      const ga = overLetters(cxp, cyp) ? SPRAY.mistGlow : SPRAY.mistGlow * 0.35;
+      glow.addColorStop(0, toRgba(mc, ga));
+      glow.addColorStop(1, toRgba(mc, 0));
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(cxp, cyp, rp * 0.95, 0, 6.2832);
+      ctx.fill();
+      const fr = this.simStep;
+      for (let k = 0; k < SPRAY.mistFlecks; k++) {
+        const ang = h32(k, fr * 3 + 1) * 6.2832;
+        const rr = rp * (0.1 + 1.15 * h32(k, fr * 3 + 2) ** 1.5);
+        const mx = cxp + Math.cos(ang) * rr;
+        const my = cyp + Math.sin(ang) * rr;
         if (!overLetters(mx, my)) continue;
-        ctx.fillStyle = toRgba(mc, 0.16 + Math.random() * 0.5);
-        const ms = (0.8 + Math.random() * 1.7) * dpr;
+        ctx.fillStyle = toRgba(mc, 0.14 + 0.4 * (1 - rr / (rp * 1.25)) * h32(k, fr * 3 + 3));
+        const ms = (0.8 + 1.6 * h32(k, fr * 3 + 4)) * dpr;
         ctx.fillRect(mx, my, ms, ms);
-      }
-      for (let k = 0; k < 50; k++) {
-        const mrow = Math.random() * (mh + 4) - 2;
-        const mx = ox + (sx0 + FF - SLOPE * mrow + 0.5 + (Math.random() - 0.5) * 4) * cell;
-        const my = (r0 + mrow) * cell - sy0;
-        if (!overLetters(mx, my)) continue;
-        ctx.fillStyle = toRgba(mc, 0.35 + Math.random() * 0.4);
-        ctx.fillRect(mx, my, 2.4 * dpr, 2.4 * dpr);
       }
     }
   }

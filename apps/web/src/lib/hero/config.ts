@@ -76,6 +76,57 @@ export const SPRAY = {
   outlineCoat: 0.06,
   haloReach: 3.4,
   haloShare: 0.07,
+
+  // ---- the writer's hand. The paint is deposited from the runner's nozzle in a soft cone (a fixed-step simulation, see engine.advanceSpray), not from a slanted line.
+  // The runner's own x (and so the nozzle's) still follows the old front curve, so his timing is untouched; the "human" pace lives in stroke tempo and dose.
+  /** Fixed simulation step (ms). Smaller is smoother but replays cost more when the spray is scrubbed. */
+  stepMs: 16,
+  /** Cone radius as a share of the letter height (minimum `coneMinCells`), and the share of it that is full-strength core. */
+  coneR: 0.3,
+  coneMinCells: 4,
+  coneCore: 0.4,
+  /** Paint dose per step at the cone core (1 = a cell is fully covered after ~1/doseRate steps). Edge dose falls to `edgeDose` of the core. */
+  doseRate: 0.3,
+  edgeDose: 0.1,
+  /** A cell shows once its paint reaches a per-cell threshold in [thrMin, thrMin+thrSpan]: edges (little paint) only speckle in, overlaps fill them. */
+  thrMin: 0.1,
+  thrSpan: 0.85,
+  /** Vertical arm strokes: rate (Hz), peak-to-peak swing as a share of letter height, and random variation of swing and rate (0..1). */
+  strokeHz: 2.6,
+  strokeAmp: 0.6,
+  strokeNoise: 0.35,
+  /** Pace per letter: dose across the gap between letters, extra dose on thick strokes, and stroke-rate multiplier in gaps (quick hops). */
+  gapDose: 0.15,
+  thickBoost: 0.9,
+  gapRate: 1.5,
+  /** Hesitation at the start of a letter: share of the letter width, dose multiplier and swing multiplier while it lasts. */
+  hesitateShare: 0.07,
+  hesitateDose: 1.5,
+  hesitateAmp: 0.35,
+  /** Ease-in over the first share of the pass, and the flourish over the last share (bigger, quicker strokes, more paint). */
+  easeInShare: 0.04,
+  flourishShare: 0.07,
+  flourishAmp: 1.25,
+  flourishRate: 1.4,
+  /** Overspray: chance per step of a spatter fleck in the ring between 1x and `spatterReach` x the cone radius. */
+  spatterReach: 2,
+  spatterShare: 0.03,
+  /** Touch-up safety net: cells this far behind the nozzle (cells) are guaranteed painted; the lag shrinks to 0 from `catchFrom` of the pass so the end state is complete. */
+  catchLag: 60,
+  catchFrom: 0.8,
+  /** Second coat over the outline / halo needs this much paint (plus a share of the per-cell threshold), so it only lands where the hand came back over. */
+  touchUpBase: 0.55,
+  touchUpSpan: 0.8,
+  /** Drips: a few lit trickles run down inside the lower half of the letters after the pass. Count, length range (cells), start (share of the pass), slide time and hold time (ms). */
+  dripCount: 3,
+  dripMin: 3,
+  dripMax: 6,
+  dripStart: 0.6,
+  dripMs: 3600,
+  dripHoldMs: 1400,
+  /** Mist round the nozzle: fleck count per frame, and the glow alpha. */
+  mistFlecks: 110,
+  mistGlow: 0.1,
 } as const;
 
 /**
