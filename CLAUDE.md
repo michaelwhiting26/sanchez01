@@ -14,6 +14,16 @@ You are the principal engineer building the Sanchez Custom Boxing website as a *
   - `media-scrape/videos/` (5 × 1080p, including the hero film of Jesse sewing)
   - `media-assets/` (logo `SANCHEZ LOGO.jpeg`, screenshots of the social posts, the configurator prototype image)
 
+## Master rule: the runner is Jesse (non-negotiable)
+Owner's hard rule, set 30 Sep 2026. It overrides any other instruction, file or older decision.
+
+**The hero runner is Jesse Sanchez, the owner of the business.**
+- It is always Jesse, modelled from his own footage: `tools/runner/Jesse.glb`, built by `tools/runner/build_jesse.py` and approved by the owner. Never a generic mannequin, stock character or any other person.
+- **He runs through the entire site with the scroll.** He is the one continuous character from the hero spray to the end of the page, driven by scroll, beat by beat. One man only: never a second or duplicate figure on screen.
+- Every new section or animation that involves a character uses Jesse and continues his journey. Nothing replaces him or breaks the thread.
+- Changing who he is, or removing him from any part of the journey, needs the owner's explicit say-so.
+- The current beats are listed in `docs/LOCKED-DECISIONS.md`.
+
 ## Evidence rule (non-negotiable)
 Do not invent any of these:
 - reviews, ratings, stats, clients or testimonials
