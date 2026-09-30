@@ -397,3 +397,7 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 .rollBtn:hover .enq__arrowA, .rollBtn:focus-visible .enq__arrowA { transform: translate(150%, -150%); }
 .rollBtn:hover .enq__arrowB, .rollBtn:focus-visible .enq__arrowB { transform: translate(0, 0); }
 @media (prefers-reduced-motion: reduce) { .enq__char, .enq__icon svg { transition: none; } .rollBtn:hover .enq__char, .rollBtn:focus-visible .enq__char { transform: none; } .enq__arrowB { opacity: 0; } }
+
+/* the heading sits fully on the card: the card's top edge is 11.1% down the surface artwork (128/1152), so start below it */
+.rise__panel { padding-block-start: calc(max(100vh, 720px) * 0.111 + clamp(28px, 4vw, 64px)); }
+.rise__statement { margin-block-start: 0; }
