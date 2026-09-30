@@ -158,7 +158,7 @@ export const INTRO = {
   /** Tiptoe: time of one full sneak cycle (the speed follows from its pxPerCycle, so the feet never slide). */
   sneakCycleMs: 1100,
   /** Planting the feet at the C before the first stroke. */
-  plantMs: 350,
+  plantMs: 450,
   /** Time to write the whole signature, lifts included. */
   customWriteMs: 8000,
   /** A finished stroke fills in over this long. */

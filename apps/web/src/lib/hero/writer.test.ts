@@ -147,7 +147,7 @@ describe("lookYaw", () => {
 
 describe("planReturn timeline", () => {
   const plan = planReturn(params, fakePen);
-  const body: BodyState = { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0 };
+  const body: BodyState = { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0, turn: 1, stepping: false, travelled: 0 };
   it("phases are ordered, and the writing lasts INTRO.customWriteMs", () => {
     const t = [plan.p.startMs, plan.tWalkEnd, plan.tLookEnd, plan.tSneakEnd, plan.tWrite0, plan.tWrite1, plan.tHoldEnd, plan.tEnd];
     for (let i = 1; i < t.length; i++) expect(t[i] ?? 0).toBeGreaterThan(t[i - 1] ?? 0);
@@ -193,6 +193,29 @@ describe("planReturn timeline", () => {
     sampleReturn(plan, plan.tWrite0 - 10, body);
     expect(body.mode).toBe(MODE.write);
     expect(body.x).toBeCloseTo(plan.xStart, 6);
+  });
+});
+
+describe("turn and shuffle state", () => {
+  const plan = planReturn(params, fakePen);
+  const body: BodyState = { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0, turn: 1, stepping: false, travelled: 0 };
+  it("turns to face the wall over the plant beat, then holds turned", () => {
+    sampleReturn(plan, plan.tSneakEnd + 1, body);
+    expect(body.turn).toBeLessThan(0.05);
+    sampleReturn(plan, plan.tWrite0, body);
+    expect(body.turn).toBeCloseTo(1, 6);
+  });
+  it("flags each step, and the ground covered only grows", () => {
+    let prev = 0;
+    let stepped = 0;
+    for (let t = plan.tWrite0; t < plan.tWrite1; t += 20) {
+      sampleReturn(plan, t, body);
+      expect(body.travelled).toBeGreaterThanOrEqual(prev - 1e-9);
+      prev = body.travelled;
+      if (body.stepping) stepped++;
+    }
+    expect(stepped).toBeGreaterThan(10);
+    expect(prev).toBeGreaterThan(300);
   });
 });
 

@@ -259,6 +259,10 @@ export interface BodyState {
   yaw: number;
   /** ms into the writing (negative while planting). */
   wt: number;
+  /** While writing: 0..1 progress of the turn to face the wall (< 1 while planting), whether he is mid-shuffle, and the ground the shuffles have covered (px, for the gait frame). */
+  turn: number;
+  stepping: boolean;
+  travelled: number;
 }
 
 /** Where the body is and what it is doing at `ti`. */
@@ -269,6 +273,9 @@ export function sampleReturn(plan: ReturnPlan, ti: number, out: BodyState): void
   out.dist = 0;
   out.yaw = 0;
   out.wt = 0;
+  out.turn = 1;
+  out.stepping = false;
+  out.travelled = 0;
   out.x = p.xEnter;
   if (ti < p.startMs || ti > plan.tEnd) return;
   if (ti < plan.tWalkEnd) {
@@ -300,6 +307,14 @@ export function sampleReturn(plan: ReturnPlan, ti: number, out: BodyState): void
     out.mode = MODE.write;
     out.wt = ti - plan.tWrite0;
     out.x = bodyAt(plan.steps, plan.xStart, out.wt);
+    out.turn = smooth((out.wt + p.plantMs) / p.plantMs);
+    for (let i = 0; i < plan.steps.length; i++) {
+      const s = plan.steps[i];
+      if (!s || out.wt < s.t0) break;
+      const f = smooth((out.wt - s.t0) / (s.t1 - s.t0));
+      out.travelled += Math.abs(s.to - s.from) * f;
+      if (out.wt < s.t1) out.stepping = true;
+    }
     return;
   }
   const u = (ti - plan.tHoldEnd) / p.walkOutMs;

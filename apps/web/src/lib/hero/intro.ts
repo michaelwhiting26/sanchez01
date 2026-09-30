@@ -189,7 +189,7 @@ export class IntroSprites {
   private planCw = 0;
   private planSize = 0;
   private planFlags = -1;
-  private readonly body: BodyState = { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0 };
+  private readonly body: BodyState = { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0, turn: 1, stepping: false, travelled: 0 };
   private readonly penNow: PenState = { x: 0, y: 0, down: false, stroke: 0 };
   private readonly penOld: PenState = { x: 0, y: 0, down: false, stroke: 0 };
   private readonly tmpV: Vec = { x: 0, y: 0 };
@@ -449,11 +449,11 @@ export class IntroSprites {
     return Math.max(this.letterHeightPx(g) * INTRO.runnerScale, g.ch * INTRO.runnerMinShare);
   }
 
-  private blitSheet(ctx: CanvasRenderingContext2D, s: Sheet, frame: number, x: number, gy: number, k: number, mirrored: boolean): void {
+  private blitSheet(ctx: CanvasRenderingContext2D, s: Sheet, frame: number, x: number, gy: number, k: number, mirrored: boolean, sx = 1): void {
     const f = ((frame % s.frames) + s.frames) % s.frames;
     ctx.save();
     ctx.translate(x, gy);
-    if (mirrored) ctx.scale(-1, 1);
+    ctx.scale(mirrored ? -sx : sx, 1);
     ctx.drawImage(s.img, (f % s.cols) * s.size, Math.floor(f / s.cols) * s.size, s.size, s.size, -s.hipsX * k, -s.footY * k, s.size * k, s.size * k);
     ctx.restore();
   }
@@ -486,12 +486,16 @@ export class IntroSprites {
       const still = this.fallbackSheet();
       if (look) this.blitSheet(ctx, look, Math.round(b.yaw * (look.frames - 1)), b.x, ground, k, b.mirrored);
       else if (still) this.blitSheet(ctx, still, 0, b.x, ground, k, b.mirrored);
-    } else this.drawReach(ctx, plan, sig.pen, b, k, ground);
+    } else if (b.turn < 0.5) {
+      // planting: he is still facing left, and turns on the spot (narrowing) towards the wall
+      const still = this.look ?? this.sneak ?? this.fallbackSheet();
+      if (still) this.blitSheet(ctx, still, 0, b.x, ground, k, true, 1 - 1.6 * b.turn);
+    } else this.drawReach(ctx, plan, sig.pen, b, k, ground, this.walk ?? this.fallbackSheet());
     ctx.restore();
   }
 
   /** The two spray poses whose nozzles are nearest the pen, each carried so its nozzle sits exactly on the pen, cross-faded by distance. */
-  private drawReach(ctx: CanvasRenderingContext2D, plan: ReturnPlan, pen: SigPen, b: BodyState, k: number, ground: number): void {
+  private drawReach(ctx: CanvasRenderingContext2D, plan: ReturnPlan, pen: SigPen, b: BodyState, k: number, ground: number, walk: Sheet | null): void {
     const R = this.reachSheet();
     if (!R) return;
     const p = this.penNow;
@@ -518,8 +522,38 @@ export class IntroSprites {
       ctx.globalAlpha = alpha;
       ctx.drawImage(R.img, (f % R.cols) * R.size, Math.floor(f / R.cols) * R.size, R.size, R.size, p.x - (R.nx[i] ?? 0) * k, p.y - (R.ny[i] ?? 0) * k, R.size * k, R.size * k);
     };
-    pose(i1, 1);
-    if (i2 >= 0 && d1 + d2 > 0) pose(i2, d1 / (d1 + d2));
+    // the turn to face the wall: the pose widens from a sliver, about the nozzle so it stays on the pen
+    const sx = b.turn < 1 ? 0.2 + 1.6 * (b.turn - 0.5) : 1;
+    const feetY = p.y - ((R.ny[i1] ?? 0) - R.footY) * k; // where the chosen pose's feet land
+    const hipsX = p.x - ((R.nx[i1] ?? 0) - (R.hx[i1] ?? 0)) * k;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.scale(sx, 1);
+    ctx.translate(-p.x, -p.y);
+    if (b.stepping && walk) {
+      // mid-shuffle: the legs are the walk cycle (feet stepping on the pose's own baseline), the upper body stays the spray pose so the nozzle stays on the pen
+      const cut = feetY - (walk.footY - 150) * k;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(p.x - 4 * R.size * k, p.y - 4 * R.size * k, 8 * R.size * k, cut - (p.y - 4 * R.size * k));
+      ctx.clip();
+      pose(i1, 1);
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(p.x - 4 * R.size * k, cut, 8 * R.size * k, 8 * R.size * k);
+      ctx.clip();
+      ctx.globalAlpha = 1;
+      this.blitSheet(ctx, walk, Math.floor((b.travelled / (walk.pxPerCycle * k)) * walk.frames), hipsX, feetY, k, false);
+      ctx.restore();
+    } else {
+      pose(i1, 1);
+      if (i2 >= 0 && d1 + d2 > 0) {
+        ctx.shadowColor = "rgba(0,0,0,0)"; // the glow belongs under the body, not over the first pose
+        pose(i2, 2 * (d1 / (d1 + d2)) ** 2); // squared: the second pose only shows near the halfway point, so the two bodies ghost for less of the time
+      }
+    }
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
