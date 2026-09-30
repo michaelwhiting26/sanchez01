@@ -16,3 +16,7 @@ prototype/media/
 
 # dev order store (JSON file), never committed
 apps/web/.data/
+
+# generated on every dev/build/typegen run (paths differ between dev and build); never commit
+apps/web/next-env.d.ts
+*.tsbuildinfo

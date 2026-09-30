@@ -192,6 +192,9 @@ export function mountBagLetters(host: HTMLElement, freeze: number | null = null)
     new THREE.MeshPhysicalMaterial({ color: hex, roughness: 0.5, clearcoat: 0.18, clearcoatRoughness: 0.3, envMapIntensity: 0.5 });
   disposables.push(...Object.values(MAT));
 
+  // a guard (not `instanceof` inline) so the narrowed type is BufferGeometry with its default attribute map, not BufferGeometry<any, any>
+  const isGeometry = (v: unknown): v is THREE.BufferGeometry => v instanceof THREE.BufferGeometry;
+
   const build = (model: THREE.Object3D): void => {
     // bake every part into model space and centre the bag on the origin
     model.updateMatrixWorld(true);
@@ -200,7 +203,9 @@ export function mountBagLetters(host: HTMLElement, freeze: number | null = null)
     const bodyBox = new THREE.Box3();
     model.traverse((o) => {
       if (!(o instanceof THREE.Mesh) || /^metal/.test(o.name)) return; // no chain or hook
-      const geo = o.geometry.clone();
+      const src: unknown = o.geometry; // THREE.Mesh's geometry is typed `any`; narrow it before use
+      if (!isGeometry(src)) return;
+      const geo = src.clone();
       geo.applyMatrix4(o.matrixWorld);
       geo.computeBoundingBox();
       const isBody = /^(body|crown)/.test(o.name);

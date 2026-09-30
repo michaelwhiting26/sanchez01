@@ -21,7 +21,9 @@ export function Marquee() {
     let visible = true;
     let raf = 0;
     const io = new IntersectionObserver((e) => (visible = e[0]?.isIntersecting ?? true), { rootMargin: "150px" });
-    io.observe(tracks[0]?.parentElement ?? tracks[0]!);
+    const first = tracks[0];
+    if (!first) return;
+    io.observe(first.parentElement ?? first);
     const frame = (now: number): void => {
       raf = requestAnimationFrame(frame);
       if (!visible) {

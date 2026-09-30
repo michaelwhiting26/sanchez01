@@ -18,6 +18,10 @@ export default tseslint.config(
       "apps/web/playwright-report/**",
       "apps/web/test-results/**",
       "apps/web/.turbo/**",
+      // Served as-is to the browser (prototype-era viewer scripts and a prebuilt carousel bundle); not compiled or imported by the app.
+      "apps/web/public/**",
+      // A separate Figma plugin with its own package.json and runtime (Figma sandbox, CommonJS); not part of the web app. Tracked as debt.
+      "tools/figma-plugin/**",
     ],
   },
   js.configs.recommended,
@@ -50,7 +54,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.js"],
+    files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
     ...tseslint.configs.disableTypeChecked,
   },
   prettier,

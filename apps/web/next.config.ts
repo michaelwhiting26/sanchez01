@@ -5,9 +5,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite", "postgres"],
   // Lets a phone on the home Wi-Fi open the dev server (http://<this Mac's LAN IP>:3000). Dev only; has no effect in production.
   // In development never let a phone reuse an old stylesheet or script: always fetch the current one.
-  async headers() {
-    return process.env.NODE_ENV === "production" ? [] : [{ source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }] }];
-  },
+  headers: () =>
+    Promise.resolve(process.env.NODE_ENV === "production" ? [] : [{ source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }] }]),
   allowedDevOrigins: ["192.168.1.115", "192.168.*.*"],
 };
 

@@ -53,7 +53,6 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resume, setResume] = useState<ReturnType<typeof loadSaved>>(null);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [backToReview, setBackToReview] = useState(false);
   const [scene, setScene] = useState<SceneId>("studio");
@@ -132,7 +131,6 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     const id = window.setTimeout(() => {
       const at = new Date().toISOString();
       store({ cfg, currency, step: STEPS.findIndex((s) => s.id === stepId), answered, skipped, savedAt: at });
-      setSavedAt(at);
     }, 400);
     return () => window.clearTimeout(id);
   }, [cfg, currency, stepId, answered, skipped, resume]);

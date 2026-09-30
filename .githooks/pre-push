@@ -1,0 +1,5 @@
+#!/bin/sh
+# Installed for everyone by `npm install` / `npm ci` (package.json "prepare" sets core.hooksPath to .githooks).
+# Same checks as CI's first step. The production build runs in CI only (it takes about a minute). Bypass in an emergency with `git push --no-verify`.
+echo "pre-push: npm run check (typecheck, lint, unit tests)"
+npm run -s check || { echo "pre-push: checks failed, push blocked. Fix them, or see CI for the same result."; exit 1; }
