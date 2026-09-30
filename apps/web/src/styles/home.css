@@ -644,15 +644,24 @@ html.gallery-locked { overscroll-behavior: none; }
 /* "Waitlist" heading: the same heavy, slightly condensed Mona Sans in red as the mr-2 "Killer Kelly" button text (red = the site's accent) */
 .waitlist__title { font-family: "Mona Sans", var(--font-display), Arial, sans-serif; font-weight: 800; font-variation-settings: "wdth" 86; letter-spacing: 0; color: var(--color-accent-text, #c4553a); }
 
-/* "Order" button: the Button 85 look, a dark rounded button with a slowly shifting rainbow glow round it (the ghost button keeps its plain outline) */
-.bag-punch__btn:not(.bag-punch__btn--ghost) { position: relative; z-index: 0; border: 0; border-radius: 14px; background: transparent; color: #fff; text-shadow: 0 1px 8px rgb(0 0 0 / .55); }
-.bag-punch__btn:not(.bag-punch__btn--ghost)::before { content: ""; position: absolute; inset: -2px; z-index: -2; border-radius: 16px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; filter: blur(7px); opacity: .9; animation: bp-glow 20s linear infinite; transition: filter .35s ease, opacity .35s ease; }
-.bag-punch__btn:not(.bag-punch__btn--ghost)::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 14px; clip-path: inset(0 round 14px); filter: blur(7px); background: radial-gradient(ellipse 62% 70% at 50% 50%, rgb(10 8 8 / .86) 0%, rgb(10 8 8 / .5) 62%, rgb(10 8 8 / 0) 100%), linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 100% 100%, 400% 100%; animation: bp-fill 20s linear infinite; }   /* the face is the glow itself: the same rainbow, softly blurred, luminous at the edges and fading into a dark glassy centre (not a solid fill) */
-.bag-punch__btn:not(.bag-punch__btn--ghost):hover, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible { background: transparent; color: #fff; }
-.bag-punch__btn:not(.bag-punch__btn--ghost):hover::before, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible::before { filter: blur(11px); opacity: 1; }
-@keyframes bp-fill { 0% { background-position: 0 0, 0 0; } 50% { background-position: 0 0, 400% 0; } 100% { background-position: 0 0, 0 0; } }
-@keyframes bp-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
-@media (prefers-reduced-motion: reduce) { .bag-punch__btn:not(.bag-punch__btn--ghost)::before, .bag-punch__btn:not(.bag-punch__btn--ghost)::after { animation: none; } }
+/* Order buttons, premium: a bone-white plate with a fine gold edge, tracked capitals, and one slow gold sheen across it on hover. Nothing glows or animates on its own. The ghost button is a hairline outline. */
+.bag-punch__btn:not(.bag-punch__btn--ghost) {
+  position: relative; z-index: 0; overflow: hidden; border: 0; border-radius: 2px;
+  background: linear-gradient(180deg, #f7f0e3 0%, #e9dec8 100%); color: #15110d; text-shadow: none;
+  font-weight: 600; letter-spacing: .3em;
+  box-shadow: inset 0 0 0 1px rgb(201 164 92 / .7), inset 0 1px 0 rgb(255 255 255 / .75), 0 22px 36px -20px rgb(0 0 0 / .95), 0 0 0 1px rgb(0 0 0 / .35);
+  transition: transform .6s cubic-bezier(.2, .7, .2, 1), box-shadow .6s ease;
+}
+.bag-punch__btn:not(.bag-punch__btn--ghost)::before { content: none; }
+.bag-punch__btn:not(.bag-punch__btn--ghost)::after {
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; border-radius: 0; clip-path: none; filter: none;
+  background: linear-gradient(105deg, transparent 30%, rgb(201 164 92 / .42) 50%, transparent 70%); transform: translateX(-130%); transition: transform 1.1s cubic-bezier(.2, .7, .2, 1);
+}
+.bag-punch__btn:not(.bag-punch__btn--ghost):hover, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible { background: linear-gradient(180deg, #faf4e8 0%, #eee3cd 100%); color: #15110d; transform: translateY(-1px); box-shadow: inset 0 0 0 1px rgb(214 176 100 / .95), inset 0 1px 0 rgb(255 255 255 / .8), 0 26px 40px -20px rgb(0 0 0 / .95), 0 0 0 1px rgb(0 0 0 / .35); }
+.bag-punch__btn:not(.bag-punch__btn--ghost):hover::after, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible::after { transform: translateX(130%); }
+.bag-punch__btn--ghost { border-radius: 2px; letter-spacing: .3em; border-color: rgb(243 234 220 / .3); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .3); transition: border-color .5s ease, background .5s ease, transform .5s ease; }
+.bag-punch__btn--ghost:hover, .bag-punch__btn--ghost:focus-visible { border-color: rgb(201 164 92 / .85); background: rgb(201 164 92 / .07); }
+@media (prefers-reduced-motion: reduce) { .bag-punch__btn:not(.bag-punch__btn--ghost)::after { transition: none; } }
 
 /* the film flows on down through the gallery's entry: the section's backdrop is see-through (slides stay above, at z-index 2), so the film and hero field carry on below the old hard edge */
 .lgc-track .lgc-section { background: transparent !important; }
