@@ -468,3 +468,38 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .depth-card::after { content: ""; position: absolute; inset: 9px; border-radius: 11px; border: 1px dashed rgb(201 164 92 / .42); pointer-events: none; z-index: 2; }
 .depth-card__t { color: #f3eadc; letter-spacing: .06em; }
 .depth-card__s { color: #c9a45c; }
+
+/* ---- Waitlist: a quiet, mysterious teaser. Black, hairline gold stitching, one redacted list. ---- */
+.waitlist { position: relative; background: #070707; padding: clamp(72px, 14vh, 160px) var(--gutter, 1.25rem); overflow: hidden; }
+.waitlist::before, .waitlist::after { content: ""; position: absolute; inset-inline: clamp(16px, 5vw, 64px); block-size: 0; border-block-start: 1px dashed rgb(201 164 92 / .3); }
+.waitlist::before { inset-block-start: clamp(16px, 4vh, 40px); } .waitlist::after { inset-block-end: clamp(16px, 4vh, 40px); }
+.waitlist__inner { position: relative; max-inline-size: 640px; margin-inline: auto; text-align: center; display: grid; justify-items: center; gap: clamp(16px, 2.6vh, 26px); }
+.waitlist__eyebrow { margin: 0; font: 500 .72rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .42em; text-transform: uppercase; color: #c9a45c; }
+.waitlist__title { margin: 0; font: 800 clamp(2.6rem, 9vw, 5.2rem)/.95 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; }
+.waitlist__lede { margin: 0; max-inline-size: 34ch; font: 400 1.05rem/1.5 var(--font-text, Barlow, sans-serif); color: #a99f92; }
+.waitlist__reveal { list-style: none; margin: clamp(6px, 1.4vh, 14px) 0; padding: 0; inline-size: min(100%, 360px); display: grid; gap: 12px; text-align: start; }
+.waitlist__reveal li { display: flex; align-items: center; gap: 16px; padding-block-end: 12px; border-block-end: 1px dashed rgb(201 164 92 / .22); }
+.waitlist__n { font: 500 .72rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; color: #6f665b; }
+.waitlist__t { font: 700 1.05rem/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .18em; text-transform: uppercase; color: #f3eadc; }
+.waitlist__bar { block-size: .9rem; inline-size: 9rem; border-radius: 2px; background: repeating-linear-gradient(90deg, #1b1a18 0 6px, #24221f 6px 9px); position: relative; overflow: hidden; }
+.waitlist__bar--long { inline-size: 13rem; }
+.waitlist__bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgb(201 164 92 / .22), transparent); transform: translateX(-100%); animation: waitlist-sweep 5.5s ease-in-out infinite; }
+.waitlist__reveal li:nth-child(3) .waitlist__bar::after { animation-delay: 1.8s; }
+@keyframes waitlist-sweep { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.waitlist__form { inline-size: min(100%, 520px); display: grid; gap: 12px; margin-block-start: clamp(4px, 1vh, 10px); }
+.waitlist__label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+.waitlist__row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.waitlist__input { min-inline-size: 0; block-size: 3rem; padding: 0 1rem; border: 1px solid rgb(255 255 255 / .18); border-radius: .54rem; background: #0d0d0c; color: #f3eadc; font: 400 1rem/1 var(--font-text, Barlow, sans-serif); }
+.waitlist__input::placeholder { color: #6f665b; }
+.waitlist__input:focus-visible { outline: 2px solid #c9a45c; outline-offset: 2px; border-color: transparent; }
+.waitlist__input[aria-invalid="true"] { border-color: #c4553a; }
+.waitlist__hp { position: absolute; inset-inline-start: -9999px; inline-size: 1px; block-size: 1px; opacity: 0; }
+.waitlist__btn { margin: 0; }
+.waitlist__msg { margin: 0; min-block-size: 1.4em; font: 500 .95rem/1.4 var(--font-text, Barlow, sans-serif); color: #c9a45c; }
+.waitlist__msg.is-error { color: #e07a5f; }
+.waitlist__fine { margin: 0; font: 400 .78rem/1.5 var(--font-text, Barlow, sans-serif); color: #6f665b; }
+.waitlist__fine a { color: #a99f92; }
+.waitlist.is-done .waitlist__row { display: none; }
+.waitlist.is-done .waitlist__msg { font: 800 clamp(1.4rem, 5vw, 2rem)/1.1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .08em; text-transform: uppercase; color: #f3eadc; }
+@media (max-width: 520px) { .waitlist__row { grid-template-columns: 1fr; } .waitlist__btn { inline-size: 100%; } }
+@media (prefers-reduced-motion: reduce) { .waitlist__bar::after { animation: none; } }
