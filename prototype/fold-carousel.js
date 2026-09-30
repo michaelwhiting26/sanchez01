@@ -72,6 +72,31 @@ function start(root) {
     return m;
   });
 
+  /* ---- the flare: as a card swings edge-on, a spectral streak of light runs the FULL height of the stage at its hinge, and the next card unfolds out of it ---- */
+  const FLARE_V = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+  const FLARE_F = `precision highp float; varying vec2 vUv; uniform float uI, uT;
+    vec3 spectrum(float t){ return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67))); }
+    void main(){
+      float x = (vUv.x - 0.5) * 2.0, y = vUv.y;
+      float core = exp(-pow(x * 26.0, 2.0)), halo = exp(-abs(x) * 5.0) * 0.32;
+      float tall = smoothstep(0.0, 0.10, y) * smoothstep(1.0, 0.90, y);                       /* runs the whole height, tapering only at the very ends */
+      float streak = exp(-abs(y - 0.5) * 7.0) * exp(-abs(x) * 0.9) * 0.28;                     /* the anamorphic glint across the middle */
+      vec3 hue = mix(spectrum(y * 0.85 + uT * 0.04), vec3(1.0, 0.9, 0.75), core * 0.55);       /* spectral along its length, hot white at the very centre */
+      float k = (core * 1.25 + halo) * tall + streak;
+      gl_FragColor = vec4(hue, clamp(k * uI, 0.0, 1.0));
+      #include <colorspace_fragment>
+    }`;
+  const flareGeo = new THREE.PlaneGeometry(1, 1);
+  const flares = cards.map(() => { const m = new THREE.Mesh(flareGeo, new THREE.ShaderMaterial({ vertexShader: FLARE_V, fragmentShader: FLARE_F, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, uniforms: { uI: { value: 0 }, uT: { value: 0 } } })); m.renderOrder = 100; m.visible = false; scene.add(m); return m; });
+  function placeFlare(f, o, phi, hingeX, hingeZ, timeS) {
+    const a = Math.abs(o), edgeOn = Math.exp(-Math.pow((phi - Math.PI / 2) / 0.32, 2));               /* peaks when the card is exactly edge-on */
+    const inten = a < 1.6 ? 0.16 * sm(0.05, 0.9, a) * (1 - sm(1.0, 1.6, a)) + 1.0 * edgeOn : 0;         /* a faint one at rest, a full one at edge-on */
+    f.visible = inten > 0.01; if (!f.visible) return;
+    const dist = cam.position.z - hingeZ, vh = 2 * dist * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2));
+    f.position.set(hingeX, 0, hingeZ + 0.05); f.scale.set(0.9, vh * 1.04, 1);                          /* full stage height at that depth */
+    f.material.uniforms.uI.value = inten; f.material.uniforms.uT.value = timeS;
+  }
+
   /* ---- layout: where each card sits for a (fractional) offset from the centre ---- */
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   function place(m, o) {
@@ -81,7 +106,7 @@ function start(root) {
     m.position.set(hinge + s * along * cosP, 0, -along * sinP + Math.max(0, a - 1) * 0.3);          /* swings about the inner edge; deeper cards curl back toward the lens */
     m.rotation.y = s * phi;
     const u = m.material.uniforms; u.uFold.value = fold; u.uSide.value = s; u.uOpacity.value = 1 - sm(1.7, 2.5, a);
-    m.renderOrder = -Math.round(a * 10); m.visible = a < 2.6;                                                   /* the deepest card fades out before it can grow past the frame */
+    m.renderOrder = -Math.round(a * 10); m.visible = a < 2.6; return { phi, hinge, hz: Math.max(0, a - 1) * 0.3 };                                                   /* the deepest card fades out before it can grow past the frame */
   }
 
   /* ---- state: pos is the (fractional) index at the centre; an exact critically damped spring settles it on the target ---- */
@@ -117,7 +142,7 @@ function start(root) {
     if (!reduce && !hoverOrFocus && !drag && now - idleSince > 4500) go(1);                       /* gentle autoplay, off for reduced motion */
     const moving = drag || pos !== target || vel !== 0; if (!moving && !dirty) return;
     if (!drag) spring(dt);
-    meshes.forEach((m, i) => place(m, wrap(i - pos)));
+    meshes.forEach((m, i) => { const o = wrap(i - pos), r = place(m, o); placeFlare(flares[i], o, r.phi, r.hinge, r.hz, now / 1000); });
     renderer.render(scene, cam); dirty = false; root.classList.add("is-ready");
   }
   requestAnimationFrame(frame);
