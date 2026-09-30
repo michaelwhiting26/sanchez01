@@ -9,6 +9,7 @@ import { BagConfigSchema, COLOURS, DEFAULT_BAG, type BagConfig, type Issue, type
 import { CURRENCIES, formatMoney, type Currency } from "@/lib/commerce/money";
 import type { PriceResult } from "@/lib/configurator/pricing";
 import { clearSaved, decodeShare, encodeShare, loadSaved, store } from "@/lib/configurator/save";
+import { ShareSheet } from "./ShareSheet";
 import { activeSteps, BOOLEAN_KEYS, GROUPS, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
 import { LOGO_SRC } from "@/lib/site";
 import "../../styles/cockpit.v3.css";
@@ -53,7 +54,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [error, setError] = useState<string | null>(null);
   const [resume, setResume] = useState<ReturnType<typeof loadSaved>>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [backToReview, setBackToReview] = useState(false);
   const [scene, setScene] = useState<SceneId>("studio");
   const [photo, setPhoto] = useState<string | null>(null);
@@ -212,9 +213,8 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     setBusy(false);
   }
 
-  async function share(): Promise<void> {
-    const url = `${window.location.origin}/configure#c=${encodeShare(cfg, currency)}`;
-    try { await navigator.clipboard.writeText(url); setCopied(true); window.setTimeout(() => setCopied(false), 2000); } catch { window.prompt("Copy your link", url); }
+  function share(): void {
+    setShareUrl(`${window.location.origin}/configure#c=${encodeShare(cfg, currency)}`); // opens the share sheet
   }
 
   const a = def.answer;
@@ -253,7 +253,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
           </ol>
           <p className="ck__price"><strong>{priceText}</strong>{res?.depositMinor && price?.status === "priced" ? <> · deposit {formatMoney(res.depositMinor, price.currency)}</> : null}{price?.status === "priced" && price.book === "test" ? " · test price" : ""}</p>
         </div>
-        <button type="button" className="ck__save" onClick={() => void share()} aria-label="Copy a link to this build">{copied ? "Copied" : savedAt ? "Saved" : "Share"}</button>
+        <button type="button" className="ck__save" onClick={share} aria-label="Share this build">Share</button>
       </header>
 
       {sheet && (
@@ -342,6 +342,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
         </div>
         {errors.filter((i) => stepForKey(i.path) === def.id).map((i) => <p key={i.code} className="ck__err" role="alert">{i.message}</p>)}
       </section>
+      <ShareSheet url={shareUrl ?? ""} open={shareUrl !== null} onClose={() => setShareUrl(null)} />
     </div>
   );
 }
