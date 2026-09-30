@@ -490,7 +490,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 @keyframes waitlist-sweep { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 .waitlist__form { inline-size: min(100%, 520px); display: grid; gap: 12px; margin-block-start: clamp(4px, 1vh, 10px); }
 .waitlist__label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
-.waitlist__row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.waitlist__row { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .waitlist__input { min-inline-size: 0; block-size: 3rem; padding: 0 1rem; border: 1px solid rgb(255 255 255 / .18); border-radius: .54rem; background: #0d0d0c; color: #f3eadc; font: 400 1rem/1 var(--font-text, Barlow, sans-serif); }
 .waitlist__input::placeholder { color: #6f665b; }
 .waitlist__input:focus-visible { outline: 2px solid #c9a45c; outline-offset: 2px; border-color: transparent; }
@@ -744,3 +744,15 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .bag-punch__view { transition: opacity 1.8s cubic-bezier(.2, .6, .2, 1); }
 @media (prefers-reduced-motion: reduce) { .bag-punch__view { transition: none; } }
 .bag-punch { block-size: calc(min(100svh, 980px) + var(--cta-zone) + var(--pill-zone)); }
+
+/* the waitlist submit button orbits the globe: a ring tilted 45deg off the globe's north axis, positioned by OrbitSubmit's rAF loop (transforms only) */
+.globe-slot { position: relative; overflow-x: clip; --globe-d: min(98vw, 480px); }
+@media (min-width: 761px) { .globe-slot { --globe-d: 400px; } }
+.orbit-layer { position: absolute; inset-block-start: 0; inset-inline-start: 50%; inline-size: var(--globe-d); block-size: var(--globe-d); margin-inline-start: calc(var(--globe-d) / -2); pointer-events: none; }
+.orbit-submit { position: absolute; inset: 0 auto auto 0; inline-size: 56px; block-size: 56px; padding: 0; border: 1px solid rgb(201 164 92 / .9); border-radius: 50%; background: #c9a45c; color: #0e0b09; display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 22px rgb(0 0 0 / .5), inset 0 1px 0 rgb(255 255 255 / .35); will-change: transform, opacity; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: background .3s ease, box-shadow .3s ease; }
+.orbit-submit svg { inline-size: 22px; block-size: 22px; }
+.orbit-submit:hover:not(:disabled) { background: #f3eadc; }
+.orbit-submit:focus-visible { outline: 2px solid #f3eadc; outline-offset: 3px; box-shadow: 0 0 0 5px #c9a45c, 0 6px 22px rgb(0 0 0 / .5); }
+.orbit-submit:disabled { cursor: default; }
+.orbit-submit:disabled:not(.is-done) { filter: saturate(.5) brightness(.85); }
+.orbit-submit.is-done { background: #f3eadc; border-color: #f3eadc; }

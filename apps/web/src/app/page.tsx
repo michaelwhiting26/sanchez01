@@ -6,6 +6,7 @@ import { FooterMin } from "@/components/home/FooterMin";
 import { Hero } from "@/components/home/Hero";
 import { Marquee } from "@/components/home/Marquee";
 import { RisePanel } from "@/components/home/RisePanel";
+import { OrbitSubmit } from "@/components/home/OrbitSubmit";
 import { Waitlist } from "@/components/home/Waitlist";
 import { WorkshopGallery } from "@/components/home/WorkshopGallery";
 
@@ -30,6 +31,7 @@ export default function HomePage() {
         <RisePanel>
           <Waitlist />
           <div className="globe-slot" data-globe-slot="">
+            <OrbitSubmit label="Submit" />
             <BagHit />
           </div>
           <FooterMin />

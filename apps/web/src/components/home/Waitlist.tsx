@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { RollingSubmit } from "@/components/ui/RollingButton";
+import { WAITLIST_FORM_ID, publishWaitlistState } from "./OrbitSubmit";
 import { GoogleButton } from "./GoogleButton";
 import { WAITLIST_LINES, waitlistSchema, type WaitlistMethod } from "@/lib/waitlist";
 
@@ -89,6 +89,9 @@ export function Waitlist() {
     }
   }, []);
   useTypingPlaceholder(inputRef, !done);
+  useEffect(() => {
+    publishWaitlistState({ busy, done });
+  }, [busy, done]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -168,7 +171,7 @@ export function Waitlist() {
             <span className="visually-hidden">Not announced</span>
           </li>
         </ol>
-        <form className="waitlist__form" onSubmit={(e) => void onSubmit(e)} noValidate>
+        <form className="waitlist__form" id={WAITLIST_FORM_ID} onSubmit={(e) => void onSubmit(e)} noValidate>
           {!done && (
             <div className="waitlist__method" role="radiogroup" aria-label="Sign up with">
               {METHODS.map((m) => (
@@ -198,7 +201,6 @@ export function Waitlist() {
               aria-invalid={error ? true : undefined}
             />
             <input className="waitlist__hp" type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" />
-            <RollingSubmit label="Submit" className="waitlist__btn" disabled={busy} />
           </div>
           <p className={`waitlist__msg${error ? " is-error" : ""}`} id={`${id}-msg`} role="status" aria-live="polite">
             {done ? "You are in." : (error ?? "")}
