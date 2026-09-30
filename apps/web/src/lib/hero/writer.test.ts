@@ -542,3 +542,10 @@ describe("SigPen (svg -> canvas)", () => {
     expect(pen.lens[0]).toBe(100);
   });
 });
+
+describe("revealedLength before writing starts", () => {
+  it("shows no ink on the first stroke long before the pen arrives, even with the commit ramp", () => {
+    const plan = planWrite(LENS, INTRO.customWriteMs, INTRO.liftMs, { commitMs: INTRO.commitMs || 900 });
+    for (const t of [-1, -500, -20000, -600000]) expect(revealedLength(plan, t, 0)).toBe(0);
+  });
+});

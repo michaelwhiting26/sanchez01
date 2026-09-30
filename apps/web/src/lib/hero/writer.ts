@@ -128,6 +128,7 @@ export function revealedLength(plan: WritePlan, t: number, i: number): number {
   const L = plan.lens[i] ?? 0;
   if (d <= 0) return t >= (plan.t0[i] ?? 0) ? L : 0;
   let local = t - (plan.t0[i] ?? 0);
+  if (local <= 0) return 0; // not started yet (the commit ramp below squares `local`, so a negative value would wrongly reveal the first stroke early)
   let dEff = d;
   const pm = plan.pauseMs[i] ?? 0;
   if (pm > 0) {
