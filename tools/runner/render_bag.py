@@ -16,6 +16,9 @@ root = os.path.dirname(os.path.abspath(__file__))
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=os.path.join(root, "..", "..", "apps", "web", "public", "assets", "bag3d", "bag_4ft.glb"))
 scene = bpy.context.scene
+# only the bag itself: no chain, hook, swivel or straps
+for o in [o for o in bpy.data.objects if o.type == "MESH" and (o.name.startswith("metal") or o.name.startswith("strap"))]:
+    bpy.data.objects.remove(o, do_unlink=True)
 meshes = [o for o in bpy.data.objects if o.type == "MESH"]
 
 mat = bpy.data.materials.new("sil"); mat.use_nodes = True
