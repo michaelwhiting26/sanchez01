@@ -179,9 +179,6 @@ export function Waitlist() {
           <p className={`waitlist__msg${error ? " is-error" : ""}`} id={`${id}-msg`} role="status" aria-live="polite">
             {done ? "You are in." : (error ?? "")}
           </p>
-          <a className="waitlist__priv" href="/legal/privacy">
-            Privacy
-          </a>
         </form>
       </div>
     </section>
