@@ -19,6 +19,12 @@ async function connect(): Promise<Db> {
     return { query: async <T extends Record<string, unknown>>(q: string, params: readonly unknown[] = []) => (await sql.unsafe(q, params as never[])) as unknown as T[] };
   }
   const { PGlite } = await import("@electric-sql/pglite");
+  if (process.env.NODE_ENV === "production") {
+    // No DATABASE_URL on a deployment (its disk is read-only): a real Postgres in memory, so the site works as a demo. Data is lost on restart. Set DATABASE_URL to keep it.
+    console.warn("[db] DATABASE_URL is not set: using an in-memory database (demo only, not persistent).");
+    const mem = new PGlite();
+    return { query: async <T extends Record<string, unknown>>(q: string, params: readonly unknown[] = []) => (await mem.query<T>(q, params as unknown[])).rows };
+  }
   const dir = path.join(process.cwd(), ".data", "pglite");
   await fs.mkdir(path.dirname(dir), { recursive: true }); // PGlite creates its own folder but not the parent
   const pg = new PGlite(dir);

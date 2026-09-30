@@ -12,6 +12,7 @@ const Schema = z.object({
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   /** Dev only: price with a synthetic book so the funnel can be exercised before real prices exist. Ignored in production. */
   TEST_PRICES: z.enum(["0", "1"]).default("0"),
+  ALLOW_DEMO: z.enum(["0", "1"]).default("0"),
 });
 
 export type Env = z.infer<typeof Schema>;
@@ -22,4 +23,9 @@ export function env(): Env {
 
 /** A key is "real" only if it looks like a Stripe key and is not the .env.example placeholder. */
 export const isRealStripeKey = (k: string | undefined): k is string => Boolean(k && /^(sk|rk)_(test|live)_/.test(k) && !k.includes("placeholder"));
-export const testPricesOn = (e: Env): boolean => e.TEST_PRICES === "1" && e.NODE_ENV !== "production";
+/**
+ * Demo mode: development, or a deployment where ALLOW_DEMO=1 is set on purpose (a private preview before real prices, keys and a database exist).
+ * In demo mode test prices, the mock deposit button and the built-in order-link secret are allowed. Never set ALLOW_DEMO on the real, public site.
+ */
+export const demoMode = (e: Env): boolean => e.NODE_ENV !== "production" || e.ALLOW_DEMO === "1";
+export const testPricesOn = (e: Env): boolean => e.TEST_PRICES === "1" && demoMode(e);

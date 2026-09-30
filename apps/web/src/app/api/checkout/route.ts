@@ -5,7 +5,7 @@ import { depositMinor } from "@/lib/commerce/money";
 import { getOrderStore, type Order } from "@/lib/commerce/orders";
 import { getPaymentProvider } from "@/lib/commerce/payments";
 import { signOrderToken } from "@/lib/commerce/token";
-import { env, testPricesOn } from "@/lib/env";
+import { demoMode, env, testPricesOn } from "@/lib/env";
 import { SCHEMA_VERSION } from "@/lib/configurator/schema";
 
 const DEV_SECRET = "dev-only-order-link-secret-not-for-production-0000";
@@ -30,7 +30,7 @@ export async function POST(req: Request): Promise<Response> {
   const e = env();
   const percent = e.DEPOSIT_PERCENT ?? (testPricesOn(e) ? 30 : undefined); // dev fallback only alongside test prices; undecided in production (business TODO)
   if (!percent) return NextResponse.json({ error: "deposit_percent_unset" }, { status: 500 });
-  const secret = e.ORDER_LINK_SECRET ?? (e.NODE_ENV !== "production" ? DEV_SECRET : undefined);
+  const secret = e.ORDER_LINK_SECRET ?? (demoMode(e) ? DEV_SECRET : undefined);
   if (!secret) return NextResponse.json({ error: "order_link_secret_unset" }, { status: 500 });
 
   const total = r.price.totalMinor;
