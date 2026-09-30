@@ -875,6 +875,12 @@ export class HeroEngine {
     ctx.globalAlpha = 1;
     if (sx1 <= sx0) return;
     const { hx, hy, hI, hR, FF, SLOPE, PSMAX, span, sy0 } = hand;
+    // spray mist may only land on the lettering: nothing of the front (or the hand's overspray) is left floating over the background
+    const overLetters = (px: number, py: number): boolean => {
+      const gx = Math.round((px - ox) / cell - 0.5);
+      const gy = Math.round((py + sy0) / cell - r0);
+      return gx >= 0 && gx < mw && gy >= 0 && gy < mh && (this.mapLetters[gy * mw + gx] ?? 0) === 1;
+    };
     const toRgba = (c: Rgb, a: number): string => `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(2)})`;
     const colourAt = (u: number, v: number): Rgb => this.flag.colour(u, v);
     if (sp >= 1 && !this.reduce) {
@@ -886,8 +892,11 @@ export class HeroEngine {
         const rh = (Math.random() + Math.random() - 1) * hR * cell * 0.9;
         const aH = 0.1 + Math.random() * 0.3;
         const sz = (0.8 + Math.random() * 1.5) * dpr;
+        const hxp = ox + (hx + 0.5) * cell + Math.cos(ah) * rh;
+        const hyp = (r0 + hy) * cell - sy0 + Math.sin(ah) * rh * 0.7;
+        if (!overLetters(hxp, hyp)) continue;
         ctx.fillStyle = toRgba(mcH, aH);
-        ctx.fillRect(ox + (hx + 0.5) * cell + Math.cos(ah) * rh, (r0 + hy) * cell - sy0 + Math.sin(ah) * rh * 0.7, sz, sz);
+        ctx.fillRect(hxp, hyp, sz, sz);
       }
     }
     if (sweeping) {
@@ -897,6 +906,7 @@ export class HeroEngine {
         const mrow = Math.random() * (mh + 4) - 2;
         const mx = ox + (sx0 + FF - SLOPE * mrow + 0.5 + (Math.random() + Math.random() - 1) * 9) * cell;
         const my = (r0 + mrow) * cell - sy0;
+        if (!overLetters(mx, my)) continue;
         ctx.fillStyle = toRgba(mc, 0.16 + Math.random() * 0.5);
         const ms = (0.8 + Math.random() * 1.7) * dpr;
         ctx.fillRect(mx, my, ms, ms);
@@ -905,6 +915,7 @@ export class HeroEngine {
         const mrow = Math.random() * (mh + 4) - 2;
         const mx = ox + (sx0 + FF - SLOPE * mrow + 0.5 + (Math.random() - 0.5) * 4) * cell;
         const my = (r0 + mrow) * cell - sy0;
+        if (!overLetters(mx, my)) continue;
         ctx.fillStyle = toRgba(mc, 0.35 + Math.random() * 0.4);
         ctx.fillRect(mx, my, 2.4 * dpr, 2.4 * dpr);
       }
