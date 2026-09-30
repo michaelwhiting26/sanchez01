@@ -235,7 +235,8 @@ export class HeroEngine {
     const [r, g, b] = TAN;
     for (let lv = 0; lv <= levels; lv++) {
       const k = lv / levels;
-      const shade = `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`; // the warm grades are all tan now (both ends of the old cream-to-gold ramp)
+      const kk = k * RIDGES.gain; // the ridge lines sit back so the runner and the paint own the contrast
+      const shade = `rgb(${Math.round(r * kk)},${Math.round(g * kk)},${Math.round(b * kk)})`; // the warm grades are all tan now (both ends of the old cream-to-gold ramp)
       for (let w = 0; w < warms; w++) this.styles.push(shade);
     }
     for (const c of FLAG_PALETTE) this.styles.push(`rgb(${c[0]},${c[1]},${c[2]})`);
@@ -678,17 +679,21 @@ export class HeroEngine {
             // the cloud bank (intro only)
             let cl = 0;
             if (cf > 0 && noise && dw > CLOUDS.innerCells && dw < CLOUDS.outerCells) {
-              const cxn = x * 0.032;
-              const cyn = pr * 0.05;
-              const ctn = tn * 0.02;
+              // a bank of billowing cloud: soft graded density (not a random on/off dither), lit from the top-left, drifting, then slumping as it melts
+              const cxn = x * 0.03;
+              const cyn = (pr - (1 - cf) * 8) * 0.048;
+              const ctn = seconds * 0.05;
               const f1 = fbm3(noise, cxn, cyn, ctn);
-              const f2 = fbm3(noise, cxn - 0.06, cyn - 0.06, ctn);
-              const lim = 10 + 40 * (0.5 + 0.5 * f1) + 8 * (0.5 + 0.5 * fbm3(noise, cxn * 2.4 + 5, cyn * 2.4, ctn * 1.4));
-              const cness = Math.min(1, (lim - dw) / 9);
+              const f2 = fbm3(noise, cxn - 0.07, cyn - 0.07, ctn);
+              const bil = 1 - Math.abs(noise(cxn * 2.2 + 3, cyn * 2.2, ctn * 1.4)); // the cauliflower edges of a cumulus
+              const lim = 12 + 40 * (0.5 + 0.5 * f1) + 8 * (0.5 + 0.5 * fbm3(noise, cxn * 2.4 + 5, cyn * 2.4, ctn * 1.4));
+              const cness = clamp01((lim - dw) / 15);
               if (cness > 0) {
-                const shade = Math.min(1, Math.max(0.12, 0.55 + (f2 - f1) * 5));
-                const body = 0.4 + 0.6 * Math.min(1, (lim - dw) / lim + 0.25);
-                if (ps0 < (0.42 + 0.55 * cness * body) * cf) cl = Math.round(levels * Math.min(1, cness * (0.16 + 0.92 * shade * body)));
+                const puff = 0.5 * (0.5 + 0.5 * f1) + 0.5 * bil;
+                const lit = clamp01(0.55 + (f2 - f1) * 5.5);
+                const dcl = cness * (0.3 + 0.7 * puff) * cf;
+                const lv = Math.round(levels * clamp01(dcl * (0.3 + 0.9 * lit) * 1.6));
+                if (lv > 0 && ps0 < 0.6 + 0.4 * clamp01(dcl * 1.6)) cl = lv;
               }
             }
             // the overspray halo just outside the outline
@@ -786,14 +791,15 @@ export class HeroEngine {
       const r = el.getBoundingClientRect();
       sig = { left: r.left * this.dpr, right: r.right * this.dpr, y: (r.top + r.height * 0.55) * this.dpr };
     }
-    const g: IntroGeom = { cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
+    const flagRef = this.flag;
+    const g: IntroGeom = { colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
     this.introGeom = g;
     // each bag landing sends a ripple through the dots: the field reacts to the impact
     for (const l of intro.landings()) {
       if (this.lastIntroTi < l.at && ti >= l.at) this.ripples.push({ x: this.ox + (l.cx + 0.5) * this.cell, y: (this.r0 + l.cy) * this.cell - sy0, start: performance.now() });
     }
     this.lastIntroTi = ti;
-    if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 200) intro.draw(this.ctx, ti, g);
+    if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 1200) intro.draw(this.ctx, ti, g);
     if (el) {
       const hidden = intro.signatureHidden(ti, g);
       el.style.clipPath = `inset(0 ${(hidden * 100).toFixed(2)}% 0 0)`; // inline beats the stylesheet's hidden default

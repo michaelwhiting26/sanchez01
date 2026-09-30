@@ -38,6 +38,8 @@ export const RIDGES = {
   drift: 0.9,
   /** Levels of brightness and grades of warmth in the colour buckets. */
   levels: 20,
+  /** Brightness of the ridge lines and clouds against the paint and outline (1 = full tan). */
+  gain: 0.74,
   warms: 6,
 } as const;
 
@@ -93,7 +95,7 @@ export const INTRO = {
   runnerEnterMs: 800,
   runOffMs: 900,
   returnStartMs: 8500,
-  returnArriveMs: 9300,
+  returnArriveMs: 9900,
   customPassMs: 1600,
   returnExitMs: 800,
   /** Runner height as a share of the letter height, and the row (share of the letter height) it sprays at. */

@@ -1,4 +1,4 @@
-import { INTRO, SPRAY } from "./config";
+import { INTRO, SPRAY, type Rgb } from "./config";
 
 export interface LetterBox {
   /** Grid units: centre column and the top and bottom rows of the letter. */
@@ -51,6 +51,8 @@ export interface IntroGeom {
   sx1: number;
   slope: number;
   psmax: number;
+  /** Flag colour at normalised (u, v), for the spray mist. */
+  colourAt: (u: number, v: number) => Rgb;
   /** The "Custom" signature's box in canvas pixels, or null. */
   sig: { left: number; right: number; y: number } | null;
 }
@@ -70,6 +72,11 @@ interface RunnerMeta {
 }
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+/** Deterministic per-bag / per-puff randomness in [0, 1). */
+const vr = (i: number, k: number): number => {
+  const x = Math.sin((i + 1) * 12.9898 + k * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
 /** The same shaping as the spray front in the engine. */
 const eOut = (v: number): number => {
   const c = clamp01(v);
@@ -112,7 +119,7 @@ export class IntroSprites {
 
   /** Letter centres in grid units and the time each bag lands, for the field's landing ripples. */
   landings(): Array<{ cx: number; cy: number; at: number }> {
-    return this.letters.map((l, i) => ({ cx: l.cx, cy: (l.top + l.bottom) / 2, at: INTRO.bagsStartMs + i * INTRO.bagStaggerMs + INTRO.bagDurMs * 0.86 }));
+    return this.letters.map((l, i) => ({ cx: l.cx, cy: (l.top + l.bottom) / 2, at: INTRO.bagsStartMs + i * INTRO.bagStaggerMs + (vr(i, 5) - 0.5) * 70 + INTRO.bagDurMs * 0.86 }));
   }
 
   /** How much of "Custom" is still hidden from the right, 0..1 (1 hidden, 0 fully shown): it is sprayed in left to right behind the runner. */
@@ -146,17 +153,25 @@ export class IntroSprites {
     const bagH = this.letterHeightPx(g) * 1.12;
     const bagW = (bagH * bag.w) / bag.h;
     this.letters.forEach((l, i) => {
-      const p = clamp01((ti - INTRO.bagsStartMs - i * INTRO.bagStaggerMs) / INTRO.bagDurMs);
+      // every bag is its own: size, spin count and direction, where it drifts in from, and when it drops
+      const sz = 0.9 + 0.2 * vr(i, 1);
+      const spins = 1.1 + 1.3 * vr(i, 2);
+      const dir = vr(i, 3) < 0.5 ? 1 : -1;
+      const drift = (vr(i, 4) - 0.5) * this.letterHeightPx(g) * 1.1;
+      const p = clamp01((ti - INTRO.bagsStartMs - i * INTRO.bagStaggerMs - (vr(i, 5) - 0.5) * 70) / INTRO.bagDurMs);
       if (p <= 0) return;
       const q = p - 1;
       const e = 1 + 2.4 * q * q * q + 1.6 * q * q; // ease-out-back: lands, dips past its mark, settles
-      const cx = g.ox + (l.cx + 0.5) * g.cell;
+      const cx = g.ox + (l.cx + 0.5) * g.cell + drift * (1 - p) * (1 - p);
       const cy = g.r0 * g.cell - g.sy0 + ((l.top + l.bottom) / 2) * g.cell;
-      const y = -bagH + (cy + bagH) * e;
-      const turns = 1.5 * (1 - p) ** 1.4; // a turn and a half, fast then easing to the side-on frame as it lands
-      const frame = Math.floor(turns * bag.frames) % bag.frames;
+      const h = bagH * sz;
+      const w = bagW * sz;
+      const y = -h + (cy + h) * e;
+      const turns = spins * (1 - p) ** 1.4; // fast, then easing to the side-on frame as it lands
+      const raw = Math.floor(turns * bag.frames) % bag.frames;
+      const frame = dir > 0 ? raw : (bag.frames - raw) % bag.frames;
       ctx.globalAlpha = fade * Math.min(1, p * 4);
-      ctx.drawImage(bag.img, (frame % bag.cols) * bag.w, Math.floor(frame / bag.cols) * bag.h, bag.w, bag.h, cx - bagW / 2, y - bagH / 2, bagW, bagH);
+      ctx.drawImage(bag.img, (frame % bag.cols) * bag.w, Math.floor(frame / bag.cols) * bag.h, bag.w, bag.h, cx - w / 2, y - h / 2, w, h);
     });
     ctx.globalAlpha = 1;
   }
@@ -211,7 +226,7 @@ export class IntroSprites {
     return sig.right + vS * u + 0.5 * a * u * u;
   }
 
-  private drawRunnerAt(ctx: CanvasRenderingContext2D, x: number, y: number, spriteS: number, mirrored: boolean): void {
+  private drawRunnerAt(ctx: CanvasRenderingContext2D, x: number, y: number, spriteS: number, mirrored: boolean, squash = 0): void {
     const r = this.runner;
     if (!r) return;
     const cycle = spriteS * 0.95;
@@ -221,6 +236,10 @@ export class IntroSprites {
     ctx.save();
     ctx.translate(x, y);
     if (mirrored) ctx.scale(-1, 1);
+    if (squash > 0) {
+      ctx.rotate(-0.07 * squash); // the crouch and lean as he sets himself to spray
+      ctx.scale(1 + 0.03 * squash, 1 - 0.08 * squash);
+    }
     ctx.shadowColor = "rgba(232,168,90,0.55)"; // a soft amber edge light so the black body separates from the dark ground
     ctx.shadowBlur = spriteS * 0.05;
     ctx.drawImage(r.img, (frame % r.cols) * r.w, Math.floor(frame / r.cols) * r.h, r.w, r.h, -r.nozzleX * k, -r.nozzleY * k, spriteS, spriteS);
@@ -236,9 +255,43 @@ export class IntroSprites {
     const rowAt = (share: number): number => top + share * (Lh / g.cell);
     const row = rowAt(INTRO.row);
     const x = this.frontRunnerX(ti, g, row, spriteS);
-    if (x !== null) this.drawRunnerAt(ctx, x, rowsPx(row), spriteS, false);
-    if (g.sig && ti >= INTRO.returnStartMs && ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 100) {
-      this.drawRunnerAt(ctx, this.returnRunnerX(ti, g, spriteS), g.sig.y, spriteS, false);
+    const yRow = rowsPx(row);
+    const tp = ti - INTRO.sprayStartMs;
+    const bump = (t: number, a: number, b: number): number => (t > a && t < b ? Math.sin(((t - a) / (b - a)) * Math.PI) ** 2 : 0);
+    // lingering spray mist behind him once the pass is done: it hangs and thins after he has gone
+    if (tp > SPRAY.durationMs - 150) this.drawMist(ctx, (t) => this.frontRunnerX(t, g, row, spriteS), ti, yRow, spriteS, () => g.colourAt(0.55, 0.5));
+    if (x !== null) this.drawRunnerAt(ctx, x, yRow, spriteS, false, bump(tp, -260, 220));
+    if (g.sig && ti >= INTRO.returnStartMs && ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 100 + 900) {
+      const sig = g.sig;
+      this.drawMist(ctx, (t) => (t < INTRO.returnArriveMs - 120 ? null : this.returnRunnerX(t, g, spriteS)), ti, sig.y, spriteS, () => [196, 85, 58]);
+      if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 100) {
+        const tau = ti - INTRO.returnArriveMs;
+        this.drawRunnerAt(ctx, this.returnRunnerX(ti, g, spriteS), sig.y, spriteS, false, bump(tau, -300, 160));
+      }
+    }
+  }
+
+  /** A trail of soft puffs at the nozzle's earlier positions, growing and thinning with age. */
+  private drawMist(ctx: CanvasRenderingContext2D, xAt: (t: number) => number | null, ti: number, y: number, spriteS: number, colour: () => Rgb): void {
+    const [r, gg, b] = colour();
+    const LIFE = 900;
+    for (let k = 0; k < 18; k++) {
+      const age = k * 50;
+      const px = xAt(ti - age);
+      if (px === null) continue;
+      const life = age / LIFE;
+      const a = 0.26 * (1 - life) ** 1.6;
+      if (a < 0.01) continue;
+      const jx = (vr(k, 7) - 0.5) * spriteS * 0.07;
+      const jy = (vr(k, 8) - 0.5) * spriteS * 0.1 - life * spriteS * 0.05; // it drifts up as it thins
+      const R = spriteS * (0.018 + 0.05 * life);
+      const g2 = ctx.createRadialGradient(px + jx, y + jy, 0, px + jx, y + jy, R);
+      g2.addColorStop(0, `rgba(${r},${gg},${b},${a.toFixed(3)})`);
+      g2.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+      ctx.fillStyle = g2;
+      ctx.beginPath();
+      ctx.arc(px + jx, y + jy, R, 0, 6.2832);
+      ctx.fill();
     }
   }
 }

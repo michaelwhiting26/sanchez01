@@ -60,8 +60,8 @@ nt = mat.node_tree
 nt.nodes.clear()
 lw = nt.nodes.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.5
 ramp = nt.nodes.new("ShaderNodeValToRGB")
-ramp.color_ramp.elements[0].position = 0.12; ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
-ramp.color_ramp.elements[1].position = 0.45; ramp.color_ramp.elements[1].color = (0.84, 0.71, 0.53, 1)   # thin tan rim so the silhouette reads on black
+ramp.color_ramp.elements[0].position = 0.34; ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
+ramp.color_ramp.elements[1].position = 0.62; ramp.color_ramp.elements[1].color = (0.62, 0.45, 0.26, 1)   # thin tan rim so the silhouette reads on black
 em = nt.nodes.new("ShaderNodeEmission")
 out = nt.nodes.new("ShaderNodeOutputMaterial")
 nt.links.new(lw.outputs["Fresnel"], ramp.inputs["Fac"]); nt.links.new(ramp.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
