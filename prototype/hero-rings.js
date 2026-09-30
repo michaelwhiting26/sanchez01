@@ -18,17 +18,19 @@
   var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 9, FLOOR = 0.26;
   var CREAM = [214, 181, 136], GOLD = [214, 181, 136];   /* Tan #D6B588: the whole pattern, the SANCHEZ outline and the ridges, in one colour (brightness still fades with distance) */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
-  var LEVELS = 20, WARMS = 6, NEON = 30, NB0 = (LEVELS + 1) * WARMS, NB = NB0 + 2 * NEON + 1, styles = [];   /* the last NEON shades are the SANCHEZ outline, one per slice of the word, left to right */
+  var LEVELS = 20, WARMS = 6, NEON = 3, NB0 = (LEVELS + 1) * WARMS, NB = NB0 + 2 * NEON + 1, styles = [];   /* the last NEON shades are the SANCHEZ outline, one per slice of the word, left to right */
   /* the spectrum, each colour taken to both of its ends (light and deep): pink -> deep red -> orange -> yellow -> blue */
-  var SPECTRUM = [[255, 120, 190], [255, 32, 140], [255, 16, 96], [214, 10, 40], [255, 34, 24], [255, 96, 12], [255, 150, 0], [255, 210, 0], [255, 244, 70], [90, 220, 255], [24, 150, 255], [30, 80, 255]];
-  function spec(u) { u = Math.min(1, Math.max(0, u)) * (SPECTRUM.length - 1); var i = Math.min(SPECTRUM.length - 2, Math.floor(u)), f = u - i, a = SPECTRUM[i], b = SPECTRUM[i + 1]; return [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f)]; }
+  /* the Australian flag, taken from the official artwork (assets/flag/flag-3840.png): navy #012169, red #E4002B, white. The navy is lifted a little so it reads on black. */
+  var PAL = [[26, 66, 176], [228, 0, 43], [250, 250, 250]], flagIdx = null, FW = 480, FH = 240;
+  function flagAt(u, v) { if (!flagIdx) return u < 0.5 ? 0 : (v < 0.5 ? 1 : 2); var fx = Math.min(FW - 1, Math.max(0, Math.round(u * (FW - 1)))), fy = Math.min(FH - 1, Math.max(0, Math.round(v * (FH - 1)))); return flagIdx[fy * FW + fx]; }
+  function spec(u, v) { return PAL[flagAt(u, v === undefined ? 0.5 : v)]; }
   for (var lv = 0; lv <= LEVELS; lv++) for (var w = 0; w < WARMS; w++) {
     var k = lv / LEVELS, t = w / (WARMS - 1);
     styles.push("rgb(" + Math.round((CREAM[0] + (GOLD[0] - CREAM[0]) * t) * k) + "," + Math.round((CREAM[1] + (GOLD[1] - CREAM[1]) * t) * k) + "," + Math.round((CREAM[2] + (GOLD[2] - CREAM[2]) * t) * k) + ")");
   }
-  for (var nz = 0; nz < NEON; nz++) { var nc = spec(nz / (NEON - 1)); styles.push("rgb(" + nc[0] + "," + nc[1] + "," + nc[2] + ")"); }
+  for (var nz = 0; nz < NEON; nz++) { var nc = PAL[nz]; styles.push("rgb(" + nc[0] + "," + nc[1] + "," + nc[2] + ")"); }
   styles.push("rgb(" + CREAM[0] + "," + CREAM[1] + "," + CREAM[2] + ")");   /* the tan of the outline, kept separate from the paint */
-  for (var nd = 0; nd < NEON; nd++) { var dc = spec(nd / (NEON - 1)); styles.push("rgb(" + Math.round(dc[0] * 0.5) + "," + Math.round(dc[1] * 0.5) + "," + Math.round(dc[2] * 0.5) + ")"); }   /* the thinner, dimmer coat */
+  for (var nd = 0; nd < NEON; nd++) { var dc = PAL[nd]; styles.push("rgb(" + Math.round(dc[0] * 0.55) + "," + Math.round(dc[1] * 0.55) + "," + Math.round(dc[2] * 0.55) + ")"); }   /* the thinner, dimmer coat */
   var cursor = { x: 0, y: 0, active: false }, ripples = [], cell = 1, ox = 0, dpr = 1, moving = false, fieldEnd = 1e9, cw = 0, ch = 0;
 
   function load() {
@@ -41,6 +43,13 @@
       for (var i = 0; i < n; i++) { bd[i] = px[i * 4]; bp[i] = px[i * 4 + 1] > 127; bl[i] = px[i * 4 + 2] > 127; }
       sx0 = MW; sx1 = 0; for (var yb = 0; yb < MH; yb++) for (var xb = 0; xb < MW; xb++) if (bp[yb * MW + xb]) { if (xb < sx0) sx0 = xb; if (xb > sx1) sx1 = xb; }
       sprayStart = performance.now();
+      var fim = new Image(); fim.onload = function () {
+        var fc = document.createElement("canvas"); fc.width = FW; fc.height = FH; var fg = fc.getContext("2d"); fg.drawImage(fim, 0, 0, FW, FH);
+        try { var fd = fg.getImageData(0, 0, FW, FH).data, ix = new Uint8Array(FW * FH);
+          for (var q = 0; q < FW * FH; q++) { var r = fd[q * 4], g2 = fd[q * 4 + 1], b2 = fd[q * 4 + 2], bi = 0, bd2 = 1e9; for (var pi = 0; pi < 3; pi++) { var d2 = (r - [1, 228, 255][pi]) * (r - [1, 228, 255][pi]) + (g2 - [33, 0, 255][pi]) * (g2 - [33, 0, 255][pi]) + (b2 - [105, 43, 255][pi]) * (b2 - [105, 43, 255][pi]); if (d2 < bd2) { bd2 = d2; bi = pi; } } ix[q] = bi; }
+          flagIdx = ix; } catch (e2) {}
+      };
+      fim.src = "assets/flag/flag-3840.png";
       size(true); cv.classList.add("is-ready");
       if (reduce) draw(0); else requestAnimationFrame(loop);
     };
@@ -197,8 +206,7 @@
               var dens = Math.min(1, hI * Math.exp(-(dxh * dxh + dyh * dyh) / (hR * hR)) + 0.7 * Math.exp(-(dxh2 * dxh2 + dyh2 * dyh2) / (hR2 * hR2)) + 0.18 + 0.16 * Math.sin(x * 0.11 + m * 0.07 + tn * 0.4));
               var covp = sp >= 1 ? 1 : Math.min(1, agep / 18);
               if (pseed[base + x] < (0.84 + 0.16 * dens) * covp) {                     /* at least 84% of the letters are always sprayed; the hand only changes how dense and bright */
-                var hue = (x - sx0) / Math.max(1, sx1 - sx0) + 0.2 * Math.sin(m * 0.09 + tn * 0.2) + 0.14 * Math.sin(x * 0.05 - m * 0.045 + 1.1) + (h2 - 0.5) * 0.16;   /* colour in soft clouds, not vertical stripes */
-                var sl = Math.max(0, Math.min(NEON - 1, Math.floor(hue * NEON)));
+                var sl = flagAt((x - sx0) / Math.max(1, sx1 - sx0) + (h2 - 0.5) * 0.006, m / MH + (pseed[base + x] - 0.5) * 0.018);   /* the flag laid over the word; the spray bleeds a little across colour edges */
                 b = (h2 < 0.22 + 0.78 * dens) ? NB0 + sl : NB0 + NEON + 1 + sl;
               }
             }
@@ -280,14 +288,14 @@
     }
     /* overspray: a fine mist thrown around the nozzle line while the letters are being painted */
     if (sp >= 1 && !reduce && sx1 > sx0) {                                          /* fine overspray round the hand, thicker when it is close */
-      var mcH = spec(Math.min(1, Math.max(0, (hx - sx0) / Math.max(1, sx1 - sx0)))), kh, nH = Math.round(70 * hI);
+      var mcH = spec((hx - sx0) / Math.max(1, sx1 - sx0), hy / MH), kh, nH = Math.round(70 * hI);
       for (kh = 0; kh < nH; kh++) {
         var ah = Math.random() * 6.2832, rh = (Math.random() + Math.random() - 1) * hR * cell * 0.9, aH = 0.1 + Math.random() * 0.3, szh = (0.8 + Math.random() * 1.5) * dpr;
         ctx.fillStyle = "rgba(" + mcH[0] + "," + mcH[1] + "," + mcH[2] + "," + aH.toFixed(2) + ")"; ctx.fillRect(ox + (hx + 0.5) * cell + Math.cos(ah) * rh, (r0 + hy) * cell - sy0 + Math.sin(ah) * rh * 0.7, szh, szh);
       }
     }
     if (sweeping && sx1 > sx0) {
-      var mc = spec(Math.min(1, Math.max(0, FF / PSMAX))), k, mrow, mx, my, aa, ms;
+      var mc = spec(Math.min(1, Math.max(0, FF / PSMAX)), 0.5), k, mrow, mx, my, aa, ms;
       for (k = 0; k < 240; k++) {
         mrow = Math.random() * (MH + 4) - 2;                                                       /* a row of the word */
         mx = ox + (sx0 + FF - SLOPE * (SLOPE < 0 ? mrow - MH : mrow) + 0.5 + (Math.random() + Math.random() - 1) * 9) * cell; my = (r0 + mrow) * cell - sy0;
