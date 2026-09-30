@@ -28,7 +28,23 @@ export interface BagEngineOptions {
   /** Where the canvas goes. */
   host: HTMLElement;
   onProduct(index: number): void;
+  /** Builder only: when set, tapping the bag picks the part under the finger (instead of punching it). */
+  onPick?(part: PartId): void;
 }
+
+/** The individually colourable parts of the bag ("build by parts"). The four straps are the four legs of the two strap loops. */
+export type PartId = "panelL" | "panelR" | "domeL" | "domeR" | "bandTop" | "strap1" | "strap2" | "strap3" | "strap4" | "bandBottom" | "patch" | "stitching" | "hardware";
+export const PART_IDS: readonly PartId[] = ["panelL", "panelR", "domeL", "domeR", "bandTop", "strap1", "strap2", "strap3", "strap4", "bandBottom", "patch", "stitching", "hardware"];
+export type PartFinish = "gloss" | "satin" | "matte" | "metallic";
+export interface PartLook {
+  hex: number;
+  finish: PartFinish;
+}
+/** Where the camera goes for a part. */
+export const PART_FOCUS: Readonly<Record<PartId, FocusPart>> = {
+  panelL: "body", panelR: "body", domeL: "top", domeR: "top", bandTop: "top", strap1: "top", strap2: "top", strap3: "top", strap4: "top",
+  bandBottom: "bottom", patch: "patch", stitching: "body", hardware: "hardware",
+};
 
 /** The parts the camera can fly to. */
 export type FocusPart = "whole" | "body" | "top" | "bottom" | "patch" | "hardware";
@@ -51,6 +67,8 @@ export interface BuildOptions {
   piping: "none" | "contrast";
   text: string;
   font: "classic" | "block" | "script" | "stencil";
+  /** Build by parts: every part's own colour and finish. When given (on a plain bag) it overrides the body/accent/band colours above. */
+  parts?: Partial<Record<PartId, PartLook>>;
 }
 
 export type SceneId = "studio" | "gym" | "garage" | "outdoor" | "room";
@@ -163,12 +181,22 @@ export class BagEngine {
   private bagBottom = 0;
   private readonly sceneTex = new Map<string, THREE.CanvasTexture>();
   private floorMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial> | null = null;
+  private readonly onPick: ((part: PartId) => void) | null;
+  private partMeshes = new Map<PartId, AnyMesh[]>();
+  private readonly partOfMesh = new WeakMap<THREE.Object3D, PartId>();
+  private readonly defaultMat = new WeakMap<THREE.Object3D, THREE.Material | THREE.Material[]>();
+  private readonly partMats = new Map<PartId, THREE.MeshPhysicalMaterial>();
+  private readonly basePos = new WeakMap<THREE.Object3D, THREE.Vector3>();
+  private readonly explodeDir = new WeakMap<THREE.Object3D, THREE.Vector3>();
+  private explodeK = 0;
+  private explodeGoal = 0;
   private blobMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null;
 
   constructor(o: BagEngineOptions) {
     this.root = o.root;
     this.host = o.host;
     this.onProduct = (i) => o.onProduct(i);
+    this.onPick = o.onPick ? (p) => o.onPick?.(p) : null;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // throws when WebGL is unavailable: the caller shows the fallback
     const r = this.renderer;
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -325,6 +353,8 @@ export class BagEngine {
         else if (/^patch/.test(m.name)) this.patchMeshes.push(m);
       }
     });
+    this.splitStraps(model);
+    this.mapParts(model);
     this.spinGroup.add(model);
     this.model = model;
     this.spinGroup.updateWorldMatrix(true, true);
@@ -348,6 +378,156 @@ export class BagEngine {
     this.bagBottom = new THREE.Box3().setFromObject(model).min.y;
     this.applyScene(); // the floor sits under whatever size of bag is now hanging
     this.applyOptions();
+  }
+
+  /** Each strap loop is one mesh with two legs: split it into its two legs so all four straps can take their own colour. */
+  private splitStraps(model: THREE.Object3D): void {
+    const loops: AnyMesh[] = [];
+    model.traverse((o) => {
+      const m = asMesh(o);
+      if (m && /^strap\d$/.test(m.name)) loops.push(m);
+    });
+    let n = 0;
+    for (const m of loops.sort((a, b) => a.name.localeCompare(b.name))) {
+      const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      g.computeBoundingBox();
+      const bb = g.boundingBox;
+      const pos = g.attributes["position"];
+      if (!bb || !pos) continue;
+      const c = bb.getCenter(new THREE.Vector3());
+      const sz = bb.getSize(new THREE.Vector3());
+      const axis = sz.x >= sz.z ? "x" : "z"; // the legs sit either side of the bag along the loop's wider horizontal axis
+      const halves: number[][] = [[], []];
+      for (let t = 0; t < pos.count; t += 3) {
+        const mid = (pos.getComponent(t, axis === "x" ? 0 : 2) + pos.getComponent(t + 1, axis === "x" ? 0 : 2) + pos.getComponent(t + 2, axis === "x" ? 0 : 2)) / 3;
+        (mid < (axis === "x" ? c.x : c.z) ? halves[0] : halves[1])?.push(t);
+      }
+      for (const tris of halves) {
+        const arr = new Float32Array(tris.length * 9);
+        const nrm = g.attributes["normal"];
+        const narr = nrm ? new Float32Array(tris.length * 9) : null;
+        tris.forEach((t, i) => {
+          for (let k = 0; k < 3; k++) {
+            arr.set([pos.getX(t + k), pos.getY(t + k), pos.getZ(t + k)], i * 9 + k * 3);
+            if (nrm && narr) narr.set([nrm.getX(t + k), nrm.getY(t + k), nrm.getZ(t + k)], i * 9 + k * 3);
+          }
+        });
+        const leg = new THREE.BufferGeometry();
+        leg.setAttribute("position", new THREE.BufferAttribute(arr, 3));
+        if (narr) leg.setAttribute("normal", new THREE.BufferAttribute(narr, 3));
+        else leg.computeVertexNormals();
+        const lm = new THREE.Mesh(leg, m.material) as AnyMesh;
+        n += 1;
+        lm.name = `strapleg${n}`;
+        lm.position.copy(m.position);
+        lm.quaternion.copy(m.quaternion);
+        lm.scale.copy(m.scale);
+        m.parent?.add(lm);
+      }
+      m.parent?.remove(m);
+    }
+  }
+
+  /** Which build-by-parts part every mesh is, its original material, and which way it moves when the bag is pulled apart. */
+  private mapParts(model: THREE.Object3D): void {
+    this.partMeshes = new Map();
+    model.updateWorldMatrix(true, true);
+    const whole = new THREE.Box3().setFromObject(model);
+    const ctr = whole.getCenter(new THREE.Vector3());
+    const topY = whole.max.y;
+    const botY = whole.min.y;
+    const partFor = (n: string): PartId | null => {
+      if (n === "body_L") return "panelL";
+      if (n === "body_R") return "panelR";
+      if (n === "crown_L") return "domeL";
+      if (n === "crown_R") return "domeR";
+      if (/^band_top/.test(n)) return "bandTop";
+      if (/^band_bottom/.test(n)) return "bandBottom";
+      const leg = /^strapleg(\d)$/.exec(n);
+      if (leg) return (`strap${leg[1]}`) as PartId;
+      if (/^patch/.test(n)) return "patch";
+      if (/^stitch/.test(n)) return "stitching";
+      if (/^metal/.test(n)) return "hardware";
+      return null;
+    };
+    model.traverse((o) => {
+      const m = asMesh(o);
+      if (!m) return;
+      this.defaultMat.set(m, m.material);
+      this.basePos.set(m, m.position.clone());
+      const part = partFor(m.name);
+      if (!part) return;
+      this.partOfMesh.set(m, part);
+      const list = this.partMeshes.get(part);
+      if (list) list.push(m);
+      else this.partMeshes.set(part, [m]);
+      // pull-apart direction, in the mesh's parent space: out from the bag's axis, plus up for the top parts and down for the bottom
+      const b = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3());
+      const out = new THREE.Vector3(b.x - ctr.x, 0, b.z - ctr.z);
+      if (out.lengthSq() < 1e-6) out.set(0, 0, 1);
+      out.normalize();
+      const h = topY - botY;
+      const up = part === "hardware" ? 0.5 : /^(dome|bandTop|strap)/.test(part) ? 0.28 : part === "bandBottom" ? -0.22 : 0;
+      const lateral = /^panel/.test(part) ? 0.32 : part === "patch" ? 0.5 : /^strap/.test(part) ? 0.18 : part === "stitching" ? 0.12 : 0.08;
+      const dirWorld = out.multiplyScalar(lateral * h * 0.45).add(new THREE.Vector3(0, up * h * 0.45, 0));
+      const parentInv = m.parent ? new THREE.Matrix4().copy(m.parent.matrixWorld).invert() : new THREE.Matrix4();
+      const p0 = new THREE.Vector3(0, 0, 0).applyMatrix4(parentInv);
+      const p1 = dirWorld.clone().applyMatrix4(parentInv);
+      this.explodeDir.set(m, p1.sub(p0));
+    });
+  }
+
+  /** Pull the bag apart to show every component, or put it back together (animated). */
+  setExploded(on: boolean): void {
+    this.explodeGoal = on ? 1 : 0;
+    if (this.reduce) this.explodeK = this.explodeGoal;
+  }
+
+  /** Fly to a build-by-parts part and turn the bag so that part faces you. */
+  focusOn(part: PartId): void {
+    this.focus(PART_FOCUS[part]);
+    const ms = this.partMeshes.get(part);
+    if (!ms?.length || part === "hardware") return;
+    const b = new THREE.Box3();
+    for (const m of ms) b.expandByObject(m);
+    const c = b.getCenter(new THREE.Vector3());
+    this.spinGoal = -Math.atan2(c.x, c.z) + this.spin - this.spinGroup.rotation.y; // the part's side faces the camera
+  }
+
+  /** Build by parts: each part gets its own material (colour + finish). Without parts, every mesh goes back to its original material. */
+  private applyParts(): void {
+    const o = this.opts;
+    if (!this.model) return;
+    const on = !!(o && o.plain && o.parts);
+    for (const [part, meshes] of this.partMeshes) {
+      const look = on ? o?.parts?.[part] : undefined;
+      for (const m of meshes) {
+        if (!look) {
+          const d = this.defaultMat.get(m);
+          if (d) m.material = d;
+          continue;
+        }
+        let mat = this.partMats.get(part);
+        if (!mat) {
+          const base = this.defaultMat.get(m);
+          const src = Array.isArray(base) ? base[0] : base;
+          mat = new THREE.MeshPhysicalMaterial();
+          const map = src && "map" in src ? (src as THREE.MeshStandardMaterial).map : null;
+          if (map && /^(band|patch)/.test(part === "bandTop" ? "band" : part === "bandBottom" ? "band" : part)) mat.map = map; // bands keep their SANCHEZ lettering, the patch its badge
+          if (part === "patch") { mat.polygonOffset = true; mat.polygonOffsetFactor = -2; mat.polygonOffsetUnits = -2; }
+          this.partMats.set(part, mat);
+        }
+        mat.color.setHex(look.hex);
+        const f = look.finish;
+        mat.roughness = f === "gloss" ? 0.26 : f === "satin" ? 0.5 : f === "matte" ? 0.88 : 0.32;
+        mat.metalness = f === "metallic" ? 0.75 : part === "hardware" ? 0.9 : 0;
+        mat.clearcoat = f === "gloss" ? 0.65 : f === "satin" ? 0.15 : f === "metallic" ? 0.4 : 0;
+        mat.clearcoatRoughness = f === "gloss" ? 0.15 : 0.4;
+        mat.envMapIntensity = 0.6;
+        mat.needsUpdate = true;
+        m.material = mat;
+      }
+    }
   }
 
   /** The exported body has collapsed UVs, so map it cylindrically: u wraps once round the bag, v runs bottom to top (u = 0.5 faces the camera). */
@@ -507,6 +687,7 @@ export class BagEngine {
     this.applyAnchor(o.anchorRing);
     this.applyPiping(o.piping === "contrast", o.accentHex);
     this.applyBandText();
+    this.applyParts();
   }
 
   /** Material feel, and the panel layout, on a plain bag (the artwork bags carry their own look). */
@@ -950,6 +1131,14 @@ export class BagEngine {
       const r = el.getBoundingClientRect();
       ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ptr, this.cam);
+      if (this.onPick && this.model) {
+        const all: THREE.Object3D[] = [];
+        for (const ms of this.partMeshes.values()) all.push(...ms);
+        const h = ray.intersectObjects(all, false).find((x) => x.object.visible);
+        const part = h ? this.partOfMesh.get(h.object) : undefined;
+        if (part) this.onPick(part);
+        return;
+      }
       const hit = ray.intersectObjects(this.bodyMeshes, false)[0];
       if (!hit) return;
       this.lastUser = performance.now();
@@ -994,6 +1183,17 @@ export class BagEngine {
       this.spinVel = 0;
     }
     this.spinGroup.rotation.y = this.spin + entry;
+    if (this.explodeK !== this.explodeGoal && this.model) {
+      const ek = 1 - Math.exp(-dt * 5);
+      this.explodeK += (this.explodeGoal - this.explodeK) * ek;
+      if (Math.abs(this.explodeGoal - this.explodeK) < 0.002) this.explodeK = this.explodeGoal;
+      const e = this.explodeK * this.explodeK * (3 - 2 * this.explodeK);
+      this.model.traverse((o) => {
+        const base = this.basePos.get(o);
+        const dir = this.explodeDir.get(o);
+        if (base && dir) o.position.copy(base).addScaledVector(dir, e);
+      });
+    }
     const S = this.state;
     this.pivot.rotation.z = S.swingZ;
     this.pivot.rotation.x = S.swingX;

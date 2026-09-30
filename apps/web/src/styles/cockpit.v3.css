@@ -81,3 +81,34 @@
 .ck__chip input { position: absolute; inset: 0; inline-size: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
 .ck__chip[aria-pressed="true"] { background: rgb(201 164 92 / .18); border-color: #c9a45c; }
 .ck__chip--save { border-color: #c9a45c; color: #c9a45c; margin-block-end: 6px; }
+
+/* ---- Build by parts (PartsPanel.tsx): a taller dock with zones -> parts -> swatches -> finish, and stage buttons for Pull apart / Copy spec ---- */
+.ck[data-parts] { --dock: min(58svh, 360px); }
+.ck[data-parts] .ck__scroll { display: block; overflow: visible; mask-image: none; -webkit-mask-image: none; padding: 0; }
+.pp { display: grid; gap: 10px; min-inline-size: 0; }
+.pp__zones { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; border-radius: 999px; background: rgb(255 255 255 / .05); border: 1px solid rgb(243 234 220 / .14); }
+.pp__zones button { min-block-size: 36px; border: 0; border-radius: 999px; background: transparent; color: rgb(243 234 220 / .7); font: 600 11px/1 var(--mono, monospace); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.pp__zones button[aria-selected="true"] { background: #f3eadc; color: #0e0b09; }
+.pp__hint { margin: 0; font: 600 13px/1.3 var(--nf-text, Barlow, sans-serif); color: #f3eadc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp__hint span { margin-inline-end: 8px; font: 500 10px/1 var(--mono, monospace); letter-spacing: .2em; text-transform: uppercase; color: #e8a85a; }
+.pp__parts, .pp__ways { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.pp__parts::-webkit-scrollbar, .pp__ways::-webkit-scrollbar { display: none; }
+.pp__parts button, .pp__ways button { flex: none; display: inline-flex; align-items: center; gap: 8px; min-block-size: 38px; padding: 0 14px; border-radius: 999px; background: rgb(255 255 255 / .05); color: #f3eadc; border: 1px solid rgb(243 234 220 / .22); font: 500 12px/1 var(--nf-text, Barlow, sans-serif); cursor: pointer; }
+.pp__parts button[aria-pressed="true"] { border-color: #e8a85a; background: rgb(232 168 90 / .16); }
+.pp__parts i, .pp__ways i, .pp__custom i { inline-size: 16px; block-size: 16px; border-radius: 50%; border: 1px solid rgb(243 234 220 / .4); }
+.pp__link { color: #e8a85a !important; border-style: dashed !important; }
+.pp__sw { display: flex; flex-wrap: wrap; gap: 8px; }
+.pp__sw > button { inline-size: 34px; block-size: 34px; padding: 0; border-radius: 50%; border: 2px solid #07080a; outline: 1px solid rgb(243 234 220 / .3); cursor: pointer; }
+.pp__sw > button[aria-checked="true"] { outline: 2px solid #e8a85a; outline-offset: 2px; }
+.pp__custom { position: relative; display: inline-flex; align-items: center; gap: 6px; block-size: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgb(243 234 220 / .26); color: #f3eadc; font: 600 10px/1 var(--mono, monospace); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
+.pp__custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; inline-size: 100%; block-size: 100%; }
+.pp__more { display: grid; gap: 8px; }
+.pp__moretoggle { justify-self: start; background: none; border: 0; padding: 2px 0; color: rgb(243 234 220 / .75); font: 500 11px/1 var(--mono, monospace); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
+.pp__finish { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: rgb(255 255 255 / .05); }
+.pp__finish button { min-block-size: 34px; border: 0; border-radius: 9px; background: transparent; color: rgb(243 234 220 / .75); font: 500 12px/1 var(--nf-text, Barlow, sans-serif); cursor: pointer; }
+.pp__finish button[aria-checked="true"] { background: #f3eadc; color: #0e0b09; }
+.pp__stagebtns { position: absolute; z-index: 6; inset-inline: 0; inset-block-end: calc(var(--dock) + 10px); display: flex; justify-content: center; gap: 8px; pointer-events: none; }
+.pp__stagebtns button { pointer-events: auto; min-block-size: 36px; padding: 0 16px; border-radius: 999px; border: 1px solid rgb(243 234 220 / .3); background: rgb(7 8 10 / .6); color: #f3eadc; font: 600 10px/1 var(--mono, monospace); letter-spacing: .18em; text-transform: uppercase; cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.pp__stagebtns button[aria-pressed="true"] { background: #f3eadc; color: #0e0b09; }
+.ck[data-parts] .ck__row { align-items: end; }   /* the back/next arrows sit at the foot of the parts panel, clear of the swatches */
+.ck[data-parts] .pp__sw { padding-inline-end: 4px; }

@@ -10,6 +10,8 @@ import { CURRENCIES, formatMoney, type Currency } from "@/lib/commerce/money";
 import type { PriceResult } from "@/lib/configurator/pricing";
 import { clearSaved, decodeShare, encodeShare, loadSaved, store } from "@/lib/configurator/save";
 import { ShareSheet } from "./ShareSheet";
+import { PartsPanel, partsSpec } from "./PartsPanel";
+import type { PartKey, Parts } from "@/lib/configurator/schema";
 import { activeSteps, BOOLEAN_KEYS, GROUPS, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
 import { LOGO_SRC } from "@/lib/site";
 import "../../styles/cockpit.v3.css";
@@ -34,6 +36,7 @@ function summary(def: StepDef, c: BagConfig): string {
   if (a.kind === "multi") return c.extras.length ? c.extras.join(", ") : "none";
   if (a.kind === "text") return c.extraText || "none";
   if (a.kind === "stepper") return `×${c.quantity}`;
+  if (a.kind === "parts") return c.parts ? `${Object.keys(c.parts).length} parts` : "";
   return "";
 }
 
@@ -58,6 +61,9 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [scene, setScene] = useState<SceneId>("studio");
   const [photo, setPhoto] = useState<string | null>(null);
   const [adjust, setAdjust] = useState(false);
+  const [activePart, setActivePart] = useState<PartKey>("panelL");
+  const [exploded, setExploded] = useState(false);
+  const [specCopied, setSpecCopied] = useState(false);
   const bag = useRef<BagHandle>(null);
   const sheetEl = useRef<HTMLElement>(null);
   const rootEl = useRef<HTMLDivElement>(null);
@@ -215,6 +221,16 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     setShareUrl(`${window.location.origin}/configure#c=${encodeShare(cfg, currency)}`); // opens the share sheet
   }
 
+  // tapping a part on the 3D bag: open it in build-by-parts (from any step)
+  const onPickPart = (p: PartKey): void => {
+    if (!cfg.parts) return;
+    setActivePart(p);
+    if (def.answer.kind !== "parts" && steps.some((s) => s.id === "parts")) setStepId("parts");
+  };
+  const copySpec = (): void => {
+    if (!cfg.parts) return;
+    void navigator.clipboard?.writeText(partsSpec(cfg.parts as Parts)).then(() => { setSpecCopied(true); window.setTimeout(() => setSpecCopied(false), 1800); }).catch(() => undefined);
+  };
   const a = def.answer;
   const priceText = !price ? "…" : price.status === "priced" ? formatMoney(price.totalMinor, price.currency) : "Price to come";
   const skippedLeft = steps.filter((s) => s.answer.kind !== "review" && stateOf(s.id) === "skipped");
@@ -233,10 +249,16 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   }, [sheet, resume, checkout]);
 
   return (
-    <div className="ck" ref={rootEl} data-sheet={sheet ? "open" : undefined}>
+    <div className="ck" ref={rootEl} data-sheet={sheet ? "open" : undefined} data-parts={def.answer.kind === "parts" ? "" : undefined}>
       <h1 className="visually-hidden">Build your bag</h1>
       <div className="ck__stage">
-        <BagPreview ref={bag} cfg={cfg} focus={def.part} scene={scene} photo={photo} adjust={adjust && reviewSheet} />
+        <BagPreview ref={bag} cfg={cfg} focus={def.part} scene={scene} photo={photo} adjust={adjust && reviewSheet} part={def.answer.kind === "parts" ? activePart : null} exploded={exploded} onPick={onPickPart} />
+        {def.answer.kind === "parts" && (
+          <div className="pp__stagebtns">
+            <button type="button" aria-pressed={exploded} onClick={() => setExploded((v) => !v)}>{exploded ? "Put back together" : "Pull apart"}</button>
+            <button type="button" onClick={copySpec}>{specCopied ? "Copied" : "Copy spec"}</button>
+          </div>
+        )}
       </div>
 
       <header className="ck__top">
@@ -328,6 +350,9 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
               return <button key={o.id} type="button" role="checkbox" aria-checked={on} onClick={() => set("extras", on ? cfg.extras.filter((x) => x !== o.id) : [...cfg.extras, o.id as BagConfig["extras"][number]])}>{o.name}</button>;
             })}
             {a.kind === "text" && <input className="ck__input" type="text" maxLength={30} value={cfg.extraText} placeholder="Up to 30 characters" aria-label="Your words" onChange={(e) => set("extraText", e.target.value)} />}
+            {a.kind === "parts" && cfg.parts && (
+              <PartsPanel cfg={cfg} active={activePart} setActive={setActivePart} setParts={(p) => set("parts", p)} />
+            )}
             {a.kind === "stepper" && (
               <div className="ck__stepper" role="group" aria-label="Quantity">
                 <button type="button" aria-label="One fewer" onClick={() => set("quantity", Math.max(1, cfg.quantity - 1))}>−</button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useImperativeHandle, useRef, useState, type PointerEvent as RPointerEvent, type Ref, type WheelEvent as RWheelEvent } from "react";
-import { BagEngine, type BuildOptions, type FocusPart, type SceneId } from "@/lib/bag/engine";
+import { BagEngine, type BuildOptions, type FocusPart, type PartId, type PartLook, type SceneId } from "@/lib/bag/engine";
 import { BAG_PRODUCTS, plain, type BagProduct } from "@/lib/bag/products";
 import { COLOURS, type BagConfig } from "@/lib/configurator/schema";
 
@@ -33,6 +33,9 @@ export function optionsFor(cfg: BagConfig): BuildOptions {
     piping: cfg.piping,
     text: cfg.extraText,
     font: cfg.font,
+    ...(cfg.parts
+      ? { parts: Object.fromEntries(Object.entries(cfg.parts).map(([k, v]) => [k, { hex: parseInt(v.hex.slice(1), 16), finish: v.finish } satisfies PartLook])) }
+      : {}),
   };
 }
 
@@ -46,7 +49,9 @@ const IDENTITY: Xf = { x: 0, y: 0, s: 1 };
 const clampScale = (s: number): number => Math.min(5, Math.max(0.5, s));
 
 /** The interactive 3D bag, always on screen while building: drag to spin, tap to hit it. It follows every choice. */
-export function BagPreview({ cfg, focus = "whole", scene = "studio", photo = null, adjust = false, ref }: { cfg: BagConfig; focus?: FocusPart; scene?: SceneId; photo?: string | null; adjust?: boolean; ref?: Ref<BagHandle> }) {
+export function BagPreview({ cfg, focus = "whole", scene = "studio", photo = null, adjust = false, part = null, exploded = false, onPick, ref }: { cfg: BagConfig; focus?: FocusPart; scene?: SceneId; photo?: string | null; adjust?: boolean; part?: PartId | null; exploded?: boolean; onPick?: (p: PartId) => void; ref?: Ref<BagHandle> }) {
+  const pickRef = useRef(onPick);
+  pickRef.current = onPick;
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const engine = useRef<BagEngine | null>(null);
@@ -106,7 +111,7 @@ export function BagPreview({ cfg, focus = "whole", scene = "studio", photo = nul
   useEffect(() => {
     if (!root.current || !host.current) return undefined;
     try {
-      const e = new BagEngine({ root: root.current, host: host.current, onProduct: () => undefined });
+      const e = new BagEngine({ root: root.current, host: host.current, onProduct: () => undefined, onPick: (p) => pickRef.current?.(p) });
       e.setFraming(1.0);
       e.start();
       e.setScene(sceneRef.current);
@@ -138,10 +143,18 @@ export function BagPreview({ cfg, focus = "whole", scene = "studio", photo = nul
 
   useEffect(() => {
     // the engine may still be loading its model: try now and once more shortly (focus needs the model's part boxes)
-    engine.current?.focus(focus);
-    const t = window.setTimeout(() => engine.current?.focus(focus), 900);
+    const go = (): void => {
+      if (part) engine.current?.focusOn(part);
+      else engine.current?.focus(focus);
+    };
+    go();
+    const t = window.setTimeout(go, 900);
     return () => window.clearTimeout(t);
-  }, [focus]);
+  }, [focus, part]);
+
+  useEffect(() => {
+    engine.current?.setExploded(exploded);
+  }, [exploded]);
 
   const down = (e: RPointerEvent<HTMLDivElement>): void => {
     e.currentTarget.setPointerCapture(e.pointerId);
