@@ -759,17 +759,9 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 @media (prefers-reduced-motion: reduce) { .bag-punch__view { transition: none; } }
 .bag-punch { block-size: calc(min(100svh, 980px) + var(--cta-zone) + var(--pill-zone)); }
 
-/* the waitlist submit button orbits the globe: a ring tilted 45deg off the globe's north axis, positioned by OrbitSubmit's rAF loop (transforms only) */
-.globe-slot { position: relative; overflow-x: clip; --globe-d: min(98vw, 480px); }
-@media (min-width: 761px) { .globe-slot { --globe-d: 400px; } }
-.orbit-layer { position: absolute; inset-block-start: 0; inset-inline-start: 50%; inline-size: var(--globe-d); block-size: var(--globe-d); margin-inline-start: calc(var(--globe-d) / -2); pointer-events: none; }
-.orbit-submit { position: absolute; inset: 0 auto auto 0; inline-size: 56px; block-size: 56px; padding: 0; border: 1px solid rgb(201 164 92 / .9); border-radius: 50%; background: #c9a45c; color: #0e0b09; display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 22px rgb(0 0 0 / .5), inset 0 1px 0 rgb(255 255 255 / .35); will-change: transform, opacity; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: background .3s ease, box-shadow .3s ease; }
-.orbit-submit svg { inline-size: 22px; block-size: 22px; }
-.orbit-submit:hover:not(:disabled) { background: #f3eadc; }
-.orbit-submit:focus-visible { outline: 2px solid #f3eadc; outline-offset: 3px; box-shadow: 0 0 0 5px #c9a45c, 0 6px 22px rgb(0 0 0 / .5); }
-.orbit-submit:disabled { cursor: default; }
-.orbit-submit:disabled:not(.is-done) { filter: saturate(.5) brightness(.85); }
-.orbit-submit.is-done { background: #f3eadc; border-color: #f3eadc; }
+/* the waitlist submit sits in its row again; it drifts in a tiny orbit and is drawn slightly towards the globe (Waitlist.tsx moves this wrapper with transforms only) */
+.waitlist__magnet { display: block; will-change: transform; }
+.waitlist__magnet .waitlist__btn { inline-size: 100%; }
 
 /* Diamond-glass film over the hero: a permanent, crisp pane. Hard-edged facet bands catch light, a hairline bevel runs round the edge, and one slow sheen crosses it.
    Sits above everything in the hero, never blocks touch or the cursor field, and adds no blur so the artwork stays sharp. */
