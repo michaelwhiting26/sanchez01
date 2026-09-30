@@ -121,6 +121,13 @@
     var sy = scrollY * dpr; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
     var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 1.1;
     counts.fill(0);
+    /* TORNADO: while the workshop carousel is scrolled through, a vortex sits at the centre of the screen and twists the ridges around it. It is the same field
+       (the ridges the hero fingerprint sends down the page), so the lines flow out of the hero, spin up into a tornado behind the carousel, and unwind again after it.
+       The page scrolls the ridges through the vortex, and the vortex also turns as you scroll, so the lines pass through the design. Twisted ridges are pushed to full gold. */
+    var env = 0, trk = reduce ? null : document.querySelector(".lgc-track");
+    if (trk) { var tr = trk.getBoundingClientRect(), pp = Math.min(1, Math.max(0, (innerHeight - tr.top) / (tr.height + innerHeight))); env = Math.pow(Math.sin(Math.PI * pp), 1.1); }
+    if (typeof window.__tornado === "number") env = window.__tornado;                 /* dev: force the tornado on for screenshots */
+    var vcx = MW / 2, vcy = topRow + (ch / 2 + sub) / cell, sig2 = Math.pow(MW * 0.42, 2), tw = env * (3.4 + scrollY * 0.0012);
     for (var y = 0, i = 0; y < nRows; y++) {
       var pr = topRow + y, m = pr - r0, inMap = m >= 0 && m < MH, base = pr * MW;
       for (var x = 0; x < MW; x++, i++) {
@@ -128,16 +135,26 @@
         if (pr < R) {
           if (inMap && bp[m * MW + x]) { if (pseed[base + x] < 0.9) b = LEVELS * WARMS; }            /* the outline: full cream */
           else if (!(inMap && bl[m * MW + x])) {
-            var dw = ddw[base + x];
+            var dw = ddw[base + x], tv = thv[base + x], vf = 0;
+            if (env > 0.01) {
+              var dxv = x - vcx, dyv = pr - vcy, d2v = dxv * dxv + dyv * dyv;
+              if (d2v < 9 * sig2) {
+                var fv = Math.exp(-d2v / sig2), phv = tw * fv, cv_ = Math.cos(phv), sv_ = Math.sin(phv);
+                var xr = Math.round(vcx + cv_ * dxv - sv_ * dyv), yr = Math.round(vcy + sv_ * dxv + cv_ * dyv);
+                var mr = yr - r0;
+                if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself: no holes */
+                vf = fv * env;
+              }
+            }
             if (dw > 2.2) {
               var rel = dw - drift, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
               /* stitch: dashes of STITCH cells with a small gap, measured along the ridge (angle x radius), each ridge starting a little apart */
-              var run = (thv[base + x] * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
+              var run = (tv * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
               var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;      /* the odd stitch missing: the flaw that makes it a print */
               if (ph < WIDTH && inD && !gone) {
                 var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
                 var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 7, 2)) * 0.55;
-                var kk = Math.min(1, 0.34 * fade + pulse * fade), warm = Math.min(1, dw / (maxD * 0.55));
+                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 0.6 * vf)), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
                 var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
               }
             }
@@ -173,5 +190,6 @@
     if (cursor.active || ripples.length || moving) step(t);
     draw(t);
   }
+  window.__ringsDraw = function () { if (MW) draw(performance.now()); };   /* dev/test: a hidden tab pauses requestAnimationFrame */
   load();
 })();
