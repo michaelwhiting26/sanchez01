@@ -510,3 +510,8 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
   .rise__surface { -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 70%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0, #000 70%, transparent 100%); filter: none; }
   .rise__card::before { display: none; }
 }
+
+/* the waitlist now lives inside the rising panel, above the footer: it takes the panel's dark surface instead of having its own block */
+.rise .waitlist { background: transparent; padding-block: clamp(36px, 7vh, 72px) clamp(28px, 5vh, 56px); overflow: visible; }
+.rise .waitlist::after { display: none; }
+.rise .waitlist::before { inset-inline: 0; inset-block-start: 0; }

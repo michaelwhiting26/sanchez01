@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=bot1">
+  <link rel="stylesheet" href="globe-hero.css?v=wl2">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
   <script src="app.js?v=min3" defer></script>
@@ -65,7 +65,7 @@
   </section>
   <script>window.SZ_TIGER_SRC = "tiger-hd.jpg";</script>   <!-- sharper enlarged tiger for this bag only; the configurator keeps tiger.png -->
   <script src="assets/bag3d/art.js?v=1790709014"></script>
-  <script type="module" src="bag-punch.js?v=spin1"></script>
+  <script type="module" src="bag-punch.js?v=two1"></script>
 
   <!-- DEPTH CARDS: tilt + layered parallax + cursor spotlight (our own implementation; depth-card.js) -->
   <section class="depth-cards" aria-label="Featured">
@@ -102,31 +102,6 @@
 
 
   <!-- FLARE CAROUSEL (flare-carousel.js): one hero card, neighbours flare into huge curved walls. Card copy reuses the grounded wording of the old carousel; "PLACEHOLDER" = client names still need written consent. -->
-  <!-- WAITLIST: a teaser, deliberately mysterious. The bags come first; what follows stays redacted on purpose (no products named). Prototype: the form is mocked, see waitlist.js + docs/TODO-business.md #22. -->
-  <section class="waitlist" id="waitlist" aria-labelledby="waitlist-title">
-    <div class="waitlist__inner">
-      <p class="waitlist__eyebrow">Not yet</p>
-      <h2 class="waitlist__title" id="waitlist-title">Join the waitlist</h2>
-      <p class="waitlist__lede">The bags come first. What we make after that, we are keeping to ourselves.</p>
-      <ol class="waitlist__reveal" aria-label="What is coming">
-        <li><span class="waitlist__n">01</span><span class="waitlist__t">The bags</span></li>
-        <li><span class="waitlist__n">02</span><span class="waitlist__bar" aria-hidden="true"></span><span class="visually-hidden">Not announced</span></li>
-        <li><span class="waitlist__n">03</span><span class="waitlist__bar waitlist__bar--long" aria-hidden="true"></span><span class="visually-hidden">Not announced</span></li>
-      </ol>
-      <form class="waitlist__form" data-waitlist novalidate>
-        <label class="waitlist__label" for="waitlist-email">Email address</label>
-        <div class="waitlist__row">
-          <input class="waitlist__input" id="waitlist-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" required aria-describedby="waitlist-msg">
-          <input class="waitlist__hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button class="rollBtn waitlist__btn" type="submit" data-roll="Join the waitlist" aria-label="Join the waitlist"></button>
-        </div>
-        <p class="waitlist__msg" id="waitlist-msg" role="status" aria-live="polite"></p>
-        <p class="waitlist__fine">We use your email only to tell you when it is ready. See our <a href="legal-privacy.html">privacy policy</a>.</p>
-      </form>
-    </div>
-  </section>
-  <script src="waitlist.js?v=1" defer></script>
-
   <section id="flare" class="flare flare--embed" data-flare data-embed aria-roledescription="carousel" aria-label="Sanchez in pictures" data-cards='[
       {"title":"The workshop","sub":"Pattaya","foot":"Handmade in Pattaya","src":"assets/carousel/clip1.jpg","colors":["#1f0a06","#902b1a","#c27446"],"dir":1},
       {"title":"On the machine","sub":"Cut and sewn by hand","foot":"Handmade in Pattaya","src":"assets/carousel/clip2.jpg","colors":["#1f160f","#5b3a1e","#b98a60"],"dir":-1},
@@ -154,6 +129,28 @@
           <img class="rise__logo" src="assets/site/images/3d2aa4_57957db32ff34fe8ac950b275e2e774b~mv2.webp" alt="Sanchez Custom Boxing Equipment">
           <a class="rollBtn rise__cta" href="contact.html" aria-label="Build your identity" data-roll="Build your identity"></a>
         </div>
+        <section class="waitlist" id="waitlist" aria-labelledby="waitlist-title">
+          <div class="waitlist__inner">
+            <p class="waitlist__eyebrow">Not yet</p>
+            <h2 class="waitlist__title" id="waitlist-title">Join the waitlist</h2>
+            <p class="waitlist__lede">The bags come first. What we make after that, we are keeping to ourselves.</p>
+            <ol class="waitlist__reveal" aria-label="What is coming">
+              <li><span class="waitlist__n">01</span><span class="waitlist__t">The bags</span></li>
+              <li><span class="waitlist__n">02</span><span class="waitlist__bar" aria-hidden="true"></span><span class="visually-hidden">Not announced</span></li>
+              <li><span class="waitlist__n">03</span><span class="waitlist__bar waitlist__bar--long" aria-hidden="true"></span><span class="visually-hidden">Not announced</span></li>
+            </ol>
+            <form class="waitlist__form" data-waitlist novalidate>
+              <label class="waitlist__label" for="waitlist-email">Email address</label>
+              <div class="waitlist__row">
+                <input class="waitlist__input" id="waitlist-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" required aria-describedby="waitlist-msg">
+                <input class="waitlist__hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
+                <button class="rollBtn waitlist__btn" type="submit" data-roll="Join the waitlist" aria-label="Join the waitlist"></button>
+              </div>
+              <p class="waitlist__msg" id="waitlist-msg" role="status" aria-live="polite"></p>
+              <p class="waitlist__fine">We use your email only to tell you when it is ready. See our <a href="legal-privacy.html">privacy policy</a>.</p>
+            </form>
+          </div>
+        </section>
         <footer class="site-footer" data-chrome="footer" data-footer-min></footer>
       </div>
     </div>
@@ -162,6 +159,7 @@
 </main>
 <script src="dna-core.js?v=chain1" defer></script>
 <script src="rise-panel.js?v=7" defer></script>
+<script src="waitlist.js?v=2" defer></script>
 
 
 </body>

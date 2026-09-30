@@ -51,12 +51,13 @@ function start(root) {
     M.stitch = new THREE.MeshStandardMaterial({ color: 0xe4e4e0, roughness: 0.8 });
   }
   /* ---- products: the slots the left / right buttons cycle through. Add a product here and it appears in the switcher. ---- */
+  /* Only Tiger and Monogram are live for now; Dragon, Koi and Gold Vein are kept below as comments so they can be switched back on. */
   const PRODUCTS = [
     { id: "tiger", name: "Tiger", sub: "Heavy bag", kind: "bag", art: "tigerfull", trim: 0xffffff, bump: 1.4, order: ["Order this bag", "product.html"], build: "configure.html?preset=tigerfull" },
-    { id: "dragon", name: "Dragon", sub: "After Hokusai · gold on oxblood", kind: "bag", art: "dragonfull", trim: 0xc9a45c, bump: 1.3, order: ["Order this bag", "product.html"], build: "configure.html?preset=dragon" },
-    { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", kind: "bag", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: ["Order this bag", "product.html"], build: "configure.html?preset=koi" },
+    // PAUSED for now (Tiger and Monogram only): { id: "dragon", name: "Dragon", sub: "After Hokusai · gold on oxblood", kind: "bag", art: "dragonfull", trim: 0xc9a45c, bump: 1.3, order: ["Order this bag", "product.html"], build: "configure.html?preset=dragon" },
+    // PAUSED for now (Tiger and Monogram only): { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", kind: "bag", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: ["Order this bag", "product.html"], build: "configure.html?preset=koi" },
     { id: "monogram", name: "Monogram", sub: "Tone on tone · black on black", kind: "bag", art: "monogram", trim: 0x1c1c1e, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=monogram" },
-    { id: "kintsugi", name: "Gold Vein", sub: "Kintsugi leather", kind: "bag", art: "kintsugi", trim: 0xb8953f, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=kintsugi" },
+    // PAUSED for now (Tiger and Monogram only): { id: "kintsugi", name: "Gold Vein", sub: "Kintsugi leather", kind: "bag", art: "kintsugi", trim: 0xb8953f, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=kintsugi" },
   ];
   let cur = 0;
 
