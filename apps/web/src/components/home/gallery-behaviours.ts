@@ -58,8 +58,8 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
   let lockY = 0;
   const BLOCKED = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Spacebar"]);
   // Resistance, not a wall: scroll attempts push against the held page (it bounces) and a few hard swipes break through and release it.
-  const THRESH = 1800;
-  const DECAY = 1200; // units of push that drain away every second
+  const THRESH = 600;
+  const DECAY = 450; // units of push that drain away every second
   let energy = 0;
   let energyAt = 0;
   let lastBump = 0;
@@ -102,7 +102,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     const y = e.touches[0]?.clientY ?? touchY;
     const dy = touchY - y;
     touchY = y;
-    if (dy) push(Math.abs(dy) * 1.6, Math.sign(dy));
+    if (dy) push(Math.abs(dy) * 2.2, Math.sign(dy));
   };
   const onKey = (e: KeyboardEvent): void => {
     if (!BLOCKED.has(e.key)) return;
