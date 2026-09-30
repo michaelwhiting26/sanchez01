@@ -183,7 +183,7 @@
               var ph2 = ph > PERIOD - 0.9 ? ph - PERIOD : ph, cov = 1 - Math.abs(ph2 - WIDTH * 0.5) / (WIDTH * 0.5 + 0.7), dpos = (run - seg) * (STITCH + GAP), dcv = Math.min(1, Math.min(dpos + 0.6, STITCH - dpos + 0.6));
               if (cov > 0.02 && dcv > 0.02 && !gone) {                                    /* soft edges: a ridge or a stitch fades in and out over a cell instead of switching on and off */
                 var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
-                var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 9, 2)) * 0.12;
+                var pulse = reduce ? 0 : 0;
                 var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 1.3 * vf) * Math.pow(cov * dcv, 0.7) * 1.25), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
                 var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
               }
