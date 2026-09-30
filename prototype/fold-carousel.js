@@ -86,6 +86,27 @@ function start(root) {
       gl_FragColor = vec4(hue, clamp(k * uI, 0.0, 1.0));
       #include <colorspace_fragment>
     }`;
+  /* the flare FIELDS: from each side of the flat photo out to the edge of the screen, streaks of spectral light that spread outward and flow */
+  const FIELD_F = `precision highp float; varying vec2 vUv; uniform float uPhase, uI, uHue, uSide;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+    vec3 spectrum(float t){ return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67))); }
+    void main(){
+      float u = uSide > 0.0 ? vUv.x : 1.0 - vUv.x, v = vUv.y;                              /* u: 0 at the photo's edge .. 1 at the screen edge */
+      float rows = 110.0, r = floor(v * rows), rh = hash(vec2(r, 3.0));
+      float lit = smoothstep(0.50, 1.0, rh);                                                /* only some rows carry a streak */
+      float along = vn(vec2(u * 3.2 - uPhase * (0.55 + rh * 0.9), r * 1.7));                /* long, slow flowing streaks, drifting outward */
+      float streak = lit * pow(along, 2.2);
+      float haze = exp(-abs(v - 0.5) * 3.2) * 0.30 * (0.6 + 0.4 * vn(vec2(u * 2.0 - uPhase * 0.4, v * 3.0)));
+      float reach = exp(-u * 1.35) + 0.10;                                                  /* bright at the photo, fading toward the screen edge but never gone */
+      float tall = smoothstep(0.0, 0.07, v) * smoothstep(1.0, 0.93, v);                     /* full height of the section */
+      float k = (0.06 + streak * 0.95 + haze) * reach * tall * uI;
+      vec3 col = spectrum(u * 0.55 + v * 0.30 + uPhase * 0.03 + uHue);
+      gl_FragColor = vec4(col, clamp(k, 0.0, 1.0));
+      #include <colorspace_fragment>
+    }`;
+  const fields = [-1, 1].map((side) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({ vertexShader: FLARE_V, fragmentShader: FIELD_F, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, uniforms: { uPhase: { value: 0 }, uI: { value: 1 }, uHue: { value: side < 0 ? 0.0 : 0.12 }, uSide: { value: side > 0 ? 1 : -1 } } })); m.renderOrder = 90; scene.add(m); return m; });
+  let phase = 0;
   const flareGeo = new THREE.PlaneGeometry(1, 1);
   const flares = cards.map(() => { const m = new THREE.Mesh(flareGeo, new THREE.ShaderMaterial({ vertexShader: FLARE_V, fragmentShader: FLARE_F, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, uniforms: { uI: { value: 0 }, uT: { value: 0 } } })); m.renderOrder = 100; m.visible = false; scene.add(m); return m; });
   function placeFlare(f, o, phi, hingeX, hingeZ, timeS) {
@@ -105,8 +126,8 @@ function start(root) {
     const along = ASPECT / 2, cosP = Math.cos(phi), sinP = Math.sin(phi);
     m.position.set(hinge + s * along * cosP, 0, -along * sinP + Math.max(0, a - 1) * 0.3);          /* swings about the inner edge; deeper cards curl back toward the lens */
     m.rotation.y = s * phi;
-    const u = m.material.uniforms; u.uFold.value = fold; u.uSide.value = s; u.uOpacity.value = 1 - sm(1.7, 2.5, a);
-    m.renderOrder = -Math.round(a * 10); m.visible = a < 2.6; return { phi, hinge, hz: Math.max(0, a - 1) * 0.3 };                                                   /* the deepest card fades out before it can grow past the frame */
+    const u = m.material.uniforms; u.uFold.value = fold; u.uSide.value = s; u.uOpacity.value = 1 - sm(0.32, 0.98, a);                               /* the doors dissolve into the flare: nothing overlaps the flat photo at rest */
+    m.renderOrder = -Math.round(a * 10); m.visible = a < 1.05; return { phi, hinge, hz: Math.max(0, a - 1) * 0.3 };                                                   /* the deepest card fades out before it can grow past the frame */
   }
 
   /* ---- state: pos is the (fractional) index at the centre; an exact critically damped spring settles it on the target ---- */
@@ -121,6 +142,8 @@ function start(root) {
     const w = stage.clientWidth || 1, h = stage.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
     const f = THREE.MathUtils.degToRad(cam.fov), dH = 0.62 / Math.tan(f / 2), dW = 1.55 / (Math.tan(f / 2) * cam.aspect);   /* the centre card fits by height; on phones also leave room for the neighbours' edges */
     cam.position.set(0, 0, Math.max(dH, Math.min(dW, dH * 2.1))); cam.lookAt(0, 0, 0); dirty = true;
+    const vis = 2 * cam.position.z * Math.tan(f / 2), halfW = vis * cam.aspect / 2, edge = ASPECT / 2 + 0.012, fw = Math.max(0.2, halfW - edge + 0.1);
+    fields.forEach((m, i) => { const sd = i === 0 ? -1 : 1; m.scale.set(fw, vis * 1.02, 1); m.position.set(sd * (edge + fw / 2), 0, 0); });
   }
   new ResizeObserver(fit).observe(stage); fit();
 
@@ -140,8 +163,9 @@ function start(root) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; if (!visible || document.hidden) return;
     if (!reduce && !hoverOrFocus && !drag && now - idleSince > 4500) go(1);                       /* gentle autoplay, off for reduced motion */
-    const moving = drag || pos !== target || vel !== 0; if (!moving && !dirty) return;
+    const moving = drag || pos !== target || vel !== 0 || !reduce; if (!moving && !dirty) return;                   /* the flare flows by itself, so it redraws every frame (reduced motion: only when something changes) */
     if (!drag) spring(dt);
+    phase += dt * (0.16 + Math.min(1.6, Math.abs(vel) * 0.9)); fields.forEach((m) => { m.material.uniforms.uPhase.value = phase; m.material.uniforms.uI.value = 0.85 + Math.min(1, Math.abs(vel) * 0.35); });
     meshes.forEach((m, i) => { const o = wrap(i - pos), r = place(m, o); placeFlare(flares[i], o, r.phi, r.hinge, r.hz, now / 1000); });
     renderer.render(scene, cam); dirty = false; root.classList.add("is-ready");
   }
