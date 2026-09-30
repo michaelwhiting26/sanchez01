@@ -14,6 +14,9 @@ function counterText(host: Element): string {
  * Workshop gallery driven by page scroll. The section sits in a tall track and is pinned (CSS sticky) while you scroll through it; the further you
  * scroll, the further the carousel moves sideways. A real drag, tap or key press on the carousel takes over until the next scroll.
  */
+/** Pixels of film that pass while the gallery is scrolled from the first slide to the last. */
+const FILM_TRAVEL = 2600;
+
 export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: HTMLElement): () => void {
   const GAP_MS = 140; // between key presses while catching up
   const REACH = 0.85; // the last slide is reached at 85% of the track; the rest is a short hold before the page carries on
@@ -40,10 +43,23 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     if (travel <= 0) return 0;
     return Math.max(0, Math.min(1, (head - track.getBoundingClientRect().top) / travel));
   };
+  let lastCur = -1;
+  let flickTimer = 0;
   const tick = (now: number): void => {
     if (!live) return;
     const n = total();
     const cur = current();
+    pin.style.setProperty("--film-x", (progress() * FILM_TRAVEL).toFixed(1)); // the film tape behind the gallery runs with the scroll
+    if (cur >= 0 && cur !== lastCur) {
+      if (lastCur >= 0 && n > 1 && (cur === 0 || cur === n - 1)) {
+        pin.classList.remove("is-flick"); // the film flicks as it runs out at either end
+        void pin.offsetWidth;
+        pin.classList.add("is-flick");
+        window.clearTimeout(flickTimer);
+        flickTimer = window.setTimeout(() => pin.classList.remove("is-flick"), 600);
+      }
+      lastCur = cur;
+    }
     if (n > 1 && steps !== n) {
       steps = n;
       track.style.setProperty("--lgc-steps", String(n - 1)); // track length follows the slide count

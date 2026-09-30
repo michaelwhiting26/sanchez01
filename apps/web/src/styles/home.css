@@ -556,3 +556,15 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 }
 .lgc-track .lgc-section::before { inset-block-start: 0; }
 .lgc-track .lgc-section::after { inset-block-end: 0; }
+
+/* the film tape runs with the gallery scroll (--film-x set by the gallery) and flicks when it reaches either end */
+.lgc-track .lgc-section::before, .lgc-track .lgc-section::after { background-position: calc(var(--film-x, 0) * -1px) center, 0 0; }
+.lgc-track .lgc-section.is-flick::before, .lgc-track .lgc-section.is-flick::after { animation: film-flick .55s cubic-bezier(.2,.9,.3,1); }
+@keyframes film-flick {
+  0% { transform: translateX(0); filter: brightness(1); }
+  18% { transform: translateX(22px) skewX(-3deg); filter: brightness(1.7); }
+  42% { transform: translateX(-11px) skewX(1.5deg); filter: brightness(1.25); }
+  68% { transform: translateX(5px); filter: brightness(1.1); }
+  100% { transform: translateX(0); filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) { .lgc-track .lgc-section.is-flick::before, .lgc-track .lgc-section.is-flick::after { animation: none; } }
