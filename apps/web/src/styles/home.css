@@ -568,3 +568,8 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
   100% { transform: translateX(0); filter: brightness(1); }
 }
 @media (prefers-reduced-motion: reduce) { .lgc-track .lgc-section.is-flick::before, .lgc-track .lgc-section.is-flick::after { animation: none; } }
+
+/* the flat tape bands are replaced by the 3D barrel-roll ribbon (lib/film.ts) */
+.lgc-track .lgc-section::before, .lgc-track .lgc-section::after { content: none; }
+.lgc-track .lgc-section.is-flick .film { animation: film-jolt .5s cubic-bezier(.2,.9,.3,1); }
+@keyframes film-jolt { 0% { transform: translateX(0) rotate(0); } 20% { transform: translateX(18px) rotate(.5deg); } 45% { transform: translateX(-9px) rotate(-.3deg); } 100% { transform: none; } }

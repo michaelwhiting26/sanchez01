@@ -15,7 +15,7 @@ function counterText(host: Element): string {
  * scroll, the further the carousel moves sideways. A real drag, tap or key press on the carousel takes over until the next scroll.
  */
 /** Pixels of film that pass while the gallery is scrolled from the first slide to the last. */
-const FILM_TRAVEL = 2600;
+export const FILM_TRAVEL = 2600;
 
 export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: HTMLElement): () => void {
   const GAP_MS = 140; // between key presses while catching up
