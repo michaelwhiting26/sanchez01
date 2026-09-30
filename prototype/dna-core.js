@@ -30,7 +30,8 @@
     var grow = sm(vh * 0.12, vh * 0.95, y);                                   /* 0 in the hero, 1 one screen down: single thread -> two strands */
     var fadeOut = 1 - sm(fieldEnd - vh * 1.4, fieldEnd - vh * 0.4, y);       /* gone once the transparent sections are behind you */
     var bag = document.querySelector(".bag-punch"), bagK = 1;                   /* the bag is the centrepiece: the helix steps back while the bag fills the screen */
-    if (bag) { var r = bag.getBoundingClientRect(), cover = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / vh; bagK = 1 - 0.8 * sm(0.35, 0.9, cover); }
+    var ringY = 1e9;                                                            /* where the bag's chain ring hangs: the helix narrows to a single thread there and stops */
+    if (bag) { var bv = bag.querySelector("[data-bag-view]") || bag, r = bv.getBoundingClientRect(); ringY = r.top + r.height * 0.118; }
     var lgc = document.querySelector(".lgc-track"), lgcK = 1;                       /* gone while the workshop carousel is being scrolled through */
     if (lgc) { var lr = lgc.getBoundingClientRect(), lcover = Math.max(0, Math.min(lr.bottom, vh) - Math.max(lr.top, 0)) / vh; lgcK = 1 - sm(0.12, 0.55, lcover); }
     var alpha = grow * fadeOut * bagK * lgcK; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -38,15 +39,18 @@
     var cx = W / 2, amp = Math.min(W * 0.16, 84) * grow, tilt = reduce ? 0 : (now - t0) / 1000 * 0.32;
     var turn = y / pitch * 2 * Math.PI * 0.55 + tilt + phase0, per = pitch;
     var step = 4, n = Math.ceil((H + 40) / step) + 1, A = [], B = [];
+    var taperLen = Math.min(H * 0.55, 420);
+    function ampAt(yv) { var t = Math.max(0, Math.min(1, (ringY - yv) / taperLen)); return amp * t * t * (3 - 2 * t); }   /* full width far above the ring, a single thread at the ring */
     for (var i = 0; i < n; i++) {
-      var yy = -20 + i * step, a = (yy / per) * 2 * Math.PI + turn, s = Math.sin(a), c = Math.cos(a);
-      A.push([cx + amp * s, yy, c]); B.push([cx - amp * s, yy, -c]);           /* [x, y, depth]: depth > 0 = towards you */
+      var yy = -20 + i * step; if (yy > ringY) break;                          /* nothing below the ring: the chain and the bag take over */
+      var a = (yy / per) * 2 * Math.PI + turn, s = Math.sin(a), c = Math.cos(a), am = ampAt(yy);
+      A.push([cx + am * s, yy, c]); B.push([cx - am * s, yy, -c]);           /* [x, y, depth]: depth > 0 = towards you */
     }
     /* rungs, back to front by depth so the helix reads as 3D */
     ctx.setLineDash([]); ctx.lineCap = "round";
-    for (var ry = -20; ry < H + 20; ry += 20) {
-      var ra = (ry / per) * 2 * Math.PI + turn, dep = Math.cos(ra), x1 = cx + amp * Math.sin(ra), x2 = cx - amp * Math.sin(ra);
-      if (amp < 3) continue;
+    for (var ry = -20; ry < H + 20 && ry < ringY; ry += 20) {
+      var ra = (ry / per) * 2 * Math.PI + turn, dep = Math.cos(ra), am2 = ampAt(ry), x1 = cx + am2 * Math.sin(ra), x2 = cx - am2 * Math.sin(ra);
+      if (am2 < 3) continue;
       ctx.lineWidth = 1; ctx.strokeStyle = rgba(CREAM, alpha * (0.06 + 0.22 * Math.abs(dep))); ctx.beginPath(); ctx.moveTo(x1, ry); ctx.lineTo(x2, ry); ctx.stroke();
       /* the little knots where a rung meets a strand */
       ctx.fillStyle = rgba(dep > 0 ? RUST : GOLD, alpha * (0.25 + 0.5 * Math.abs(dep))); ctx.beginPath(); ctx.arc(x1, ry, 1.6 + 1.2 * Math.max(0, dep), 0, 7); ctx.fill();
