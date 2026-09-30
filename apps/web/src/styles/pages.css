@@ -42,3 +42,16 @@
 .bd__bar > div { display: grid; gap: 2px; margin-inline-end: auto; }
 .bd__bar strong { font: 800 22px/1 var(--nf-display, "Barlow Condensed", sans-serif); letter-spacing: .04em; }
 .bd__bar small { font: 500 10px/1.2 var(--nf-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: rgb(243 234 220 / .55); }
+
+/* the live bag: pinned above the steps on a phone, beside them on a wide screen, so it is always in view */
+.bd__view { position: sticky; inset-block-start: 0; z-index: 20; margin-inline: -24px; background: linear-gradient(#0a0b0d 88%, rgb(10 11 13 / 0)); }
+.bd__bag { position: relative; block-size: 38svh; min-block-size: 240px; }
+.bd__bag-host { position: absolute; inset: 0; }
+.bd__bag-still { position: absolute; inset: 0; margin: auto; block-size: 90%; inline-size: auto; }
+.bd__bag-hint { position: absolute; inset-inline: 0; inset-block-end: 4px; margin: 0; text-align: center; font: 500 10px/1 var(--nf-text, Barlow, sans-serif); letter-spacing: .24em; text-transform: uppercase; color: rgb(243 234 220 / .45); pointer-events: none; }
+@media (min-width: 900px) {
+  .pg__main:has(.bd) { max-inline-size: 1120px; }
+  .bd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+  .bd__view { margin-inline: 0; inset-block-start: 24px; background: none; }
+  .bd__bag { block-size: min(78svh, 760px); }
+}

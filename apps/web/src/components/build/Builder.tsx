@@ -5,6 +5,7 @@ import { BagConfigSchema, COLOURS, DEFAULT_BAG, PRESETS, type BagConfig, type Is
 import { CURRENCIES, formatMoney, type Currency } from "@/lib/commerce/money";
 import type { PriceResult } from "@/lib/configurator/pricing";
 import { PaymentStep, type CheckoutResult } from "./PaymentStep";
+import { BagPreview } from "./BagPreview";
 
 const STEPS = ["Design", "Size", "Colours", "Branding", "Review"] as const;
 const PRESET_LABEL: Record<Preset, string> = { plain: "Plain", tigerfull: "Tiger", monogram: "Monogram" };
@@ -99,6 +100,10 @@ export function Builder({ initialPreset }: { initialPreset: Preset }) {
 
   return (
     <div className="bd">
+      <div className="bd__view">
+        <BagPreview cfg={cfg} />
+      </div>
+      <div className="bd__panel">
       <ol className="bd__steps" aria-label="Build steps">
         {STEPS.map((s, i) => (
           <li key={s} aria-current={i === step ? "step" : undefined} className={i <= step ? "is-done" : ""}>
@@ -182,6 +187,8 @@ export function Builder({ initialPreset }: { initialPreset: Preset }) {
           <PaymentStep checkout={checkout} />
         </>
       )}
+
+      </div>
 
       <div className="bd__bar" role="region" aria-label="Your price">
         <div>

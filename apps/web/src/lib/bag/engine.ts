@@ -75,6 +75,8 @@ export class BagEngine {
   private onScreen = true;
   private raf = 0;
   private timers: number[] = [];
+  /** When set (by the builder), this look is applied instead of the current product's, so any colours or artwork can be previewed. */
+  private override: BagProduct | null = null;
 
   constructor(o: BagEngineOptions) {
     this.root = o.root;
@@ -147,6 +149,12 @@ export class BagEngine {
     this.ring.material.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
+  }
+
+  /** Show any look on the live bag (the builder drives this as choices change); the model may still be loading, the look is applied as soon as it is. */
+  preview(look: BagProduct): void {
+    this.override = look;
+    this.apply(this.current);
   }
 
   go(delta: number): void {
@@ -252,7 +260,7 @@ export class BagEngine {
   }
 
   private apply(index: number): void {
-    const p = BAG_PRODUCTS[index];
+    const p = this.override ?? BAG_PRODUCTS[index];
     if (!p) return;
     this.current = index;
     const m = this.bodyMaterial;
