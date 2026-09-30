@@ -1,0 +1,40 @@
+/** Database migrations, applied in order at first connection (recorded in schema_migrations). Plain Postgres SQL; the same runs on PGlite locally and on a hosted Postgres. */
+export const MIGRATIONS: ReadonlyArray<{ id: string; sql: string }> = [
+  {
+    id: "001_init",
+    sql: `
+      CREATE TABLE IF NOT EXISTS waitlist_entries (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        email text NOT NULL,
+        method text NOT NULL DEFAULT 'email',
+        source text NOT NULL DEFAULT 'form',
+        name text,
+        google_sub text,
+        product text NOT NULL DEFAULT 'bag',
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS waitlist_entries_email_key ON waitlist_entries (lower(email));
+
+      CREATE TABLE IF NOT EXISTS orders (
+        id uuid PRIMARY KEY,
+        status text NOT NULL,
+        schema_version text NOT NULL,
+        config jsonb NOT NULL,
+        currency text NOT NULL,
+        book text NOT NULL,
+        total_minor integer NOT NULL CHECK (total_minor >= 0),
+        deposit_minor integer NOT NULL CHECK (deposit_minor >= 0),
+        payment_intent_id text,
+        history jsonb NOT NULL DEFAULT '[]'::jsonb,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status);
+
+      CREATE TABLE IF NOT EXISTS payment_events (
+        id text PRIMARY KEY,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `,
+  },
+];

@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { RollingSubmit } from "@/components/ui/RollingButton";
+import { GoogleButton } from "./GoogleButton";
 import { WAITLIST_LINES, waitlistSchema, type WaitlistMethod } from "@/lib/waitlist";
 
 const STORE_KEY = "sz.waitlist";
@@ -126,6 +127,29 @@ export function Waitlist() {
     }
   }
 
+  async function onGoogle(credential: string): Promise<void> {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/waitlist/google", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ credential }) });
+      const json = (await res.json()) as { ok: boolean; message?: string; email?: string };
+      if (!json.ok) {
+        setError(json.message ?? "Google sign-in failed. Please try again.");
+        return;
+      }
+      try {
+        window.localStorage.setItem(STORE_KEY, `${json.email ?? "google"} (google)`);
+      } catch {
+        /* ignore */
+      }
+      setDone(true);
+    } catch {
+      setError("Could not reach us. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className={`waitlist${done ? " is-done" : ""}`} id="waitlist" aria-labelledby={`${id}-title`}>
       <div className="waitlist__inner">
@@ -156,6 +180,7 @@ export function Waitlist() {
               ))}
             </div>
           )}
+          {!done && method === "gmail" && <GoogleButton onCredential={(c) => void onGoogle(c)} />}
           <label className="waitlist__label" htmlFor={`${id}-email`}>
             Email address
           </label>

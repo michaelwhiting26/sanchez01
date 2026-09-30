@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 import { waitlistSchema } from "@/lib/waitlist";
+import { limited } from "@/lib/rate-limit";
 import { getWaitlistStore } from "@/lib/waitlist-store";
-
-// Best-effort rate limit per client (in-memory: per server instance). Replace with the shared limiter when infrastructure exists.
-const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 8;
-const hits = new Map<string, number[]>();
-
-function limited(key: string, now: number): boolean {
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
-  recent.push(now);
-  hits.set(key, recent);
-  if (hits.size > 5000) for (const [k, v] of hits) if (v.every((t) => now - t >= WINDOW_MS)) hits.delete(k);
-  return recent.length > MAX_PER_WINDOW;
-}
 
 export async function POST(request: Request): Promise<NextResponse> {
   const now = Date.now();

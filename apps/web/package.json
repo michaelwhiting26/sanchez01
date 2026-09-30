@@ -14,6 +14,7 @@
     "generate:types": "payload generate:types"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@payloadcms/db-postgres": "3.90.2",
     "@payloadcms/next": "3.90.2",
     "@payloadcms/richtext-lexical": "3.90.2",
@@ -24,11 +25,13 @@
     "@stripe/stripe-js": "^9.17.0",
     "animejs": "^4.5.0",
     "file-type": "^22.1.1",
+    "google-auth-library": "^11.1.0",
     "graphql": "^16.8.1",
     "isomorphic-dompurify": "^4.4.0",
     "next": "16.3.6",
     "next-intl": "^4.14.7",
     "payload": "3.90.2",
+    "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "^0.35.5",
