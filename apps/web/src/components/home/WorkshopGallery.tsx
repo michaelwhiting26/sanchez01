@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { attachGalleryNote, attachGalleryRuler, attachGalleryScroll } from "./gallery-behaviours";
 import { FilmHelix } from "@/lib/film";
 import { GALLERY_SLIDES } from "./gallery-slides";
+import { GalleryReelButton } from "./GalleryReelButton";
 
 const BUNDLE = "/assets/carousel/lgc.bundle.js";
 
@@ -67,6 +68,7 @@ export function WorkshopGallery() {
           ref={hostRef}
           suppressHydrationWarning
         />
+        <GalleryReelButton />
       </section>
     </div>
   );

@@ -7,6 +7,7 @@ export function Hero() {
     <section className="wm-hero wm-hero--rings" aria-label="Sanchez" data-hero-rings>
       <h1 className="visually-hidden">Sanchez Custom Boxing</h1>
       <HeroField />
+      <div className="wm-hero__static" aria-hidden="true">SANCHEZ</div>
       <div className="wm-hero__pool" aria-hidden="true" />
       <div className="wm-hero__sig" aria-hidden="true">
         <svg className="sig" viewBox={SIGNATURE_VIEWBOX} role="img" aria-label="Custom">

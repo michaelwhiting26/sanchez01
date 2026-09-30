@@ -14,13 +14,19 @@ export function HeroField() {
     const canvas = canvasRef.current;
     const hero = canvas?.closest<HTMLElement>("[data-hero-rings]");
     if (!canvas || !hero) return;
-    const engine = new HeroEngine({
-      canvas,
-      hero,
-      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-      coarsePointer: window.matchMedia("(pointer: coarse)").matches,
-    });
-    void engine.start();
+    let engine: HeroEngine;
+    try {
+      engine = new HeroEngine({
+        canvas,
+        hero,
+        reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        coarsePointer: window.matchMedia("(pointer: coarse)").matches,
+      });
+    } catch {
+      hero.classList.add("is-static"); // no canvas: the plain wordmark and "Custom" stand in for the field
+      return;
+    }
+    void engine.start().catch(() => hero.classList.add("is-static"));
     if (process.env.NODE_ENV !== "production") (window as Window & { __hero?: HeroEngine }).__hero = engine;
     return () => engine.destroy();
   }, []);
