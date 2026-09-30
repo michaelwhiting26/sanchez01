@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
+import { registerSz } from "@/lib/e2e-hooks";
 import { FilmHelix } from "@/lib/film";
 import { GalleryAbseil } from "@/lib/gallery-abseil";
 import { GALLERY_SLIDES } from "./gallery-slides";
@@ -147,6 +148,7 @@ export function WorkshopGallery() {
       if (!raf) raf = requestAnimationFrame(frame);
     };
     kickRef.current = kick;
+    const offSz = registerSz("gallery", { update: frame });
 
     const measure = (): void => {
       vw = window.innerWidth || 1;
@@ -215,6 +217,7 @@ export function WorkshopGallery() {
       ro.disconnect();
       abseil.destroy();
       film.destroy();
+      offSz();
     };
   }, []);
 

@@ -1,0 +1,25 @@
+# Manual: generates the linux screenshot baselines for the home-page e2e suite (apps/web/e2e). Download the artifact and commit its contents at
+# apps/web/e2e/__screenshots__/, then the CI `e2e` job starts comparing screenshots on linux too. Baselines are per platform, so darwin's stay as they are.
+name: E2E snapshots
+on:
+  workflow_dispatch:
+jobs:
+  update-snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Generate linux baselines
+        run: npm run e2e -w @sanchez/web -- --update-snapshots home.spec.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-linux
+          path: apps/web/e2e/__screenshots__/**/linux/**
+          if-no-files-found: error

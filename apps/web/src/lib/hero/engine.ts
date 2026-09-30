@@ -26,6 +26,7 @@ import {
   type Rgb,
 } from "./config";
 import { FlagLookup, loadFlagIndices } from "./flag";
+import { E2E_ENABLED, registerSz } from "@/lib/e2e-hooks";
 import { onHeroRunnerHidden, setHeroHideSpot, setHeroRunnerHidden } from "./handoff";
 import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
 import { SigPen, tabulate } from "./sigpen";
@@ -254,7 +255,7 @@ export class HeroEngine {
         setHeroRunnerHidden(false);
       });
     }
-    if (process.env.NODE_ENV !== "production" && !this.reduce) this.exposeDevSeek();
+    if (E2E_ENABLED && !this.reduce) this.exposeDevSeek();
   }
 
   /** Draw the whole scene as it is `ms` after the engine started, with no rAF: the same draw the loop runs, at a chosen time. */
@@ -293,7 +294,10 @@ export class HeroEngine {
       },
     };
     Object.defineProperty(api, "duration", { get: () => plan()?.tEnd ?? 0 });
-    (window as unknown as { __hero?: unknown }).__hero = api;
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __hero?: unknown }).__hero = api;
+    // the e2e suite's window.__sz.hero (lib/e2e-hooks.ts): the same methods, `duration` as a function
+    const off = registerSz("hero", { seek: api.seek, duration: () => plan()?.tEnd ?? 0, timeline: api.timeline });
+    this.abort.signal.addEventListener("abort", off);
   }
 
   destroy(): void {
