@@ -158,8 +158,9 @@
     var hc = 0.5 + 0.5 * Math.sin(tn * 0.55 + 1.3) * Math.cos(tn * 0.21), hR = 4 + 20 * (1 - hc), hI = 0.45 + 0.55 * hc;
     var hx = sx0 + (sx1 - sx0) * (0.5 + 0.46 * Math.sin(tn * 0.31 - 0.9) + 0.06 * Math.sin(tn * 1.7)), hy = MH * (0.5 + 0.42 * Math.sin(tn * 0.83 + 2.0) * Math.cos(tn * 0.29));
     var hx2 = sx0 + (sx1 - sx0) * (0.5 + 0.46 * Math.sin(tn * 0.23 + 2.4)), hy2 = MH * (0.5 + 0.4 * Math.sin(tn * 0.61 - 0.5)), hR2 = 5 + 16 * (0.5 + 0.5 * Math.sin(tn * 0.4 + 0.7));
+    var densAt = function (xx, mm) { var a1 = xx - hx, b1 = (mm - hy) * 1.5, a2 = xx - hx2, b2 = (mm - hy2) * 1.5; return Math.min(1, hI * Math.exp(-(a1 * a1 + b1 * b1) / (hR * hR)) + 0.7 * Math.exp(-(a2 * a2 + b2 * b2) / (hR2 * hR2)) + 0.18 + 0.16 * Math.sin(xx * 0.11 + mm * 0.07 + tn * 0.4)); };
     var eOut = function (v) { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v) * 0.35 + v * 0.65; };
-    var SLOPE = 0.35, PSMAX = (sx1 - sx0) + Math.abs(SLOPE) * MH, FF = sp >= 1 ? PSMAX + 40 : -8 + (PSMAX + 24) * eOut(sp);
+    var SLOPE = 0.35, PSMAX = (sx1 - sx0) + Math.abs(SLOPE) * MH, FF = sp >= 1 ? PSMAX + 40 : -8 + (PSMAX + 24) * eOut(sp), FF2 = sp >= 1 ? PSMAX + 40 : FF - 34;   /* the second coat trails the first */
     /* WAVE SETS, one per quarter: every quarter of the field rolls out its own sets of seven waves (own timing, speed, spacing and power), so the four sides move independently.
        Each crest has its own strength (middle ones strongest, every set differs). A 1-D table per quarter over distance keeps it cheap; the quarters blend smoothly across the axes. */
     var WAVES = 7, BINS = 480, WWIDTH = 8.5, tW0 = (t - (sprayStart || t)) / 1000 - SPRAY_MS / 1000 * 0.7 - 0.7;
@@ -200,7 +201,14 @@
       for (var x = 0; x < MW; x++, i++) {
         var b = -1;
         if (pr < R) {
-          if (inMap && bp[m * MW + x]) { b = NB0 + NEON; }   /* the outline: pure tan, every dot */            /* the outline: its own bright white-tan shade */
+          if (inMap && bp[m * MW + x]) {                                               /* the outline: pure tan, then one more coat of spray over it */
+            b = NB0 + NEON;
+            var ps2 = (x - sx0) + SLOPE * m;
+            if (sp >= 1 || FF2 - ps2 + (pseed[base + x] - 0.5) * 6 > 0) {
+              var h3 = (pseed[base + x] * 3571.7) % 1, d3 = densAt(x, m);
+              if (h3 < 0.5 + 0.3 * d3) { var sl3 = flagAt((x - sx0) / Math.max(1, sx1 - sx0) + (h3 - 0.5) * 0.006, m / MH + (pseed[base + x] - 0.5) * 0.018); b = (pseed[base + x] < 0.3 + 0.7 * d3) ? NB0 + sl3 : NB0 + NEON + 1 + sl3; }   /* tan still shows through where the coat is thin */
+            }
+          }
           else if (inMap && bl[m * MW + x]) {                                          /* the black inside the letters: spray paint */
             var ps = (x - sx0) + SLOPE * m, agep = FF - ps + (pseed[base + x] - 0.5) * 6;
             if (agep > 0 || sp >= 1) {
@@ -242,7 +250,13 @@
                 if (pseed[base + x] < (0.42 + 0.55 * cness * body) * cf) { cl = Math.round(LEVELS * Math.min(1, cness * (0.16 + 0.92 * shade * body))); }
               }
             }
+            var halo = -1;
+            if (cf < 1 && dw > 2.6 && dw < 10 && (sp >= 1 || FF2 - ((x - sx0) + SLOPE * m) > 0)) {                    /* the outside of the word sprayed with one more coat: a fine overspray halo just beyond the outline */
+              var hd = densAt(x, m), hh3 = (pseed[base + x] * 5813.3) % 1;
+              if (hh3 < (1 - (dw - 2.6) / 7.4) * (0.35 + 0.4 * hd)) halo = NB0 + NEON + 1 + flagAt((x - sx0) / Math.max(1, sx1 - sx0), m / MH);
+            }
             if (cl > 0) b = cl * WARMS;
+            else if (halo >= 0) b = halo;
             else if (dw > 2.2) {
               var fxg = x / GS, fyg = y / GS, gx0 = Math.floor(fxg), gy0 = Math.floor(fyg), tx = fxg - gx0, ty = fyg - gy0, gi = gy0 * gcols + gx0;
               var wv = (warpG[gi] * (1 - tx) + warpG[gi + 1] * tx) * (1 - ty) + (warpG[gi + gcols] * (1 - tx) + warpG[gi + gcols + 1] * tx) * ty;
