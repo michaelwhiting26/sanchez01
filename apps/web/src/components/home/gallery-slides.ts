@@ -6,6 +6,10 @@ export interface GallerySlide {
   /** Width / height of the picture, so the card is the right shape before it loads. */
   readonly aspect: number;
   readonly note: string;
+  /** Real description, written by Jesse. Absent until he supplies it: the lightbox then shows a marked "Caption to come" slot (never invented copy). */
+  readonly caption?: string;
+  /** Real meta lines (materials, place, date...), only ever facts Jesse has supplied. */
+  readonly details?: readonly string[];
 }
 
 export const GALLERY_SLIDES: readonly GallerySlide[] = [

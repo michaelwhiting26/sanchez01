@@ -712,9 +712,23 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 /* the pinned horizontal gallery (MR-2's mechanic): the strip slides sideways as you scroll down, at your pace */
 .pg-stage { display: block; padding: 0; }
 .pg-title { position: absolute; inset-inline: 0; inset-block-start: max(20px, env(safe-area-inset-top)); z-index: 4; margin: 0; text-align: center; font: 500 clamp(12px, 3.4vw, 15px)/1 var(--font-text, Barlow, sans-serif); letter-spacing: .4em; text-transform: uppercase; color: #f3eadc; pointer-events: none; }
-.pg-viewport { position: absolute; inset: 0; overflow: hidden; display: flex; align-items: center; }
-.pg-strip { display: flex; align-items: center; gap: clamp(20px, 5vw, 72px); padding-inline: 30vw; will-change: transform; }
-.pg-card { position: relative; flex: none; margin: 0; block-size: min(64svh, 620px); aspect-ratio: var(--ar); overflow: hidden; border-radius: 4px; background: #0d0a08; transform: scale(calc(.86 + .14 * var(--focus, 0))); filter: brightness(calc(.5 + .5 * var(--focus, 0))); box-shadow: 0 40px 70px -34px rgb(0 0 0 / .95), 0 0 0 1px rgb(243 234 220 / .08); transition: none; }
+.pg-viewport { position: absolute; inset: 0; z-index: 2; overflow: hidden; display: flex; align-items: center; }
+/* the viewport sits above the FilmHelix canvas (fixed, z-index 1) so its opaque black band hides the dot field and ring; the tapes (z 3) and HUD (z 4) stay above it. No containment on the stage: it would make the stage one stacking context and put the band back underneath the canvas */
+/* the strip is one piece of black 35mm film: as wide as its content, sprocket rails top and bottom (vector tile, crisp at any DPR), frames sitting on it */
+.pg-strip { position: relative; display: flex; align-items: center; gap: clamp(20px, 5vw, 72px); padding-inline: 30vw; padding-block: 44px; inline-size: max-content; min-inline-size: 100%; background: #000; }
+.pg-track[data-live] .pg-strip { will-change: transform; }
+.pg-strip::before, .pg-strip::after { content: ""; position: absolute; inset-inline: 0; block-size: 26px; z-index: 0; pointer-events: none; background: linear-gradient(rgb(239 227 200 / .42), rgb(239 227 200 / .42)) 0 0 / 100% 1px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='26'%3E%3Crect x='7' y='8' width='14' height='10' rx='2.6' fill='%23efe3c8'/%3E%3C/svg%3E") 0 0 / 28px 26px repeat-x; }
+.pg-strip::before { inset-block-start: 9px; }
+.pg-strip::after { inset-block-end: 9px; transform: scaleY(-1); }
+.pg-track[data-pg-sd] .pg-strip { will-change: auto; }
+@keyframes pg-slide { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(calc(-1px * var(--pg-travel, 0)), 0, 0); } }
+@supports (animation-timeline: scroll()) {
+  /* the sideways move runs on the compositor, tied to the page scroll across exactly the pinned travel (the JS sets --pg-start and --pg-travel in px) */
+  .pg-track[data-pg-sd] .pg-strip { animation: pg-slide 1s linear both; animation-timeline: scroll(root block); animation-range: calc(var(--pg-start, 0) * 1px) calc((var(--pg-start, 0) + var(--pg-travel, 0)) * 1px); }
+  .pg-track[data-pg-sd][data-live] .pg-strip { will-change: transform; }
+}
+.pg-card { position: relative; z-index: 1; flex: none; margin: 0; block-size: min(64svh, 620px); aspect-ratio: var(--ar); overflow: hidden; border-radius: 4px; background: #0d0a08; transform: scale(calc(.86 + .14 * var(--focus, 0))); filter: brightness(calc(.5 + .5 * var(--focus, 0))); box-shadow: 0 0 0 2px rgb(239 227 200 / .24), 0 30px 60px -34px rgb(0 0 0 / .95); transition: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.pg-card:focus-visible { outline: 2px solid #c9a45c; outline-offset: 4px; }
 .pg-card img, .pg-card video { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; }
 .pg-card figcaption { position: absolute; inset-inline: 0; inset-block-end: 0; padding: 26px 16px 14px; background: linear-gradient(transparent, rgb(0 0 0 / .72)); font: 500 12px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .26em; text-transform: uppercase; color: #f3eadc; opacity: calc(var(--focus, 0)); }
 .pg-card figcaption span { color: #e8a85a; margin-inline-end: 8px; }
@@ -770,3 +784,32 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .wm-hero__glass::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 70% at 12% 0%, rgb(255 255 255 / .1), transparent 55%), radial-gradient(90% 60% at 100% 100%, rgb(200 220 255 / .06), transparent 60%); }
 @keyframes wm-glass-sheen { 0% { transform: translateX(-70%); } 38%, 100% { transform: translateX(70%); } }
 @media (prefers-reduced-motion: reduce) { .wm-hero__glass::before { animation: none; transform: translateX(-8%); } }
+
+/* gallery lightbox (GalleryLightbox.tsx): a native <dialog>, black and cream with gold accents */
+.pgl { inline-size: 100%; block-size: 100%; max-inline-size: none; max-block-size: none; margin: 0; padding: 0; border: 0; background: rgb(0 0 0 / .96); color: #f3eadc; overscroll-behavior: contain; overflow: hidden; }
+.pgl::backdrop { background: #000; }
+.pgl-shell { position: relative; display: flex; flex-direction: column; block-size: 100%; padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); box-sizing: border-box; }
+.pgl-top { display: flex; align-items: center; justify-content: space-between; flex: none; }
+.pgl-count { margin: 0; font: 500 12px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; color: #c9a45c; }
+.pgl-x { inline-size: 48px; block-size: 48px; display: grid; place-items: center; margin-inline-end: -8px; border: 0; border-radius: 50%; background: transparent; color: #f3eadc; cursor: pointer; }
+.pgl-x:hover, .pgl-nav:hover { color: #c9a45c; }
+.pgl button:focus-visible { outline: 2px solid #c9a45c; outline-offset: 2px; }
+.pgl-body { flex: 1; min-block-size: 0; display: flex; flex-direction: column; gap: 16px; }
+.pgl-media { flex: 1 1 auto; min-block-size: 0; display: grid; place-items: center; touch-action: none; }
+.pgl-media img, .pgl-media video { display: block; max-inline-size: 100%; max-block-size: 100%; inline-size: auto; block-size: auto; object-fit: contain; border-radius: 3px; background: #0d0a08; box-shadow: 0 0 0 1px rgb(239 227 200 / .18); }
+.pgl-text { flex: none; max-block-size: 34svh; overflow-y: auto; padding-block-end: 56px; }
+.pgl-title { margin: 0 0 8px; font: 400 clamp(26px, 7vw, 40px)/1.05 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .06em; text-transform: uppercase; color: #f3eadc; }
+.pgl-caption { margin: 0; max-inline-size: 60ch; font: 400 15px/1.55 var(--font-text, Barlow, sans-serif); color: rgb(243 234 220 / .86); }
+.pgl-caption--todo { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: rgb(243 234 220 / .38); }
+.pgl-details { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font: 500 12px/1.4 var(--font-text, Barlow, sans-serif); letter-spacing: .16em; text-transform: uppercase; color: #c9a45c; }
+.pgl-nav { position: absolute; inset-block-end: max(8px, env(safe-area-inset-bottom)); inline-size: 52px; block-size: 52px; display: grid; place-items: center; border: 1px solid rgb(201 164 92 / .55); border-radius: 50%; background: rgb(0 0 0 / .6); color: #f3eadc; cursor: pointer; }
+.pgl-prev { inset-inline-start: 16px; }
+.pgl-next { inset-inline-end: 16px; }
+@media (min-width: 900px) {
+  .pgl-body { flex-direction: row; align-items: center; gap: 48px; padding-inline: 72px; }
+  .pgl-media { flex: 1 1 62%; block-size: 100%; }
+  .pgl-text { flex: 0 1 34%; max-block-size: 100%; padding-block-end: 0; }
+  .pgl-nav { inset-block-end: auto; inset-block-start: 50%; margin-block-start: -26px; }
+}
+@media (prefers-reduced-motion: no-preference) { .pgl[open] { animation: pgl-in .22s ease-out; } }
+@keyframes pgl-in { from { opacity: 0; } to { opacity: 1; } }
