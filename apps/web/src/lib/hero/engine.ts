@@ -123,6 +123,11 @@ export class HeroEngine {
   private sprayStart = 0;
   private intro: IntroSprites | null = null;
   private ti = 0;
+  private penTable: { xs: Float32Array; ss: Float32Array } | null = null;
+  private penKey = "";
+  private sigPaths: SVGPathElement[] = [];
+  private sigLens: number[] = [];
+  private sigTotal = 0;
   private waveCells: Array<[number, number]> = [];
   private lastIntroTi = -1;
   private lastT = 0;
@@ -199,7 +204,13 @@ export class HeroEngine {
     window.clearTimeout(this.resizeTimer);
     this.canvas.classList.remove("is-ready");
     this.hero.classList.remove("is-intro");
-    if (this.sigEl) this.sigEl.style.clipPath = "";
+    if (this.sigEl) {
+      this.sigEl.style.clipPath = "";
+      for (const p of this.sigPaths) {
+        p.style.strokeDashoffset = "";
+        p.style.fillOpacity = "";
+      }
+    }
   }
 
   /** Reshape the ridges for a name: the same name always gives the same print. */
@@ -819,7 +830,10 @@ export class HeroEngine {
       sig = { left: r.left * this.dpr, right: r.right * this.dpr, y: (r.top + r.height * 0.55) * this.dpr };
     }
     const flagRef = this.flag;
-    const g: IntroGeom = { colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
+    const penNow = this.penTable && el ? this.penTable : null;
+    const rectLeft = el ? el.getBoundingClientRect().left : 0;
+    const dprNow = this.dpr;
+    const g: IntroGeom = { pen: penNow ? (sv: number) => (rectLeft + this.penAt(penNow, sv)) * dprNow : null, colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
     this.introGeom = g;
     // each bag landing sends a ripple through the dots: the field reacts to the impact
     for (const l of intro.landings()) {
@@ -828,9 +842,88 @@ export class HeroEngine {
     this.lastIntroTi = ti;
     if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 1200) intro.draw(this.ctx, ti, g);
     if (el) {
-      const hidden = intro.signatureHidden(ti, g);
-      el.style.clipPath = `inset(0 ${(hidden * 100).toFixed(2)}% 0 0)`; // inline beats the stylesheet's hidden default
+      this.buildPen();
+      this.applyInk(intro.inkProgress(ti));
     }
+  }
+
+  /** Where the signature's pen is (relative to the signature's left edge, in CSS px) at ink progress s: never goes backwards. */
+  private penAt(t: { xs: Float32Array; ss: Float32Array }, s: number): number {
+    const { xs, ss } = t;
+    if (s <= 0) return xs[0] ?? 0;
+    if (s >= 1) return xs[xs.length - 1] ?? 0;
+    let lo = 0;
+    let hi = ss.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if ((ss[mid] ?? 0) <= s) lo = mid;
+      else hi = mid;
+    }
+    const s0 = ss[lo] ?? 0;
+    const s1 = ss[hi] ?? 1;
+    const f = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
+    return (xs[lo] ?? 0) + ((xs[hi] ?? 0) - (xs[lo] ?? 0)) * f;
+  }
+
+  /** Sample the signature's strokes in the order they are drawn, to know where the pen is as the ink goes down. */
+  private buildPen(): void {
+    const el = this.sigEl;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const key = `${Math.round(rect.width)}x${Math.round(rect.height)}`;
+    if (this.penKey === key) return;
+    const paths = Array.from(el.querySelectorAll<SVGPathElement>("path"));
+    if (!paths.length) return;
+    const lens = paths.map((p) => p.getTotalLength());
+    const total = lens.reduce((a, b) => a + b, 0);
+    if (total <= 0) return;
+    const xs: number[] = [];
+    const ss: number[] = [];
+    let acc = 0;
+    paths.forEach((p, i) => {
+      const L = lens[i] ?? 0;
+      const ctm = p.getScreenCTM();
+      if (!ctm) return;
+      const n = Math.max(2, Math.ceil(L / 5));
+      for (let k = 0; k <= n; k++) {
+        const pt = p.getPointAtLength((L * k) / n);
+        xs.push(new DOMPoint(pt.x, pt.y).matrixTransform(ctm).x - rect.left);
+        ss.push((acc + (L * k) / n) / total);
+      }
+      acc += L;
+    });
+    if (xs.length < 4) return;
+    for (let i = 1; i < xs.length; i++) xs[i] = Math.max(xs[i] ?? 0, xs[i - 1] ?? 0); // the runner cannot go backwards
+    const w = Math.max(3, Math.round(xs.length * 0.03)); // smooth so a doubled-back stroke slows him gently
+    const sm = xs.map((_, i) => {
+      let sum = 0;
+      let n = 0;
+      for (let j = Math.max(0, i - w); j <= Math.min(xs.length - 1, i + w); j++) {
+        sum += xs[j] ?? 0;
+        n++;
+      }
+      return sum / n;
+    });
+    sm[0] = xs[0] ?? 0;
+    sm[sm.length - 1] = xs[xs.length - 1] ?? 0;
+    this.penTable = { xs: Float32Array.from(sm), ss: Float32Array.from(ss) };
+    this.sigPaths = paths;
+    this.sigLens = lens;
+    this.sigTotal = total;
+    this.penKey = key;
+  }
+
+  /** Lay the ink down: each stroke is drawn in turn as the pen reaches it, and fills in once it is done. */
+  private applyInk(s: number): void {
+    if (!this.sigPaths.length) return;
+    let acc = 0;
+    this.sigPaths.forEach((p, i) => {
+      const L = this.sigLens[i] ?? 0;
+      const local = L > 0 ? Math.min(1, Math.max(0, (s * this.sigTotal - acc) / L)) : 1;
+      p.style.strokeDashoffset = String(1 - local);
+      p.style.fillOpacity = String(Math.min(1, Math.max(0, (local - 0.55) / 0.45)));
+      acc += L;
+    });
   }
 
   /** Draw every bucket in one pass, then the overspray mist. */

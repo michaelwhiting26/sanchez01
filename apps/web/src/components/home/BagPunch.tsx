@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BagEngine } from "@/lib/bag/engine";
-import { BAG_PRODUCTS } from "@/lib/bag/products";
+import { BAG_PRODUCTS, priceLabel } from "@/lib/bag/products";
 
 /** The live 3D bag with its product switcher. Only Tiger and Monogram are live. The canvas is decorative; the switcher is real buttons and links. */
 export function BagPunch() {
@@ -66,6 +66,7 @@ export function BagPunch() {
       <div className="bag-punch__label" aria-live="polite">
         <p className="bag-punch__name">{product.name}</p>
         <p className="bag-punch__sub">{product.sub}</p>
+        <p className={`bag-punch__price${priceLabel(product.price).placeholder ? " is-placeholder" : ""}`}>{priceLabel(product.price).text}</p>
         <div className="bag-punch__dots">
           {BAG_PRODUCTS.map((p, k) => (
             <button key={p.id} type="button" aria-label={p.name} aria-current={k === index} onClick={() => k !== index && engineRef.current?.show(k)} />

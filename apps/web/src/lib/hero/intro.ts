@@ -53,6 +53,8 @@ export interface IntroGeom {
   psmax: number;
   /** Flag colour at normalised (u, v), for the spray mist. */
   colourAt: (u: number, v: number) => Rgb;
+  /** Where the pen of the signature is, as its ink is laid down: canvas x for ink progress 0..1 (never goes backwards), or null. */
+  pen: ((s: number) => number) | null;
   /** The "Custom" signature's box in canvas pixels, or null. */
   sig: { left: number; right: number; y: number } | null;
 }
@@ -122,13 +124,9 @@ export class IntroSprites {
     return this.letters.map((l, i) => ({ cx: l.cx, cy: (l.top + l.bottom) / 2, at: INTRO.bagsStartMs + i * INTRO.bagStaggerMs + (vr(i, 5) - 0.5) * 70 + INTRO.bagDurMs * 0.86 }));
   }
 
-  /** How much of "Custom" is still hidden from the right, 0..1 (1 hidden, 0 fully shown): it is sprayed in left to right behind the runner. */
-  signatureHidden(ti: number, g: IntroGeom): number {
-    if (!g.sig) return 0;
-    if (ti < INTRO.returnArriveMs) return 1;
-    if (ti > INTRO.returnArriveMs + INTRO.customPassMs) return 0;
-    const x = this.returnRunnerX(ti, g, 1);
-    return 1 - clamp01((x - g.sig.left) / Math.max(1, g.sig.right - g.sig.left));
+  /** How much of the "Custom" ink has been laid down, 0..1: it is drawn stroke by stroke as he sprays, at the pace of the pen. */
+  inkProgress(ti: number): number {
+    return clamp01((ti - INTRO.returnArriveMs) / INTRO.customPassMs);
   }
 
   draw(ctx: CanvasRenderingContext2D, ti: number, g: IntroGeom): void {
@@ -208,22 +206,30 @@ export class IntroSprites {
   private returnRunnerX(ti: number, g: IntroGeom, spriteS: number): number {
     const sig = g.sig;
     if (!sig) return -1e9;
-    const width = Math.max(1, sig.right - sig.left);
+    // his pace is the pen's: where the ink doubles back (the loop of the C: up, back on itself, down) he slows to spend the time, and where the
+    // letters are simple he moves on. A tenth of a steady drift keeps his feet from ever stopping dead.
+    const left = g.pen ? g.pen(0) : sig.left;
+    const right = g.pen ? g.pen(1) : sig.right;
+    const width = Math.max(1, right - left);
     const vS = width / (INTRO.customPassMs / 1000);
     const enter = (INTRO.returnArriveMs - INTRO.returnStartMs) / 1000;
     const tau = (ti - INTRO.returnArriveMs) / 1000;
     const pass = INTRO.customPassMs / 1000;
     const exit = INTRO.returnExitMs / 1000;
     if (tau < 0) {
-      const D = sig.left + spriteS * 1.2; // from off the left edge, easing down to the spraying speed
+      const D = left + spriteS * 1.2; // from off the left edge, easing down to the spraying speed
       const k = (D - vS * enter) / (enter * enter);
-      return sig.left - (vS * -tau + k * tau * tau);
+      return left - (vS * -tau + k * tau * tau);
     }
-    if (tau <= pass) return sig.left + vS * tau;
+    if (tau <= pass) {
+      const p = tau / pass;
+      const steady = left + width * p;
+      return g.pen ? g.pen(p) * 0.9 + steady * 0.1 : steady;
+    }
     const u = tau - pass;
-    const D = g.cw - sig.right + spriteS * 1.2; // then away off the right edge
+    const D = g.cw - right + spriteS * 1.2; // then away off the right edge
     const a = Math.max(0, (2 * (D - vS * exit)) / (exit * exit));
-    return sig.right + vS * u + 0.5 * a * u * u;
+    return right + vS * u + 0.5 * a * u * u;
   }
 
   private drawRunnerAt(ctx: CanvasRenderingContext2D, x: number, y: number, spriteS: number, mirrored: boolean, squash = 0): void {

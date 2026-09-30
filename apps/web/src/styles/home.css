@@ -542,8 +542,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .rise.is-pinned .rise__card { position: fixed; inset-inline: 0; inset-block-start: 0; z-index: 30; min-block-size: 100vh; block-size: auto; transform: translate3d(0, calc((1 - var(--rise, 0)) * 100vh - var(--more, 0) * var(--overflow, 0px)), 0); }
 
 /* load sequence: "Custom" is drawn in by the returning runner (the engine sets clip-path), so its own draw-in animation is off */
-[data-hero-rings].is-intro .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; }
-[data-hero-rings].is-intro .sig { clip-path: inset(0 100% 0 0); }
+[data-hero-rings].is-intro .sig__p { animation: none; } /* the engine lays the ink down stroke by stroke as the runner sprays */
 
 /* Gallery backdrop: fully opaque (nothing of the hero field shows through) with a film tape top and bottom, drawn in the tape's amber and sprocket holes */
 .lgc-track .lgc-section { background: #090706; overflow: hidden; }
@@ -613,3 +612,7 @@ html.gallery-locked { overscroll-behavior: none; }
 /* the guided tour's hint: small, bottom-centre, only while the site is playing itself */
 .tour-hint { position: fixed; inset-inline: 0; inset-block-end: max(18px, env(safe-area-inset-bottom)); z-index: 40; margin-inline: auto; inline-size: max-content; max-inline-size: 90vw; padding: 9px 16px; border-radius: 999px; border: 1px solid rgb(243 234 220 / .22); background: rgb(9 7 6 / .62); color: rgb(243 234 220 / .82); font: 500 11px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(8px); transition: opacity .6s ease, transform .6s ease; pointer-events: none; }
 .tour-hint.is-on { opacity: 1; transform: none; }
+
+/* the price line under the product name */
+.bag-punch__price { margin: 6px 0 0; font: 600 15px/1.2 var(--font-text, Barlow, sans-serif); letter-spacing: .14em; color: #f3eadc; }
+.bag-punch__price.is-placeholder { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgb(243 234 220 / .5); }

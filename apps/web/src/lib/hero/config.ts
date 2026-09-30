@@ -96,7 +96,7 @@ export const INTRO = {
   runOffMs: 900,
   returnStartMs: 8500,
   returnArriveMs: 9900,
-  customPassMs: 1600,
+  customPassMs: 3400,
   returnExitMs: 800,
   /** Runner height as a share of the letter height, and the row (share of the letter height) it sprays at. */
   runnerScale: 1.1,
