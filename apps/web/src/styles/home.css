@@ -218,8 +218,8 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 @media (prefers-reduced-motion: reduce) { .hero-cursor__ring svg { animation: none; } }
 
 /* Workshop carousel driven by page scroll (lgc-scroll.js): a tall track, the carousel pinned inside it. 65svh of scroll per slide change. */
-.lgc-track { position: relative; block-size: calc(100svh - var(--header-h) + var(--lgc-steps, 5) * 65svh); background: #090706; }
-.lgc-track .lgc-section { position: sticky; inset-block-start: var(--header-h); block-size: calc(100svh - var(--header-h)); padding-block: 0; display: flex; align-items: center; }
+.lgc-track { position: relative; block-size: calc((100svh - var(--header-h)) * 1.5 + var(--lgc-steps, 5) * 65svh); background: #090706; }
+.lgc-track .lgc-section { position: sticky; inset-block-start: var(--header-h); block-size: calc((100svh - var(--header-h)) * 1.5); padding-block: 0; display: flex; align-items: center; }
 .lgc-track .lgc { inline-size: 100%; block-size: min(calc(100svh - var(--header-h) - 32px), 760px); }
 
 /* Paragraph shown under a focused carousel image (lgc-note.js). Text comes from each item's "note" in data-items. */
@@ -530,5 +530,5 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .waitlist__priv:hover, .waitlist__priv:focus-visible { color: #a99f92; text-decoration: underline; }
 
 /* workshop gallery: fills the pinned screen (was capped at 760px with a 32px margin) and is a touch brighter */
-.lgc { block-size: min(94svh, 1100px); }
-.lgc-track .lgc { block-size: min(calc(100svh - var(--header-h) - 12px), 1100px); filter: brightness(1.2) saturate(1.04); }
+.lgc { block-size: min(141svh, 1650px); }   /* gallery 1.5x taller */
+.lgc-track .lgc { block-size: min(calc((100svh - var(--header-h) - 12px) * 1.5), 1650px); filter: brightness(1.2) saturate(1.04); }
