@@ -14,7 +14,7 @@
   var R = 0, r0 = 0, ddw, thv, pseed;                              /* the page-long grid: rows, map's first row, ridge distance, angle, per-dot random */
   var nRows = 0, topRow = 0, sub = 0, bucketOf, order, counts, offX, offY;   /* what is on screen right now */
   var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25, FLOOR = 0.26;
-  var CREAM = [243, 234, 220], GOLD = [201, 164, 92];
+  var CREAM = [214, 181, 136], GOLD = [214, 181, 136];   /* Tan #D6B588: the whole pattern, the SANCHEZ outline and the ridges, in one colour (brightness still fades with distance) */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
   var LEVELS = 20, WARMS = 6, NB = (LEVELS + 1) * WARMS, styles = [];
   for (var lv = 0; lv <= LEVELS; lv++) for (var w = 0; w < WARMS; w++) {
