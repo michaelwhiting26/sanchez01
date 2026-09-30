@@ -102,6 +102,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
       <div className="rise__stage">
         <div className="rise__card" ref={cardRef}>
           <img className="rise__surface" src="/assets/brand/rise-card.svg?v=3" alt="" aria-hidden="true" />
+          <img className="rise__bag" src="/assets/brand/bag-footer.webp" alt="" aria-hidden="true" width="800" height="1200" loading="lazy" />
           <div className="rise__panel">
             <div className="rise__hero">
               <h2 className="visually-hidden">Sanchez Custom Boxing Equipment</h2>
