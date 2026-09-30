@@ -536,3 +536,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 /* whatever section precedes the rise panel is pinned under it: the panel rides up and over it, no dead space */
 .rise-under { position: sticky; z-index: 0; }
 .rise.is-pinned { background: transparent; z-index: 1; }
+
+/* MR-2 structure: the panel is a fixed layer riding --rise; the section itself is only the scroll length beneath it */
+.rise.is-pinned .rise__stage { position: static; block-size: auto; overflow: visible; }
+.rise.is-pinned .rise__card { position: fixed; inset-inline: 0; inset-block-start: 0; z-index: 30; min-block-size: 100vh; block-size: auto; transform: translate3d(0, calc((1 - var(--rise, 0)) * 100vh - var(--more, 0) * var(--overflow, 0px)), 0); }

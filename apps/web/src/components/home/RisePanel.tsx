@@ -21,47 +21,51 @@ export function RisePanel({ children }: { children: ReactNode }) {
     if (!root || !card) return;
     const mq = window.matchMedia("(min-width: 761px) and (prefers-reduced-motion: no-preference)");
     let vh = 0;
-    let top = 0;
+    let rootTop = 0;
     let reveal = 0;
     let over = 0;
     let ticking = false;
     let raf = 0;
 
+    // MR-2's structure: the panel is a fixed layer whose translate is a pure function of scroll; this section is only the scroll length under it.
     const update = (): void => {
       ticking = false;
       if (!mq.matches) return;
-      const raw = Math.min(1, Math.max(0, (window.scrollY - top) / reveal));
+      const x = window.scrollY + vh - rootTop; // 0 when the section's top edge reaches the bottom of the screen
+      const raw = Math.min(1, Math.max(0, x / reveal));
       const rise = teaseRise(raw);
       root.style.setProperty("--rise", rise.toFixed(4));
-      root.style.setProperty("--more", (over > 0 ? Math.min(1, Math.max(0, (window.scrollY - top - reveal) / over)) : 0).toFixed(4));
+      root.style.setProperty("--more", (over > 0 ? Math.min(1, Math.max(0, (x - reveal) / over)) : 0).toFixed(4));
+      card.style.visibility = rise <= 0.001 ? "hidden" : "visible";
       if (rise > 0.3) root.classList.add("is-in"); // one-shot copy reveal once the panel is well into view
     };
     const measure = (): void => {
       vh = window.innerHeight || 1;
+      const prev = prevRef.current ?? (root.previousElementSibling as HTMLElement | null);
+      prevRef.current = prev;
       if (!mq.matches) {
         root.style.height = "";
         root.style.marginTop = "";
-        prevRef.current?.classList.remove("rise-under");
+        prev?.classList.remove("rise-under");
         document.documentElement.classList.remove("rise-pinned");
         root.classList.remove("is-pinned");
         root.style.setProperty("--rise", "1");
+        card.style.visibility = "";
         root.classList.add("is-in");
         return;
       }
       root.classList.add("is-pinned");
       document.documentElement.classList.add("rise-pinned");
-      const prev = prevRef.current ?? (root.previousElementSibling as HTMLElement | null); // pull up over the section before us and pin it while we ride over it
-      prevRef.current = prev;
       if (prev) {
-        prev.classList.add("rise-under");
+        prev.classList.add("rise-under"); // pinned while the panel rides up and over it
         prev.style.top = `${Math.min(0, vh - prev.offsetHeight)}px`;
-        root.style.marginTop = `${-prev.offsetHeight}px`;
-      } else root.style.marginTop = "";
-      reveal = Math.round(vh * 1.4); // the extra scroll: rise, pause, rise again
-      over = Math.max(0, card.offsetHeight - vh); // the footer is taller than the screen: scroll on through it while the stage stays pinned
+      }
+      root.style.marginTop = "";
+      reveal = Math.round(vh * 1.2); // the extra scroll: rise, stall on the shaped edge, rise again
+      over = Math.max(0, card.offsetHeight - vh); // the footer is taller than the screen: scroll on through it
       root.style.setProperty("--overflow", `${over}px`);
-      root.style.height = `${vh + reveal + over}px`;
-      top = root.getBoundingClientRect().top + window.scrollY;
+      root.style.height = `${reveal + over}px`;
+      rootTop = root.getBoundingClientRect().top + window.scrollY;
       update();
     };
     const onScroll = (): void => {
@@ -78,7 +82,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
     void document.fonts?.ready.then(measure);
     measure();
     const ro = new ResizeObserver(() => {
-      if (mq.matches && Math.abs(card.offsetHeight - vh - over) > 2 && card.offsetHeight > 0) measure(); // the footer fills in after load (globe, fonts)
+      if (mq.matches && card.offsetHeight > 0 && Math.abs(root.offsetHeight - reveal - Math.max(0, card.offsetHeight - vh)) > 2) measure();
     });
     ro.observe(card);
     return () => {
