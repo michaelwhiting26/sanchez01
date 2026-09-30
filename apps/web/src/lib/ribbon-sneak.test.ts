@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { getHeroHideSpot, isHeroRunnerHidden, onHeroRunnerHidden, resetHandoff, setHeroHideSpot, setHeroRunnerHidden, type HeroHideSpot } from "./hero/handoff";
-import { detrendHips, newScene, parseSheet, ribbonScene, RIBBON, type Foot, type RibbonSheet, type SceneIn, type SceneOut } from "./ribbon-sneak";
+import { buildTimeline, comboAt, detrendHips, newScene, SEG_JAB, SEG_STEP, parseSheet, ribbonScene, RIBBON, type CombatKit, type Foot, type RibbonSheet, type SceneIn, type SceneOut } from "./ribbon-sneak";
 
 const VH = 800;
 const ROOT_H = 500;
@@ -26,9 +26,9 @@ const HIDE_DOC_Y = 300; // viewport y when the ribbon's top is at TOP0
 const TOP0 = VH + 40;
 const hideAt = (rootTop: number): HeroHideSpot => ({ x: 300, y: HIDE_DOC_Y - (TOP0 - rootTop), size: SZ * 1.4, scale: (SZ * 1.4) / 320, facing: "left" });
 
-const scene = (rootTop: number, opts: { roll?: RibbonSheet | null; fade?: number; hide?: boolean } = {}): SceneOut => {
+const scene = (rootTop: number, opts: { roll?: RibbonSheet | null; fade?: number; hide?: boolean; combat?: CombatKit | null } = {}): SceneOut => {
   const out = newScene();
-  const inp: SceneIn = { rootTop, rootH: ROOT_H, vh: VH, width: WIDTH, sz: SZ, hide: opts.hide === false ? null : hideAt(rootTop), line, gait: teep, roll: opts.roll === undefined ? roll : opts.roll, fade: opts.fade ?? 0 };
+  const inp: SceneIn = { rootTop, rootH: ROOT_H, vh: VH, width: WIDTH, sz: SZ, hide: opts.hide === false ? null : hideAt(rootTop), line, gait: teep, combat: opts.combat === undefined ? null : opts.combat, roll: opts.roll === undefined ? roll : opts.roll, fade: opts.fade ?? 0 };
   ribbonScene(inp, out);
   return out;
 };
@@ -227,5 +227,130 @@ describe("hand-off registry", () => {
     off();
     setHeroRunnerHidden(true);
     expect(seen).toEqual([true, false]);
+  });
+});
+
+// ---------------------------------------------------------------- jab combos
+
+const hips10 = new Float32Array(10).fill(140.8);
+const stepinTravel = Float32Array.from([0, 2.6, 8.2, 13.8, 16.3, 18.9, 25, 32.2, 38.3, 40.9]);
+const mkKit = (guard: boolean): CombatKit => ({
+  jab: { frames: 10, cols: 5, size: 320, hipsX: 140.8, hips: hips10, stepPx: 0, travel: null },
+  stepin: { frames: 10, cols: 5, size: 320, hipsX: 140.8, hips: hips10, stepPx: 40.9, travel: stepinTravel },
+  guard: guard ? { frames: 8, cols: 4, size: 320, hipsX: 140.8, hips: new Float32Array(8).fill(140.8), stepPx: 0, travel: null } : null,
+  tl: null,
+});
+/** rootTop at which the crossing has progress c (0..1). */
+const topForCross = (c: number): number => {
+  let lo = -ROOT_H - 60;
+  let hi = TOP0;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (scene(mid, { combat: mkKit(true) }).cross > c) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+};
+
+describe("jab combos", () => {
+  it("combo c is a pure function of (seed, c): the same sequence every time, sizes 1..4, mostly small", () => {
+    const a = Array.from({ length: 400 }, (_, c) => comboAt(c));
+    const b = Array.from({ length: 400 }, (_, c) => comboAt(c));
+    expect(a).toEqual(b);
+    const counts = [0, 0, 0, 0, 0];
+    for (const c of a) counts[c.jabs] = (counts[c.jabs] ?? 0) + 1;
+    expect(counts[0]).toBe(0);
+    for (let n = 1; n <= 4; n++) expect(counts[n] ?? 0).toBeGreaterThan(0);
+    expect(counts[1]).toBeGreaterThan(counts[4] ?? 0);
+    expect(comboAt(0).guard).toBe(true);
+    expect(comboAt(3, 1).jabs).toBe(comboAt(3, 1).jabs);
+  });
+
+  it("the timeline is deterministic and a longer crossing only extends the shorter one (scrolling back reproduces it exactly)", () => {
+    const short = buildTimeline(12, true);
+    const again = buildTimeline(12, true);
+    expect(Array.from(again.kind)).toEqual(Array.from(short.kind));
+    expect(Array.from(again.len)).toEqual(Array.from(short.len));
+    const long = buildTimeline(30, true);
+    const cut = short.count - 1; // the last combo of the short one may be truncated
+    let lastFull = cut;
+    while (lastFull > 0 && short.combo[lastFull] === short.combo[cut]) lastFull--;
+    expect(Array.from(long.kind.slice(0, lastFull))).toEqual(Array.from(short.kind.slice(0, lastFull)));
+    // every step segment is a whole cycle, jabs come only in combos of 1..4 per combo index
+    const jabsIn = new Map<number, number>();
+    for (let i = 0; i < long.count; i++) if (long.kind[i] === SEG_JAB) jabsIn.set(long.combo[i] ?? 0, (jabsIn.get(long.combo[i] ?? 0) ?? 0) + 1);
+    for (const [c, n] of jabsIn) expect(n).toBe(comboAt(c).jabs);
+    expect(long.kind[long.count - 1]).toBe(SEG_STEP);
+    expect(long.stepsBefore[long.count - 1]).toBe(29);
+  });
+
+  it("scroll to (segment, frame) is a pure map: same position gives the same pose whichever way you arrived; reversible", () => {
+    const kit = mkKit(true);
+    const tops = Array.from({ length: 200 }, (_, i) => topForCross(0.001 + (i / 200) * 0.99));
+    const down = tops.map((t) => JSON.stringify(scene(t, { combat: kit })));
+    const up = [...tops].reverse().map((t) => JSON.stringify(scene(t, { combat: kit })));
+    expect(up.reverse()).toEqual(down);
+  });
+
+  it("feet are planted during jabs and guard (x constant within a segment), and x advances only during steps", () => {
+    const kit = mkKit(true);
+    const k = SZ / 320;
+    const stepK = 40.9 * k;
+    let prevX = Number.NaN;
+    let prevSheet = "";
+    let planted = 0;
+    let moved = 0;
+    for (let i = 0; i <= 4000; i++) {
+      const s = scene(topForCross(0.02 + (i / 4000) * 0.95), { combat: kit });
+      if (!s.visible || s.sheet === "roll") continue;
+      if (s.sheet === "jab" || s.sheet === "guard") {
+        if (prevSheet === s.sheet || prevSheet === "") {
+          if (!Number.isNaN(prevX) && prevSheet === s.sheet) expect(s.x).toBeCloseTo(prevX, 4);
+        }
+        planted++;
+      } else if (s.sheet === "step") moved++;
+      // x never increases (right to left) and never jumps by more than one step cycle
+      if (!Number.isNaN(prevX)) {
+        expect(s.x).toBeLessThanOrEqual(prevX + 1e-6);
+        expect(prevX - s.x).toBeLessThanOrEqual(stepK + 1e-6);
+      }
+      prevX = s.x;
+      prevSheet = s.sheet;
+    }
+    expect(planted).toBeGreaterThan(0);
+    expect(moved).toBeGreaterThan(0);
+  });
+
+  it("advances exactly stepPx * scale per step cycle in total, and exits off the left edge", () => {
+    const kit = mkKit(true);
+    const k = SZ / 320;
+    const first = scene(topForCross(0.0005), { combat: kit });
+    expect(first.visible).toBe(true);
+    const tl = kit.tl;
+    expect(tl).not.toBeNull();
+    const n = tl?.steps ?? 0;
+    const last = scene(topForCross(0.9995), { combat: kit });
+    // just before the end he is at most one step from the exit point, which is where n whole steps have been walked
+    expect(first.x - last.x).toBeGreaterThan((n - 1) * 40.9 * k - 1e-6);
+    expect(first.x - last.x).toBeLessThanOrEqual(n * 40.9 * k + 1e-6);
+    expect(last.x).toBeLessThan(0.2 * SZ);
+    expect(scene(-ROOT_H - 40, { combat: kit }).visible).toBe(false);
+  });
+
+  it("stays on the ribbon curve with the clamped tilt, facing left", () => {
+    const kit = mkKit(false);
+    for (let c = 0.01; c < 0.99; c += 0.02) {
+      const s = scene(topForCross(c), { combat: kit });
+      if (!s.visible) continue;
+      const f: Foot = [0, 0, 0];
+      line(s.x, f);
+      expect(s.y).toBeCloseTo(f[1], 6);
+      expect(s.mirrored).toBe(true);
+    }
+  });
+
+  it("falls back to the old gait when the kit is missing (jab missing -> teep)", () => {
+    const s = scene(topForCross(0.5), { combat: null });
+    expect(s.sheet).toBe("gait");
   });
 });

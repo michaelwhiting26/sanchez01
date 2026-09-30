@@ -941,3 +941,10 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 
 /* no sideways scrolling on phones: decorative layers (the hero pool etc.) may bleed past the edge, the page must not. clip, not hidden, so sticky sections keep working */
 html, body { overflow-x: clip; }
+
+/* Jesse at the workshop gallery (lib/gallery-abseil.ts): clipped to the pinned stage so the rope and his walk off the right edge never widen the page. Above the film band (z 2) and the HUD (z 4). */
+.pg-abseil { position: absolute; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; contain: layout paint style; }
+.pg-abseil__rope { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; }
+.pg-abseil__actor { position: absolute; inset-block-start: 0; inset-inline-start: 0; visibility: hidden; will-change: transform; filter: drop-shadow(0 0 4px rgb(232 168 90 / .5)); }
+.pg-abseil__sheet { position: absolute; inset-block-start: 0; inset-inline-start: 0; background-repeat: no-repeat; transform-origin: 0 0; }
+@media (prefers-reduced-motion: reduce) { .pg-abseil { display: none; } }

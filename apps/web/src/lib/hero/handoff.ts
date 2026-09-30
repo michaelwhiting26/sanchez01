@@ -47,9 +47,54 @@ export function onHeroRunnerHidden(cb: (hidden: boolean) => void): () => void {
   return () => listeners.delete(cb);
 }
 
+// ---------------------------------------------------------------- who owns Jesse
+
+/** Which single figure is drawn now: the hero's canvas runner, the ribbon figure, the gallery figure, or nobody (he is between scenes, off screen). */
+export type JesseOwner = "hero" | "ribbon" | "gallery" | "none";
+/** What one scene says about itself: `idle` = not reached yet (scrolled above it), `active` = its figure is on screen, `spent` = he has left it (scrolled past). */
+export type JesseStatus = "idle" | "active" | "spent";
+
+const status: Record<"ribbon" | "gallery", JesseStatus> = { ribbon: "idle", gallery: "idle" };
+let owner: JesseOwner = "hero";
+const ownerListeners = new Set<(o: JesseOwner) => void>();
+
+function deriveOwner(): JesseOwner {
+  if (status.gallery === "active") return "gallery";
+  if (status.ribbon === "active") return "ribbon";
+  if (status.gallery === "spent" || status.ribbon === "spent") return "none";
+  return "hero";
+}
+
+/**
+ * A scene reports its status; returns the resulting owner. The hero's canvas runner is hidden exactly while the owner is not "hero".
+ * Priority gallery > ribbon, so even a transient overlap never draws two: a scene draws only while `owner === itself`.
+ */
+export function setJesseStatus(who: "ribbon" | "gallery", s: JesseStatus): JesseOwner {
+  status[who] = s;
+  const next = deriveOwner();
+  if (next !== owner) {
+    owner = next;
+    setHeroRunnerHidden(owner !== "hero");
+    for (const cb of ownerListeners) cb(owner);
+  }
+  return owner;
+}
+
+export const getJesseOwner = (): JesseOwner => owner;
+
+/** Called synchronously when the owner changes (so the loser hides in the same frame). Pass an AbortSignal to unsubscribe. */
+export function onJesseOwner(cb: (o: JesseOwner) => void, signal?: AbortSignal): void {
+  ownerListeners.add(cb);
+  signal?.addEventListener("abort", () => ownerListeners.delete(cb));
+}
+
 /** Tests only. */
 export function resetHandoff(): void {
   published = null;
   runnerHidden = false;
   listeners.clear();
+  status.ribbon = "idle";
+  status.gallery = "idle";
+  owner = "hero";
+  ownerListeners.clear();
 }

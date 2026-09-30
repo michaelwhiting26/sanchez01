@@ -25,7 +25,7 @@ export function CurvedLoop({ text, curve = 140, speed = 1.6, starSrc = "/assets/
     return () => loop.destroy();
   }, [text, curve, speed, starSrc]);
 
-  // the hero's man rolls onto the ribbon and teeps across it on scroll; omitted entirely under reduced motion
+  // the hero's man rolls onto the ribbon and jabs across it on scroll; omitted entirely under reduced motion
   useEffect(() => {
     const root = rootRef.current;
     const actor = actorRef.current;

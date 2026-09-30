@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { FilmHelix } from "@/lib/film";
+import { GalleryAbseil } from "@/lib/gallery-abseil";
 import { GALLERY_SLIDES } from "./gallery-slides";
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
@@ -63,6 +64,8 @@ export function WorkshopGallery() {
       return () => film.destroy();
     }
 
+    // Jesse continues here: abseils down the left edge, then walks the strip's bottom edge off the right (one man: lib/hero/handoff.ts)
+    const abseil = new GalleryAbseil(pin, strip);
     const cards: Card[] = els.map((el) => ({ el, video: el.querySelector("video"), centre: 0, focus: -1, z: -1 }));
     const scrollDriven = typeof CSS !== "undefined" && CSS.supports("animation-timeline: scroll()");
     if (scrollDriven) track.dataset.pgSd = ""; // switches on the compositor-driven CSS animation (home.css)
@@ -99,6 +102,7 @@ export function WorkshopGallery() {
           strip.style.transform = `translate3d(${tx}px,0,0)`;
         }
       }
+      abseil.update(travel > 0 ? (y - start) / travel : 0);
       const shift = travel * d;
       const fx = f0 + (f1 - f0) * d; // the focal point travels with the scroll, so the first card leads at the start and slide 6 at the end
       let bestI = 0;
@@ -170,6 +174,7 @@ export function WorkshopGallery() {
       lastTx = Number.NaN;
       lastLeave = -1;
       lastBar = -1;
+      abseil.measure();
       frame();
     };
     let timer = 0;
@@ -208,6 +213,7 @@ export function WorkshopGallery() {
       window.removeEventListener("load", measureSoon);
       io.disconnect();
       ro.disconnect();
+      abseil.destroy();
       film.destroy();
     };
   }, []);
