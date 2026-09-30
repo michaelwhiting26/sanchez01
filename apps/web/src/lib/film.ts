@@ -14,15 +14,34 @@ export function makeTapeTexture(): HTMLCanvasElement {
   c.height = TEX_H;
   const g = c.getContext("2d");
   if (!g) return c;
-  // base: amber film with a soft lengthwise sheen, lighter in the middle of the band and darker at the edges
+  // base: developed film, a deep translucent brown, lighter through the middle of the band where the light passes through
   const base = g.createLinearGradient(0, 0, 0, TEX_H);
-  base.addColorStop(0, "#6b3714");
-  base.addColorStop(0.12, "#9a5a24");
-  base.addColorStop(0.5, "#a9682d");
-  base.addColorStop(0.88, "#94551f");
-  base.addColorStop(1, "#5e300f");
+  base.addColorStop(0, "#180b04");
+  base.addColorStop(0.1, "#4a2610");
+  base.addColorStop(0.5, "#5c3115");
+  base.addColorStop(0.9, "#43220d");
+  base.addColorStop(1, "#150a03");
   g.fillStyle = base;
   g.fillRect(0, 0, TEX_W, TEX_H);
+  // a soft specular sheen sliding across the base, and the orange glow that backlit film has along both edges
+  const sheen = g.createLinearGradient(0, 0, TEX_W * 0.18, TEX_H);
+  sheen.addColorStop(0, "rgba(255,226,180,0)");
+  sheen.addColorStop(0.45, "rgba(255,226,180,0.10)");
+  sheen.addColorStop(1, "rgba(255,226,180,0)");
+  g.fillStyle = sheen;
+  for (let x = -TEX_W * 0.1; x < TEX_W; x += 260) {
+    g.save();
+    g.translate(x, 0);
+    g.fillRect(0, 0, 130, TEX_H);
+    g.restore();
+  }
+  for (const y of [0, TEX_H - 4]) {
+    const edge = g.createLinearGradient(0, y, 0, y + 4);
+    edge.addColorStop(y === 0 ? 0 : 1, "rgba(255,150,60,0.55)");
+    edge.addColorStop(y === 0 ? 1 : 0, "rgba(255,150,60,0)");
+    g.fillStyle = edge;
+    g.fillRect(0, y, TEX_W, 4);
+  }
   // the picture windows are translucent so the gallery reads through the film
   const FR = 120;
   const frames = TEX_W / FR;
@@ -51,7 +70,7 @@ export function makeTapeTexture(): HTMLCanvasElement {
   g.globalCompositeOperation = "source-over";
   for (let x = 6; x < TEX_W; x += 30) for (const y of [15, TEX_H - 15 - holeH]) {
     rr(x, y, holeW, holeH, 3.2);
-    g.strokeStyle = "rgba(255,206,140,0.42)"; // the light catching the rim
+    g.strokeStyle = "rgba(255,181,112,0.5)"; // the light catching the rim
     g.lineWidth = 1.2;
     g.stroke();
     rr(x + 0.8, y + 0.8, holeW - 1.6, 4, 2);
@@ -64,10 +83,10 @@ export function makeTapeTexture(): HTMLCanvasElement {
   for (let f = 0; f < frames; f++) {
     g.fillStyle = "rgba(40,16,2,0.55)";
     g.fillRect(f * FR + FR - 3, 40, 1.6, TEX_H - 80);
-    g.fillStyle = "rgba(255,214,150,0.85)";
+    g.fillStyle = "rgba(255,190,120,0.8)";
     g.fillText(String((f % 9) + 1), f * FR + 12, 38);
     g.fillText(String((f % 9) + 1), f * FR + 12, TEX_H - 38);
-    g.fillStyle = "rgba(255,214,150,0.55)";
+    g.fillStyle = "rgba(255,190,120,0.5)";
     g.font = "500 8px 'Barlow', Arial, sans-serif";
     g.fillText("SANCHEZ 400", f * FR + 46, 33);
     g.fillText("▸ " + String((f % 9) + 1) + "A", f * FR + 46, TEX_H - 33);
@@ -80,7 +99,7 @@ export function makeTapeTexture(): HTMLCanvasElement {
   const rnd = (): number => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] === 0) continue;
-    const n = (rnd() - 0.5) * 22;
+    const n = (rnd() - 0.5) * 30;
     d[i] = Math.max(0, Math.min(255, (d[i] ?? 0) + n));
     d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] ?? 0) + n * 0.8));
     d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] ?? 0) + n * 0.6));

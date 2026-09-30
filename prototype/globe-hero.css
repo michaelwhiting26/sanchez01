@@ -538,8 +538,11 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .lgc-track .lgc-section::before, .lgc-track .lgc-section::after {
   content: ""; position: absolute; inset-inline: 0; block-size: 34px; z-index: 3; pointer-events: none;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='34'%3E%3Crect x='11' y='9' width='22' height='16' rx='4' fill='%23090706'/%3E%3Crect x='11' y='9' width='22' height='16' rx='4' fill='none' stroke='%23e8a85a' stroke-opacity='.35'/%3E%3C/svg%3E") repeat-x center / 44px 34px,
-    linear-gradient(180deg, #8a4a1a 0%, #b5641f 45%, #7a3f16 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='34'%3E%3Crect x='11' y='9' width='22' height='16' rx='4' fill='%23090706'/%3E%3Crect x='11' y='9' width='22' height='16' rx='4' fill='none' stroke='%23ffb570' stroke-opacity='.5'/%3E%3C/svg%3E") repeat-x center / 44px 34px,
+    linear-gradient(180deg, rgb(255 150 60 / .42) 0, transparent 3px, transparent calc(100% - 3px), rgb(255 150 60 / .42) 100%),
+    linear-gradient(104deg, transparent 22%, rgb(255 226 180 / .13) 40%, rgb(255 226 180 / .04) 52%, transparent 64%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1  0 0 0 0 .05  0 0 0 0 0  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='60' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, #1d0e05 0%, #4a2610 12%, #5b3014 50%, #43220d 88%, #180b04 100%);
   box-shadow: 0 0 24px rgb(0 0 0 / .6);
 }
 .lgc-track .lgc-section::before { inset-block-start: 0; }
@@ -556,3 +559,30 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
   100% { transform: translateX(0); filter: brightness(1); }
 }
 @media (prefers-reduced-motion: reduce) { .lgc-track .lgc-section.is-flick::before, .lgc-track .lgc-section.is-flick::after { animation: none; } }
+
+/* ---- the gallery film: full-screen player that runs the six items as one continuous movie ---- */
+.reel-play { position: absolute; z-index: 8; inset-inline-end: 16px; inset-block-end: 20px; display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 999px; border: 1px solid rgb(232 168 90 / .5); background: rgb(9 7 6 / .72); color: #f3eadc; font: 600 12px/1 "Barlow Condensed", "Barlow", sans-serif; letter-spacing: .18em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.reel-play__icon { font-size: 10px; color: #e8a85a; }
+.reel-play:hover { border-color: #e8a85a; }
+.reel { position: fixed; inset: 0; z-index: 9999; background: #050403; color: #f3eadc; opacity: 0; visibility: hidden; transition: opacity .5s ease, visibility 0s linear .5s; block-size: 100vh; block-size: 100dvh; overflow: hidden; touch-action: manipulation; }
+.reel.is-open { opacity: 1; visibility: visible; transition-delay: 0s; }
+html.reel-open, html.reel-open body { overflow: hidden; }
+.reel__stage { position: absolute; inset: 0; }
+.reel__layer { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
+.reel__layer img, .reel__layer video { inline-size: 100%; block-size: 100%; object-fit: contain; display: block; }
+.reel__flash { position: absolute; inset: 0; background: radial-gradient(120% 90% at 30% 20%, rgb(255 196 120 / .95), rgb(214 120 40 / .6) 55%, rgb(60 20 5 / 0) 100%); mix-blend-mode: screen; opacity: 0; pointer-events: none; }
+.reel__film { position: absolute; inset-inline: 0; block-size: 26px; z-index: 3; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='26'%3E%3Crect x='11' y='6' width='22' height='14' rx='4' fill='%23050403'/%3E%3Crect x='11' y='6' width='22' height='14' rx='4' fill='none' stroke='%23e8a85a' stroke-opacity='.4'/%3E%3C/svg%3E") repeat-x 0 0 / 44px 26px, linear-gradient(104deg, transparent 22%, rgb(255 226 180 / .13) 40%, rgb(255 226 180 / .04) 52%, transparent 64%), linear-gradient(180deg, #1d0e05 0%, #4a2610 12%, #5b3014 50%, #43220d 88%, #180b04 100%); opacity: .95; }
+.reel__film--t { inset-block-start: 0; padding-top: env(safe-area-inset-top); }
+.reel__film--b { inset-block-end: 0; }
+.reel__title { position: absolute; z-index: 4; inset-inline: 22px; inset-block-end: calc(64px + env(safe-area-inset-bottom)); font: 700 clamp(26px, 6vw, 54px)/1 "Barlow Condensed", "Barlow", sans-serif; text-transform: uppercase; letter-spacing: .06em; text-shadow: 0 2px 24px rgb(0 0 0 / .9); opacity: 0; }
+.reel__title span { display: block; font-size: 12px; letter-spacing: .3em; color: #e8a85a; margin-bottom: 8px; }
+.reel__title.is-on { animation: reel-title 4s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes reel-title { 0% { opacity: 0; transform: translateY(18px); clip-path: inset(0 0 100% 0); } 12% { opacity: 1; transform: none; clip-path: inset(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+.reel__count { position: absolute; z-index: 4; inset-inline-start: 22px; inset-block-start: calc(42px + env(safe-area-inset-top)); font: 500 12px/1 "Barlow", sans-serif; letter-spacing: .28em; color: rgb(243 234 220 / .8); }
+.reel__close { position: absolute; z-index: 6; inset-inline-end: 16px; inset-block-start: calc(36px + env(safe-area-inset-top)); background: rgb(9 7 6 / .6); border: 1px solid rgb(243 234 220 / .3); color: inherit; padding: 9px 14px; border-radius: 999px; font: 600 11px/1 "Barlow", sans-serif; letter-spacing: .24em; text-transform: uppercase; cursor: pointer; }
+.reel__bars { position: absolute; z-index: 4; inset-inline: 22px; inset-block-end: calc(40px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
+.reel__bars i { flex: 1; block-size: 2px; background: rgb(243 234 220 / .25); overflow: hidden; border-radius: 2px; }
+.reel__bars b { display: block; inline-size: 100%; block-size: 100%; background: #e8a85a; transform: scaleX(0); transform-origin: left; }
+.reel__tap { position: absolute; z-index: 5; inset-block: 90px 90px; inline-size: 34%; }
+.reel__tap--l { inset-inline-start: 0; } .reel__tap--r { inset-inline-end: 0; }
+@media (prefers-reduced-motion: reduce) { .reel__title.is-on { animation: none; opacity: 1; } }
