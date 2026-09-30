@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { RollingSubmit } from "@/components/ui/RollingButton";
+import { WAITLIST_FORM_ID, publishWaitlistState } from "./OrbitSubmit";
 import { GoogleButton } from "./GoogleButton";
 import { WAITLIST_LINES, waitlistSchema, type WaitlistMethod } from "@/lib/waitlist";
 
@@ -73,60 +73,9 @@ function useTypingPlaceholder(input: React.RefObject<HTMLInputElement | null>, e
   }, [input, enabled]);
 }
 
-/**
- * The submit button stays in its row but is alive: it drifts in a tiny orbit (a few px, slow) and is pulled slightly towards the globe below, more the nearer the globe is to the screen.
- * Transforms only, one rAF loop, paused off screen; a still button with reduced motion.
- */
-function useMagnet(ref: React.RefObject<HTMLSpanElement | null>): void {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let raf = 0;
-    let visible = true;
-    let px = 0;
-    let py = 0;
-    const io = new IntersectionObserver(([e]) => {
-      visible = Boolean(e?.isIntersecting);
-    });
-    io.observe(el);
-    const t0 = performance.now();
-    const frame = (now: number): void => {
-      raf = requestAnimationFrame(frame);
-      if (!visible) return;
-      const t = (now - t0) / 1000;
-      const orbitX = Math.cos(t * 0.9) * 4; // a slight orbit, ~7s a lap
-      const orbitY = Math.sin(t * 0.9) * 2.2;
-      let pullX = 0;
-      let pullY = 0;
-      const globe = document.querySelector<HTMLElement>(".globe-slot .footer-globe");
-      if (globe) {
-        const g = globe.getBoundingClientRect();
-        const b = el.getBoundingClientRect();
-        const dx = g.left + g.width / 2 - (b.left - px + b.width / 2);
-        const dy = g.top + g.height / 2 - (b.top - py + b.height / 2);
-        const dist = Math.hypot(dx, dy) || 1;
-        const near = Math.min(1, Math.max(0, 1 - (dist - g.width / 2) / (window.innerHeight * 0.9))); // 0 far, 1 touching
-        const pull = 4 + near * 12; // px, capped: slightly magnetised, never wandering off the field
-        pullX = (dx / dist) * pull;
-        pullY = (dy / dist) * pull;
-      }
-      px += (orbitX + pullX - px) * 0.08;
-      py += (orbitY + pullY - py) * 0.08;
-      el.style.transform = `translate3d(${px.toFixed(2)}px,${py.toFixed(2)}px,0)`;
-    };
-    raf = requestAnimationFrame(frame);
-    return () => {
-      cancelAnimationFrame(raf);
-      io.disconnect();
-      el.style.transform = "";
-    };
-  }, [ref]);
-}
-
 export function Waitlist() {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const magnetRef = useRef<HTMLSpanElement>(null);
   const [method, setMethod] = useState<WaitlistMethod>("email");
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +89,9 @@ export function Waitlist() {
     }
   }, []);
   useTypingPlaceholder(inputRef, !done);
-  useMagnet(magnetRef);
+  useEffect(() => {
+    publishWaitlistState({ busy, done });
+  }, [busy, done]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -220,7 +171,7 @@ export function Waitlist() {
             <span className="visually-hidden">Not announced</span>
           </li>
         </ol>
-        <form className="waitlist__form" onSubmit={(e) => void onSubmit(e)} noValidate>
+        <form className="waitlist__form" id={WAITLIST_FORM_ID} onSubmit={(e) => void onSubmit(e)} noValidate>
           {!done && (
             <div className="waitlist__method" role="radiogroup" aria-label="Sign up with">
               {METHODS.map((m) => (
@@ -250,9 +201,6 @@ export function Waitlist() {
               aria-invalid={error ? true : undefined}
             />
             <input className="waitlist__hp" type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" />
-            <span className="waitlist__magnet" ref={magnetRef}>
-              <RollingSubmit label="Submit" className="waitlist__btn" disabled={busy} />
-            </span>
           </div>
           <p className={`waitlist__msg${error ? " is-error" : ""}`} id={`${id}-msg`} role="status" aria-live="polite">
             {done ? "You are in." : (error ?? "")}
