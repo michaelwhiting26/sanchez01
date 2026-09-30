@@ -7,7 +7,13 @@
   if (!root) return;
   var card = root.querySelector(".rise__card");
   var mq = matchMedia("(min-width: 761px) and (prefers-reduced-motion: no-preference)");
-  var vh = 0, top = 0, reveal = 0, ticking = false;
+  /* the mr-2 "Business enquiries" button: build the rolling characters and the two arrows */
+  document.querySelectorAll("[data-roll]").forEach(function (a) {
+    var label = a.getAttribute("data-roll"), arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7 H17 V16"/></svg>';
+    var chars = Array.from(label).map(function (ch, i) { var c = ch === " " ? "\u00a0" : ch; return '<span class="enq__char" style="--i:' + i + '"><span class="enq__a">' + c + '</span><span class="enq__b">' + c + '</span></span>'; }).join("");
+    a.innerHTML = '<span class="enq__clip" aria-hidden="true"><span class="enq__text">' + chars + '</span></span><span class="enq__icon" aria-hidden="true">' + arrow.replace("<svg", '<svg class="enq__arrowA"') + arrow.replace("<svg", '<svg class="enq__arrowB"') + '</span>';
+  });
+  var vh = 0, top = 0, reveal = 0, over = 0, ticking = false;
 
   var smooth = function (x) { return x * x * (3 - 2 * x); };
   /* early rise -> eased plateau (lingers) -> final rise; velocity eases to ~0 at the plateau edges, so there is no kink. */
@@ -23,7 +29,9 @@
     if (!mq.matches) { root.style.height = ""; root.classList.remove("is-pinned"); root.style.setProperty("--rise", "1"); root.classList.add("is-in"); return; }
     root.classList.add("is-pinned");
     reveal = Math.round(vh * 1.4);                                   /* the extra scroll: rise, pause, rise again */
-    root.style.height = vh + reveal + "px";
+    over = Math.max(0, card.offsetHeight - vh);                      /* the footer is taller than the screen: after the rise, scroll on through it while the stage stays pinned */
+    root.style.setProperty("--overflow", over + "px");
+    root.style.height = vh + reveal + over + "px";
     top = root.getBoundingClientRect().top + window.scrollY;
     update();
   }
@@ -33,6 +41,7 @@
     var raw = Math.min(1, Math.max(0, (window.scrollY - top) / reveal));
     var rise = teaseRise(raw);
     root.style.setProperty("--rise", rise.toFixed(4));
+    root.style.setProperty("--more", (over > 0 ? Math.min(1, Math.max(0, (window.scrollY - top - reveal) / over)) : 0).toFixed(4));
     if (rise > 0.3) root.classList.add("is-in");                     /* one-shot copy reveal once the panel is well into view */
   }
   function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
@@ -43,4 +52,5 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   measure();
   window.addEventListener("load", measure);
+  if (window.ResizeObserver) new ResizeObserver(function () { if (mq.matches && Math.abs(card.offsetHeight - vh - over) > 2 && card.offsetHeight > 0) measure(); }).observe(card);   /* the footer fills in after load (chrome, globe) */
 })();

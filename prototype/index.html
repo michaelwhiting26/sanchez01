@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=mob2">
+  <link rel="stylesheet" href="globe-hero.css?v=btn1">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
   <script src="app.js?v=1790708958" defer></script>
@@ -179,34 +179,21 @@
 </main>
 <script src="dna-core.js?v=1790725297" defer></script>
 
-<footer class="site-footer" data-chrome="footer"></footer>
-<!-- RISE PANEL (rise-panel.js): ported from the mr-2 site's last Figma page. The panel rises over a pinned stage, lingers, then needs more scrolling to finish.
-     Copy is grounded: real pages, the two real Instagram handles, and a link to the contact page. -->
+<!-- RISE PANEL = THE SITE FOOTER (rise-panel.js): the real footer (logo, cities, links, globe, currency, legal) lives inside the panel that rises over a pinned stage,
+     lingers, then needs more scrolling to finish. On other pages the footer is still the plain block. -->
 <section class="rise" data-rise aria-label="Get in touch">
   <div class="rise__stage">
     <div class="rise__card">
       <img class="rise__surface" src="assets/brand/rise-card.svg" alt="" aria-hidden="true">
       <div class="rise__panel">
         <h2 class="rise__statement">Sanchez <em>Custom</em></h2>
-        <div class="rise__cols">
-          <nav class="rise__col" aria-label="Pages">
-            <p class="rise__label">Pages</p>
-            <ul><li><a href="index.html">Home</a></li><li><a href="shop.html">Shop</a></li><li><a href="workshop.html">Workshop</a></li><li><a href="about.html">About</a></li></ul>
-          </nav>
-          <nav class="rise__col rise__col--r" aria-label="Follow on">
-            <p class="rise__label">Follow on</p>
-            <ul>
-              <li><a href="https://www.instagram.com/sanchezproducts/" rel="noopener" target="_blank">@sanchezproducts<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>
-              <li><a href="https://www.instagram.com/jessesanchezlgboxing/" rel="noopener" target="_blank">@jessesanchezlgboxing<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>
-            </ul>
-          </nav>
-        </div>
-        <a class="rise__cta" href="contact.html">Contact us</a>
+        <a class="rollBtn rise__cta" href="contact.html" aria-label="Business enquiries" data-roll="Business enquiries"></a>
+        <footer class="site-footer" data-chrome="footer"></footer>
       </div>
     </div>
   </div>
 </section>
-<script src="rise-panel.js?v=1" defer></script>
+<script src="rise-panel.js?v=3" defer></script>
 
 </body>
 </html>
