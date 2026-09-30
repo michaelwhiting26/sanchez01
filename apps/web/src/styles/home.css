@@ -934,3 +934,7 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .orbit-submit .enq__clip { transition: transform .95s var(--ease-lando); }
 .orbit-submit:hover:not(:disabled) .enq__clip, .orbit-submit:focus-visible .enq__clip { transform: translate3d(0, -6px, 0) scale(1.05); }
 @media (prefers-reduced-motion: reduce) { .orbit-submit::before, .orbit-submit .enq__char, .orbit-submit .enq__clip, .orbit-submit .enq__icon svg { transition: none; } }
+
+/* Ribbon figure = the hero runner (ribbon-sneak.ts): the same amber edge light the canvas runner has, so the hand-off does not change his look */
+.ribbon-sneak { filter: drop-shadow(0 0 4px rgb(232 168 90 / .5)); }
+.ribbon-sneak__sheet { transform-origin: 0 0; }

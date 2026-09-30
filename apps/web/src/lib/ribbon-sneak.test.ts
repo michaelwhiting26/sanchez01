@@ -1,0 +1,231 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { getHeroHideSpot, isHeroRunnerHidden, onHeroRunnerHidden, resetHandoff, setHeroHideSpot, setHeroRunnerHidden, type HeroHideSpot } from "./hero/handoff";
+import { detrendHips, newScene, parseSheet, ribbonScene, RIBBON, type Foot, type RibbonSheet, type SceneIn, type SceneOut } from "./ribbon-sneak";
+
+const VH = 800;
+const ROOT_H = 500;
+const WIDTH = 390;
+const SZ = 132;
+const K = SZ / 320;
+const STEP = 36.8;
+
+/** A gentle arc, root-relative: the ribbon's top line. */
+const line = (x: number, out: Foot): void => {
+  out[0] = x;
+  out[1] = 120 + 0.0006 * (x - WIDTH / 2) ** 2 * -1 + 60;
+  out[2] = ((x - WIDTH / 2) / WIDTH) * 0.2;
+};
+
+// like the real sheets: rendered in place (hips pinned), with the body's cumulative travel per frame (a plateau while the teep is thrown)
+const smooth01 = (v: number): number => v * v * (3 - 2 * v);
+const teep: RibbonSheet = { frames: 24, cols: 6, size: 320, hipsX: 140.8, hips: new Float32Array(24).fill(140.8), stepPx: STEP, travel: Float32Array.from({ length: 24 }, (_, i) => STEP * smooth01(Math.min(1, i / 12))) };
+const roll: RibbonSheet = { frames: 20, cols: 5, size: 320, hipsX: 140.8, hips: new Float32Array(20).fill(140.8), stepPx: 143, travel: Float32Array.from({ length: 20 }, (_, i) => (143 * i) / 19) };
+
+/** The hide spot is fixed in the document: it moves up the viewport by however far the page has scrolled. */
+const HIDE_DOC_Y = 300; // viewport y when the ribbon's top is at TOP0
+const TOP0 = VH + 40;
+const hideAt = (rootTop: number): HeroHideSpot => ({ x: 300, y: HIDE_DOC_Y - (TOP0 - rootTop), size: SZ * 1.4, scale: (SZ * 1.4) / 320, facing: "left" });
+
+const scene = (rootTop: number, opts: { roll?: RibbonSheet | null; fade?: number; hide?: boolean } = {}): SceneOut => {
+  const out = newScene();
+  const inp: SceneIn = { rootTop, rootH: ROOT_H, vh: VH, width: WIDTH, sz: SZ, hide: opts.hide === false ? null : hideAt(rootTop), line, gait: teep, roll: opts.roll === undefined ? roll : opts.roll, fade: opts.fade ?? 0 };
+  ribbonScene(inp, out);
+  return out;
+};
+
+const sweepDown = (): number[] => {
+  const tops: number[] = [];
+  for (let t = TOP0; t >= -ROOT_H - 60; t -= 4) tops.push(t);
+  return tops;
+};
+
+describe("single figure: the hero runner is hidden exactly while the ribbon figure exists", () => {
+  it("never both drawn, and the canvas runner is hidden whenever the ribbon figure is drawn, across a scroll sweep down and back up", () => {
+    const down = sweepDown();
+    const order = [...down, ...[...down].reverse()];
+    let sawVisible = false;
+    let sawHeroHiddenOnly = false;
+    for (const top of order) {
+      const s = scene(top);
+      if (s.visible) {
+        sawVisible = true;
+        expect(s.heroHidden).toBe(true);
+      }
+      if (!s.heroHidden) expect(s.visible).toBe(false); // hero drawn => no ribbon figure
+      if (s.heroHidden && !s.visible) {
+        sawHeroHiddenOnly = true;
+        expect(s.cross).toBe(1); // only after he has walked off the left edge (nobody on screen)
+      }
+    }
+    expect(sawVisible).toBe(true);
+    expect(sawHeroHiddenOnly).toBe(true);
+  });
+  it("the ribbon figure never exists before the hero has published a hide spot", () => {
+    for (const top of sweepDown()) {
+      const s = scene(top, { hide: false });
+      expect(s.visible).toBe(false);
+      expect(s.heroHidden).toBe(false);
+    }
+  });
+  it("neither exists before the ribbon comes into view, and the first frame of the ribbon figure sits exactly on the hide spot", () => {
+    expect(scene(TOP0).visible).toBe(false);
+    let firstTop = 0;
+    for (const top of sweepDown()) {
+      if (scene(top).visible) {
+        firstTop = top;
+        break;
+      }
+    }
+    const s = scene(firstTop);
+    const h = hideAt(firstTop);
+    expect(s.sheet).toBe("roll");
+    expect(s.frame).toBeLessThanOrEqual(1);
+    expect(Math.abs(s.y - (h.y - firstTop))).toBeLessThan(3);
+    expect(Math.abs(s.scale * SZ - h.size)).toBeLessThan(6);
+  });
+  it("without a roll sheet the same invariant holds through the fade", () => {
+    for (const fade of [0, 0.3, 1]) {
+      for (const top of sweepDown()) {
+        const s = scene(top, { roll: null, fade });
+        if (s.visible) expect(s.heroHidden).toBe(true);
+        if (!s.heroHidden) expect(s.visible).toBe(false);
+      }
+    }
+    expect(scene(TOP0 - 400, { roll: null, fade: 0 }).heroHidden).toBe(false);
+    const mid = scene(TOP0 - 400, { roll: null, fade: 0.5 });
+    expect(mid.visible).toBe(true);
+    expect(mid.sheet).toBe("pose");
+    expect(mid.alpha).toBe(0.5);
+  });
+});
+
+describe("roll hand-off", () => {
+  it("scrubs the roll frames forward with scroll, lands on the ribbon line, then crosses", () => {
+    let last = -1;
+    let sawLand = false;
+    for (const top of sweepDown()) {
+      const s = scene(top);
+      if (s.sheet === "roll" && s.visible) {
+        expect(s.frame).toBeGreaterThanOrEqual(last);
+        last = s.frame;
+      }
+      if (s.sheet === "gait" && s.visible && !sawLand) {
+        sawLand = true;
+        expect(last).toBe(roll.frames - 1);
+        const foot: Foot = [0, 0, 0];
+        line(s.x, foot);
+        expect(Math.abs(s.y - foot[1])).toBeLessThan(0.01);
+      }
+    }
+    expect(sawLand).toBe(true);
+  });
+  it("is symmetric: scrolling back up gives exactly the same frames as scrolling down (he rolls back into hiding)", () => {
+    const down = sweepDown();
+    const a = down.map((t) => JSON.stringify(scene(t)));
+    const b = [...down].reverse().map((t) => JSON.stringify(scene(t))).reverse();
+    expect(b).toEqual(a);
+  });
+  it("uses the documented scroll window for the roll", () => {
+    expect(RIBBON.rollFromShare).toBeGreaterThan(RIBBON.rollToShare);
+    const rolling = sweepDown().filter((t) => {
+      const s = scene(t);
+      return s.visible && s.sheet === "roll";
+    });
+    expect(rolling.length).toBeGreaterThan(5);
+  });
+});
+
+describe("teep crossing", () => {
+  const crossing = (): SceneOut[] => sweepDown().map((t) => scene(t)).filter((s) => s.visible && s.sheet === "gait");
+  it("runs right to left, off the left edge, facing left", () => {
+    const c = crossing();
+    expect(c.length).toBeGreaterThan(20);
+    for (let i = 1; i < c.length; i++) expect(c[i]?.x ?? 0).toBeLessThanOrEqual((c[i - 1]?.x ?? 0) + 1e-9);
+    expect(c[c.length - 1]?.x ?? 1e9).toBeLessThan(SZ);
+    for (const s of c) expect(s.mirrored).toBe(true);
+  });
+  it("advances exactly stepPx * scale per gait cycle, so the support foot does not slide", () => {
+    // sample finely and note where each cycle starts (frame wraps 23 -> 0)
+    const xs: number[] = [];
+    let prevFrame = -1;
+    for (let top = TOP0; top >= -ROOT_H - 60; top -= 0.05) {
+      const s = scene(top);
+      if (s.visible && s.sheet === "gait") {
+        if (prevFrame > 20 && s.frame === 0) xs.push(s.x);
+        prevFrame = s.frame;
+      }
+    }
+    expect(xs.length).toBeGreaterThanOrEqual(2);
+    for (let i = 1; i < xs.length; i++) expect((xs[i - 1] ?? 0) - (xs[i] ?? 0)).toBeCloseTo(STEP * K, 0);
+  });
+  it("moves the body by the sheet's own travelAt within a cycle, never backwards", () => {
+    let prevX = Infinity;
+    for (let top = TOP0; top >= -ROOT_H - 60; top -= 0.05) {
+      const s = scene(top);
+      if (!s.visible || s.sheet !== "gait") continue;
+      expect(s.x).toBeLessThanOrEqual(prevX + 1e-6);
+      prevX = s.x;
+    }
+  });
+  it("keeps the feet on the ribbon curve with the clamped tilt", () => {
+    for (const s of crossing()) {
+      const foot: Foot = [0, 0, 0];
+      line(s.x, foot);
+      expect(s.y).toBeCloseTo(foot[1], 6);
+      expect(s.tilt).toBeCloseTo(foot[2], 6);
+    }
+  });
+  it("freezes when scroll stops: the same position gives the same pose, however you arrived", () => {
+    const at = TOP0 - 640;
+    const a = JSON.stringify(scene(at));
+    scene(at - 50);
+    scene(at + 90);
+    expect(JSON.stringify(scene(at))).toBe(a);
+  });
+});
+
+describe("sheet parsing", () => {
+  it("reads the teep and roll contracts, and rejects bad or missing data", () => {
+    const hips = Array.from({ length: 24 }, (_, i) => ({ x: 150 + i, y: 170 }));
+    const t = parseSheet({ frames: 24, cols: 6, size: 320, footY: 293.4, stepPx: 190, support: [], hips }, "stepPx");
+    expect(t?.stepPx).toBe(190);
+    expect(t?.hips?.length).toBe(24);
+    expect(parseSheet({ frames: 24, cols: 6, size: 320 }, "stepPx")).toBeNull();
+    expect(parseSheet(null, "stepPx")).toBeNull();
+    expect(parseSheet({ frames: 0, cols: 6, size: 320, stepPx: 10 }, "stepPx")).toBeNull();
+    const r = parseSheet({ frames: 20, cols: 5, size: 320, travelPx: 90, hips: hips.slice(0, 20) }, "travelPx");
+    expect(r?.frames).toBe(20);
+    expect(parseSheet({ frames: 20, cols: 5, size: 320, hips: hips.slice(0, 3) }, "travelPx")?.hips).toBeNull();
+    const withTravel = parseSheet({ frames: 4, cols: 2, size: 320, stepPx: 10, travelAt: [0, 2, 8, 10] }, "stepPx");
+    expect(Array.from(withTravel?.travel ?? [])).toEqual([0, 2, 8, 10]);
+    expect(parseSheet({ frames: 4, cols: 2, size: 320, stepPx: 10, travelAt: [0, 2] }, "stepPx")?.travel).toBeNull();
+  });
+  it("removes baked-in travel from gait hips and leaves an in-place sheet alone", () => {
+    const baked: RibbonSheet = { ...teep, hips: Float32Array.from({ length: 24 }, (_, i) => 100 + 8 * i) };
+    const d = detrendHips(baked);
+    for (let i = 0; i < 24; i++) expect(d.hips?.[i]).toBeCloseTo(100, 4);
+    expect(detrendHips({ ...teep, hips: null }).hips).toBeNull();
+  });
+});
+
+describe("hand-off registry", () => {
+  beforeEach(() => resetHandoff());
+  it("has no hide spot until the hero publishes one, and returns it for the current scroll", () => {
+    expect(getHeroHideSpot()).toBeNull();
+    setHeroHideSpot({ x: 10, y: 20, size: 100, scale: 0.3, facing: "left" });
+    expect(getHeroHideSpot()?.y).toBe(20);
+    setHeroHideSpot(null);
+    expect(getHeroHideSpot()).toBeNull();
+  });
+  it("tells listeners synchronously, only on a change", () => {
+    const seen: boolean[] = [];
+    const off = onHeroRunnerHidden((h) => seen.push(h));
+    setHeroRunnerHidden(true);
+    setHeroRunnerHidden(true);
+    expect(isHeroRunnerHidden()).toBe(true);
+    setHeroRunnerHidden(false);
+    off();
+    setHeroRunnerHidden(true);
+    expect(seen).toEqual([true, false]);
+  });
+});

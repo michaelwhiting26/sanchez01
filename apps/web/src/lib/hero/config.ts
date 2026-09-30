@@ -145,18 +145,18 @@ export const INTRO = {
   sprayStartMs: 2500,
   runnerEnterMs: 800,
   runOffMs: 900,
-  /** The return pass (all ms): he walks in from the right, looks behind and ahead twice, crouches and scans, peeks, tiptoes (with a listen-pause and a spooked duck) to the C, sets himself, writes "Custom", pauses, walks off right. */
+  /** The return pass (all ms), fast version (owner, 30 Sep): he walks in from the right (~3 s), crouches once and scans (glance back, glance forward, ~1.7 s), rises, tiptoes straight to the C, turns to the wall, shakes the can (0.3 s), writes "Custom" (~8 s), then tiptoes to the bottom right and crouches hidden for good. First stroke ~8.5 s after the walk-in starts. No standing look, peek, listen-freeze, duck or extra glances (their timings stay below, zeroed, so the machinery is still there). */
   returnStartMs: 8500,
   /** Walk in from the right edge to the spot in front of the wordmark: eases in over walkAccelMs, cruises, eases to a stop over walkDecelMs. */
-  walkInMs: 4400,
-  walkAccelMs: 800,
-  walkDecelMs: 1200,
+  walkInMs: 3000,
+  walkAccelMs: 600,
+  walkDecelMs: 900,
   /** A beat standing still before the first look. */
-  lookLeadMs: 250,
+  lookLeadMs: 0,
   /** Time to turn the head one way (each of the four turns). */
   lookTurnMs: 500,
   /** Hold after each turn: back, forward, back, forward. */
-  lookHoldMs: [500, 400, 500, 400] as readonly number[],
+  lookHoldMs: [] as readonly number[],
   /** Which sprite renders (default "silhouette": the owner rejected the shaded soldier model; the option stays wired): "shaded" = the lit colour renders (`<name>_shaded`, each falling back to the silhouette sheet if missing), "silhouette" = the black cut-outs. */
   look: "silhouette" as "shaded" | "silhouette",
   /** Sheet crossfade at every change of pose set (standing to crouch, crouch to tiptoe, ...): the outgoing pose is held at its last frame while the new one fades in. */
@@ -164,22 +164,22 @@ export const INTRO = {
   /** Crouch block (crouch, crouchlook, crouchpeek sheets; skipped entirely if any is missing). */
   crouch: {
     /** Standing to fully crouched, ease-in-out. */
-    downMs: 600,
+    downMs: 500,
     /** The wait-and-scan, flat keys [ms, yaw 0..1 (1 = fully back), pitch -1..1 (+ up)]: glance back (quick), hold, slow look forward, small head raise and lower, freeze, double-take back, settle. */
-    scanMs: 3500,
-    scanKeys: [0, 0, 0, 200, 0, 0, 480, 1, 0, 850, 1, 0, 1700, 0.05, 0, 1850, 0.05, 0, 2100, 0.05, 0.7, 2350, 0.05, -0.1, 2500, 0.05, 0, 3000, 0.05, 0, 3180, 0.9, 0, 3260, 0.9, 0.1, 3500, 0.1, 0] as readonly number[],
+    scanMs: 1700,
+    scanKeys: [0, 0, 0, 150, 0, 0, 500, 1, 0, 900, 1, 0, 1350, 0.05, 0, 1700, 0.05, 0] as readonly number[],
     /** Dead still (no breathing bob, head frozen) from here for this long, ms into the scan. */
-    freezeAtMs: 2450,
-    freezeMs: 550,
+    freezeAtMs: 100000,
+    freezeMs: 0,
     /** Peek over: rise, hold at the top, sink back. */
-    peekRiseMs: 380,
-    peekHoldMs: 420,
-    peekSinkMs: 400,
+    peekRiseMs: 0,
+    peekHoldMs: 0,
+    peekSinkMs: 0,
     /** One more quick glance back while low: keys as the scan's. */
-    glanceMs: 400,
+    glanceMs: 0,
     glanceKeys: [0, 0.05, 0, 130, 0.95, 0, 260, 0.95, 0, 400, 0.05, 0] as readonly number[],
     /** Rise out of the crouch into the tiptoe (the crouch sheet backwards). */
-    riseMs: 450,
+    riseMs: 400,
     /** Idle breathing bob while he waits: canvas px (peak) and rate. */
     breathPx: 1,
     breathHz: 0.3,
@@ -187,10 +187,12 @@ export const INTRO = {
   /** Tiptoe: time of one full sneak cycle (the speed follows from its pxPerCycle, so the feet never slide). */
   sneakCycleMs: 1100,
   /** The tiptoe never takes less than this to cover its ground (the gait slows to suit; feet still plant). */
-  sneakMinMs: 3000,
+  sneakMinMs: 2200,
   /** The listen-pause part-way along the tiptoe: where (share of the ground), then frozen on one foot, then the duck. */
   sneakPauseAt: 0.45,
-  listenMs: 400,
+  listenMs: 0,
+  /** The spooked duck at the listen-pause (off in the fast return; the machinery stays). */
+  duckOn: false,
   /** Spooked duck at the pause: crouch sheet fast down, hold low with a head scan, slowly back up. Keys as crouch.scanKeys. */
   duck: {
     downMs: 250,
@@ -199,10 +201,10 @@ export const INTRO = {
     riseMs: 800,
   },
   /** Before the first stroke: standing at the C he glances back once, turns to the wall over plantMs, shakes the can for shakeMs (fast small vertical oscillation), then writes. */
-  plantGlanceMs: 600,
+  plantGlanceMs: 0,
   plantGlanceKeys: [0, 0, 0, 150, 1, 0, 400, 1, 0, 600, 0, 0] as readonly number[],
   plantMs: 450,
-  shakeMs: 500,
+  shakeMs: 300,
   shakeHz: 8,
   /** Amplitude of the can shake, as a share of the sprite height. */
   shakeAmp: 0.012,

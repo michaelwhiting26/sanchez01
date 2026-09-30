@@ -16,7 +16,35 @@ const fakePen: PenSampler = {
   },
 };
 
-const params: ReturnParams = {
+/** The original slow return (standing look, long scan, peek, listen-freeze, duck, plant glance): kept here so the machinery for all those beats stays under test now that INTRO plays the fast one. */
+const LEGACY = {
+  walkInMs: 4400,
+  walkAccelMs: 800,
+  walkDecelMs: 1200,
+  lookLeadMs: 250,
+  lookTurnMs: 500,
+  lookHoldMs: [500, 400, 500, 400] as readonly number[],
+  sneakMinMs: 3000,
+  listenMs: 400,
+  plantGlanceMs: 600,
+  shakeMs: 500,
+  duck: { downMs: 250, holdMs: 750, holdKeys: [0, 0, 0, 150, 0.9, 0, 400, 0.9, 0.1, 600, 0.2, 0, 750, 0.2, 0] as readonly number[], riseMs: 800 },
+  crouch: {
+    downMs: 600,
+    scanMs: 3500,
+    scanKeys: [0, 0, 0, 200, 0, 0, 480, 1, 0, 850, 1, 0, 1700, 0.05, 0, 1850, 0.05, 0, 2100, 0.05, 0.7, 2350, 0.05, -0.1, 2500, 0.05, 0, 3000, 0.05, 0, 3180, 0.9, 0, 3260, 0.9, 0.1, 3500, 0.1, 0] as readonly number[],
+    freezeAtMs: 2450,
+    freezeMs: 550,
+    peekRiseMs: 380,
+    peekHoldMs: 420,
+    peekSinkMs: 400,
+    glanceKeys: [0, 0.05, 0, 130, 0.95, 0, 260, 0.95, 0, 400, 0.05, 0] as readonly number[],
+    glanceMs: 400,
+    riseMs: 450,
+  },
+} as const;
+
+const fast: ReturnParams = {
   startMs: INTRO.returnStartMs,
   walkInMs: INTRO.walkInMs,
   walkAccelMs: INTRO.walkAccelMs,
@@ -28,7 +56,7 @@ const params: ReturnParams = {
   sneakMinMs: INTRO.sneakMinMs,
   sneakPauseAt: INTRO.sneakPauseAt,
   listenMs: INTRO.listenMs,
-  duck: INTRO.duck,
+  duck: INTRO.duckOn ? INTRO.duck : null,
   plantGlanceMs: INTRO.plantGlanceMs,
   plantGlanceKeys: INTRO.plantGlanceKeys,
   plantMs: INTRO.plantMs,
@@ -55,6 +83,7 @@ const params: ReturnParams = {
   maxStands: 3,
   crouch: INTRO.crouch,
 };
+const params: ReturnParams = { ...fast, ...LEGACY };
 const noCrouch: ReturnParams = { ...params, crouch: null, duck: null };
 
 describe("strokeEase", () => {
@@ -207,7 +236,7 @@ describe("tracks", () => {
     expect(o.yaw).toBe(1);
   });
   it("peek rises, holds at the top and sinks back to zero", () => {
-    const c = INTRO.crouch;
+    const c = LEGACY.crouch;
     expect(peekProfile(c, 0)).toBe(0);
     expect(peekProfile(c, c.peekRiseMs + c.peekHoldMs / 2)).toBe(1);
     expect(peekProfile(c, c.peekRiseMs + c.peekHoldMs + c.peekSinkMs)).toBe(0);
@@ -260,7 +289,7 @@ describe("planReturn timeline", () => {
     expect(body.x).toBe(params.xLook);
   });
   it("the crouch block runs down, scan, peek, glance, rise in that order with the planned durations", () => {
-    const c = INTRO.crouch;
+    const c = LEGACY.crouch;
     expect(plan.tDownEnd - plan.tLookEnd).toBe(c.downMs);
     expect(plan.tScanEnd - plan.tDownEnd).toBe(c.scanMs);
     expect(plan.tPeekEnd - plan.tScanEnd).toBe(c.peekRiseMs + c.peekHoldMs + c.peekSinkMs);
@@ -298,7 +327,7 @@ describe("planReturn timeline", () => {
     expect(yaws.size).toBeGreaterThan(8);
     expect(flips).toBeGreaterThanOrEqual(3); // back, forward, back (double-take), settle
     expect(pitchMax).toBeGreaterThan(0.5);
-    const c = INTRO.crouch;
+    const c = LEGACY.crouch;
     sampleReturn(plan, plan.tDownEnd + c.freezeAtMs + 200, body);
     const y0 = body.yaw;
     const b0 = body.breath;
@@ -373,9 +402,9 @@ describe("planReturn timeline", () => {
   });
   it("the tiptoe takes at least sneakMinMs of moving time, plus a listen and a duck, without the feet sliding (distance monotonic, x continuous)", () => {
     const moving = plan.tSneakEnd - plan.tSneak0 - (plan.tDuck1 - plan.tListen0);
-    expect(moving).toBeGreaterThanOrEqual(INTRO.sneakMinMs - 1e-6);
-    expect(plan.tListen1 - plan.tListen0).toBe(INTRO.listenMs);
-    expect(plan.tDuck1 - plan.tListen1).toBe(INTRO.duck.downMs + INTRO.duck.holdMs + INTRO.duck.riseMs);
+    expect(moving).toBeGreaterThanOrEqual(LEGACY.sneakMinMs - 1e-6);
+    expect(plan.tListen1 - plan.tListen0).toBe(LEGACY.listenMs);
+    expect(plan.tDuck1 - plan.tListen1).toBe(LEGACY.duck.downMs + LEGACY.duck.holdMs + LEGACY.duck.riseMs);
     let prev = -1;
     let px = params.xLook;
     for (let t = plan.tSneak0; t < plan.tSneakEnd; t += 10) {
@@ -395,7 +424,7 @@ describe("planReturn timeline", () => {
     expect(body.mode).toBe(MODE.sneak);
   });
   it("the duck is fast down, holds low with a head scan, and slowly back up", () => {
-    const d = INTRO.duck;
+    const d = LEGACY.duck;
     expect(d.downMs).toBeLessThan(d.riseMs / 2);
     sampleReturn(plan, plan.tListen1 + d.downMs / 2, body);
     expect(body.mode).toBe(MODE.crouch);
@@ -443,7 +472,7 @@ describe("standing, turning, shaking, and repositioning", () => {
       if (sg !== 0) sign = sg;
     }
     expect(amp).toBeGreaterThan(0.8);
-    expect(crossings).toBeGreaterThanOrEqual(2 * INTRO.shakeHz * (INTRO.shakeMs / 1000) - 2);
+    expect(crossings).toBeGreaterThanOrEqual(2 * INTRO.shakeHz * (LEGACY.shakeMs / 1000) - 2);
     sampleReturn(plan, plan.tWrite0 + 50, body);
     expect(body.shake).toBe(0);
   });
@@ -547,5 +576,70 @@ describe("revealedLength before writing starts", () => {
   it("shows no ink on the first stroke long before the pen arrives, even with the commit ramp", () => {
     const plan = planWrite(LENS, INTRO.customWriteMs, INTRO.liftMs, { commitMs: INTRO.commitMs || 900 });
     for (const t of [-1, -500, -20000, -600000]) expect(revealedLength(plan, t, 0)).toBe(0);
+  });
+});
+
+describe("the fast return (owner spec, 30 Sep)", () => {
+  // realistic geometry: the tiptoe covers about 1.1 sprite heights (~330 px) at about 200 px per sneak cycle
+  const first = planReturn(fast, fakePen);
+  const real: ReturnParams = { ...fast, xLook: first.xStart + 330, sneakCyclePx: 200 };
+  const plan = planReturn(real, fakePen);
+  const body = newBody();
+
+  it("plays walk-in, one crouch (down, one short scan, rise), a straight tiptoe, then writes: no look, peek, listen, duck or extra glance", () => {
+    const seen: number[] = [];
+    const phases: number[] = [];
+    for (let t = plan.p.startMs - 100; t <= plan.tWrite0 + 50; t += 10) {
+      sampleReturn(plan, t, body);
+      if (seen[seen.length - 1] !== body.mode) seen.push(body.mode);
+      if (body.mode === MODE.crouch && phases[phases.length - 1] !== body.cphase) phases.push(body.cphase);
+      expect(body.duck).toBe(false);
+      expect(body.glance).toBe(false);
+    }
+    expect(seen).toEqual([MODE.off, MODE.walk, MODE.crouch, MODE.sneak, MODE.write]);
+    expect(phases).toEqual([CROUCH.down, CROUCH.scan, CROUCH.rise]);
+    expect(plan.tPeekEnd).toBe(plan.tScanEnd);
+    expect(plan.tGlanceEnd).toBe(plan.tPeekEnd);
+    expect(plan.tListen1).toBe(plan.tListen0);
+    expect(plan.tDuck1).toBe(plan.tListen1);
+    expect(plan.tPlantGlanceEnd).toBe(plan.tSneakEnd);
+  });
+  it("walks in for about 3 s and the one scan (glance back, glance forward) takes 1.5 to 2 s", () => {
+    expect(plan.tWalkEnd - plan.p.startMs).toBeGreaterThanOrEqual(2800);
+    expect(plan.tWalkEnd - plan.p.startMs).toBeLessThanOrEqual(3200);
+    expect(plan.tScanEnd - plan.tDownEnd).toBeGreaterThanOrEqual(1500);
+    expect(plan.tScanEnd - plan.tDownEnd).toBeLessThanOrEqual(2000);
+    // back, then forward: the head is turned back mid-scan and forward at the end
+    let maxYaw = 0;
+    for (let t = plan.tDownEnd; t < plan.tScanEnd; t += 10) {
+      sampleReturn(plan, t, body);
+      maxYaw = Math.max(maxYaw, body.yaw);
+    }
+    expect(maxYaw).toBeGreaterThan(0.95);
+    sampleReturn(plan, plan.tScanEnd - 1, body);
+    expect(body.yaw).toBeLessThan(0.1);
+  });
+  it("first stroke lands 8 to 9 s after the walk-in starts (was about 21 s), with a can shake of at most 300 ms", () => {
+    const toFirstStroke = (plan.tWrite0 - plan.p.startMs) / 1000;
+    expect(toFirstStroke).toBeGreaterThanOrEqual(8);
+    expect(toFirstStroke).toBeLessThanOrEqual(9);
+    expect(INTRO.shakeMs).toBeLessThanOrEqual(300);
+    expect(plan.tWrite0 - plan.tTurnEnd).toBeLessThanOrEqual(300);
+  });
+  it("keeps the writing phase as it was: 8 s, legs still inside each standing place, and still ends hiding", () => {
+    expect(plan.tWrite1 - plan.tWrite0).toBeCloseTo(8000, 6);
+    expect(plan.tEnd).toBeGreaterThan(plan.tHoldEnd);
+    sampleReturn(plan, plan.tEnd + 1e6, body);
+    expect(body.mode).toBe(MODE.crouch);
+    expect(body.depth).toBe(1);
+  });
+  it("tiptoes without sliding: x is continuous and monotonic from the crouch to the C", () => {
+    let prev = Infinity;
+    for (let t = plan.tSneak0; t < plan.tSneakEnd; t += 10) {
+      sampleReturn(plan, t, body);
+      expect(body.mode).toBe(MODE.sneak);
+      expect(body.x).toBeLessThanOrEqual(prev + 1e-9);
+      prev = body.x;
+    }
   });
 });

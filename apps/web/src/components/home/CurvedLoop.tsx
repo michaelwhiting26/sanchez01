@@ -25,23 +25,21 @@ export function CurvedLoop({ text, curve = 140, speed = 1.6, starSrc = "/assets/
     return () => loop.destroy();
   }, [text, curve, speed, starSrc]);
 
-  // the sneaking runner rides the ribbon on scroll; omitted entirely under reduced motion
+  // the hero's man rolls onto the ribbon and teeps across it on scroll; omitted entirely under reduced motion
   useEffect(() => {
     const root = rootRef.current;
     const actor = actorRef.current;
     if (!root || !actor || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const sneak = new RibbonSneak(root, actor);
     sneak.start();
-    (window as unknown as { __ribbonSneak?: RibbonSneak }).__ribbonSneak = sneak;
+    // dev only: lets a test drive `update({ rootTop, vh })` with faked scroll positions
+    if (process.env.NODE_ENV !== "production") (window as unknown as { __ribbonSneak?: RibbonSneak }).__ribbonSneak = sneak;
     return () => sneak.destroy();
   }, []);
 
   return (
     <section className="curved-loop" ref={rootRef} data-curved-loop="">
-      <div className="ribbon-sneak" ref={actorRef} aria-hidden="true">
-        <div className="ribbon-sneak__sheet" data-sneak-walk="" />
-        <div className="ribbon-sneak__sheet" data-sneak-look="" style={{ display: "none" }} />
-      </div>
+      <div className="ribbon-sneak" ref={actorRef} aria-hidden="true" />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { INTRO, SPRAY, type Rgb } from "./config";
+import { isHeroRunnerHidden } from "./handoff";
 import type { SigPen } from "./sigpen";
 import { CROUCH, MODE, penAt, planReturn, revealedLength, sampleReturn, type BodyState, type CrouchParams, type PenState, type ReturnPlan, type Vec } from "./writer";
 
@@ -477,7 +478,7 @@ export class IntroSprites {
         sneakMinMs: INTRO.sneakMinMs,
         sneakPauseAt: INTRO.sneakPauseAt,
         listenMs: INTRO.listenMs,
-        duck: crouchOn ? INTRO.duck : null,
+        duck: crouchOn && INTRO.duckOn ? INTRO.duck : null,
         plantGlanceMs: INTRO.plantGlanceMs,
         plantGlanceKeys: INTRO.plantGlanceKeys,
         plantMs: INTRO.plantMs,
@@ -532,7 +533,7 @@ export class IntroSprites {
     const plan = this.returnPlan(g);
     const r = this.runner;
     const sig = g.sig;
-    if (!plan || !r || !sig) return;
+    if (!plan || !r || !sig || isHeroRunnerHidden()) return;
     const spriteS = this.spriteSize(g);
     const k = spriteS / r.w;
     const b = this.body;
@@ -643,7 +644,7 @@ export class IntroSprites {
     const k = spriteS / r.w;
     const ground = sig.y + (RUN_FOOT - r.nozzleY) * k; // his feet: where the first pass's runner stood on this row
     if (ti >= plan.tSneakEnd) this.drawPenMist(ctx, plan, sig.pen, ti, spriteS);
-    if (b.mode === MODE.off) return;
+    if (b.mode === MODE.off || isHeroRunnerHidden()) return; // the ribbon figure is the same man: never two
     // a change of pose set fades over sheetFadeMs: the outgoing pose is held at its last frame underneath, the incoming one fades in over it
     let cut = -1;
     for (let i = 0; i < plan.cuts.length; i++) {

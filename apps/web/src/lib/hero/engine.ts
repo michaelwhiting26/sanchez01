@@ -26,6 +26,7 @@ import {
   type Rgb,
 } from "./config";
 import { FlagLookup, loadFlagIndices } from "./flag";
+import { onHeroRunnerHidden, setHeroHideSpot, setHeroRunnerHidden } from "./handoff";
 import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
 import { SigPen, tabulate } from "./sigpen";
 import { createSeededNoise, fbm3, hashSeed, type Noise3 } from "./noise";
@@ -166,6 +167,8 @@ export class HeroEngine {
   private dripHead = new Int32Array(0);
   private lastIntroTi = -1;
   private lastT = 0;
+  /** window.scrollY when `introGeom` was measured (the hide spot's y is relative to it). */
+  private geomScrollY = 0;
   private readonly stats = { letters: 0, coat: 0, halo: 0 };
   private sigEl: HTMLElement | null = null;
   private introGeom: IntroGeom | null = null;
@@ -240,6 +243,17 @@ export class HeroEngine {
       });
       this.draw(0);
     } else this.raf = requestAnimationFrame(this.loop);
+    if (!this.reduce) {
+      // the ribbon figure is the same man: when it hides / shows the canvas runner, repaint in the same frame so the two never overlap
+      const off = onHeroRunnerHidden(() => {
+        if (window.scrollY <= this.fieldEnd && this.lastT) this.draw(this.lastT);
+      });
+      this.abort.signal.addEventListener("abort", () => {
+        off();
+        setHeroHideSpot(null);
+        setHeroRunnerHidden(false);
+      });
+    }
     if (process.env.NODE_ENV !== "production" && !this.reduce) this.exposeDevSeek();
   }
 
@@ -716,6 +730,7 @@ export class HeroEngine {
         this.ctx.clearRect(0, 0, this.cw, this.ch);
         this.cleared = true;
       }
+      this.publishHandoff(this.overrides.introMs ?? t - (this.sprayStart || t)); // the intro clock runs on while he is off screen
       return; // below the last transparent section nothing shows: skip the work
     }
     this.cleared = false;
@@ -1100,6 +1115,8 @@ export class HeroEngine {
     const flagRef = this.flag;
     const g: IntroGeom = { colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
     this.introGeom = g;
+    this.geomScrollY = window.scrollY;
+    this.publishHandoff(ti);
     if (this.reduce) {
       intro.drawHidden(this.ctx, g);
       return;
@@ -1111,6 +1128,16 @@ export class HeroEngine {
     this.lastIntroTi = ti;
     intro.draw(this.ctx, ti, g);
     if (sig && intro.inkAt(ti, this.inkLens, this.inkFill)) this.applyInk();
+  }
+
+  /** Tell the ribbon where he hides once the return pass has really finished (until then: null, so no second figure can exist). */
+  private publishHandoff(ti: number): void {
+    const intro = this.intro;
+    const g = this.introGeom;
+    if (!intro || !g || this.reduce) return;
+    const plan = intro.returnPlan(g);
+    const spot = plan && ti >= plan.tEnd ? this.hideSpot() : null;
+    setHeroHideSpot(spot, this.geomScrollY);
   }
 
   /** Tabulate the signature's strokes in screen space (once per layout): the pen's path, and each stroke's length. */
