@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { attachGalleryNote, attachGalleryRuler, attachGalleryScroll } from "./gallery-behaviours";
 import { FilmHelix } from "@/lib/film";
 import { GALLERY_SLIDES } from "./gallery-slides";
-import { GalleryReelButton } from "./GalleryReelButton";
 
 const BUNDLE = "/assets/carousel/lgc.bundle.js";
 
@@ -35,16 +34,33 @@ export function WorkshopGallery() {
     if (!track || !host || !pin) return;
     let cleanup: Array<() => void> = [];
     let cancelled = false;
-    loadBundle()
-      .then(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // how long each slide holds: a photo a few seconds, a video its own length
+    const dwell = Promise.all(
+      GALLERY_SLIDES.map(
+        (slide) =>
+          new Promise<number>((resolve) => {
+            if (!slide.video) return resolve(4500);
+            const v = document.createElement("video");
+            v.preload = "metadata";
+            const done = (ms: number): void => resolve(Math.min(20000, Math.max(3000, ms)));
+            v.onloadedmetadata = () => done(Number.isFinite(v.duration) ? v.duration * 1000 : 8000);
+            v.onerror = () => done(8000);
+            window.setTimeout(() => done(8000), 4000);
+            v.src = slide.video;
+          }),
+      ),
+    );
+    Promise.all([loadBundle(), dwell])
+      .then(([, dwellMs]) => {
         if (cancelled) return;
         const notes = new Map(GALLERY_SLIDES.map((s) => [s.title, s.note] as const));
         const hero = document.querySelector<HTMLElement>("[data-hero-rings]");
         const film = hero
-          ? new FilmHelix({ start: hero, end: track, reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches })
+          ? new FilmHelix({ start: hero, end: track, reduced })
           : null;
         if (process.env.NODE_ENV !== "production") (window as Window & { __film?: FilmHelix | null }).__film = film;
-        cleanup = [attachGalleryScroll(track, host, pin), attachGalleryRuler(host, GALLERY_SLIDES.length), attachGalleryNote(host, notes), () => film?.destroy()];
+        cleanup = [attachGalleryScroll(track, host, pin, { autoplay: !reduced, dwellMs }), attachGalleryRuler(host, GALLERY_SLIDES.length), attachGalleryNote(host, notes), () => film?.destroy()];
       })
       .catch(() => {
         /* the gallery is decorative; the page stands without it */
@@ -68,7 +84,6 @@ export function WorkshopGallery() {
           ref={hostRef}
           suppressHydrationWarning
         />
-        <GalleryReelButton />
       </section>
     </div>
   );

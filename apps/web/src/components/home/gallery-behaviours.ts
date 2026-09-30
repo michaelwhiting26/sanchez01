@@ -17,7 +17,14 @@ function counterText(host: Element): string {
 /** Pixels of film that pass while the gallery is scrolled from the first slide to the last. */
 export const FILM_TRAVEL = 2600;
 
-export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: HTMLElement): () => void {
+export interface GalleryScrollOptions {
+  /** Play the gallery through on its own the first time it is reached, locking the page until it has finished. */
+  autoplay: boolean;
+  /** How long each slide holds, in ms: a few seconds for a photo, the video's own length for a video. */
+  dwellMs: readonly number[];
+}
+
+export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: HTMLElement, options?: GalleryScrollOptions): () => void {
   const GAP_MS = window.matchMedia("(pointer: coarse)").matches ? 70 : 140; // between key presses while catching up
   const REACH = 0.85; // the last slide is reached at 85% of the track; the rest is a short hold before the page carries on
   let hold = false;
@@ -45,10 +52,77 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
   };
   let lastCur = -1;
   let flickTimer = 0;
+  let dead = false;
+  let auto: "idle" | "running" | "done" = options?.autoplay ? "idle" : "done";
+  let settling = false;
+  let lockY = 0;
+  const BLOCKED = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Spacebar"]);
+  const stop = (e: Event): void => e.preventDefault();
+  const stopKey = (e: KeyboardEvent): void => {
+    if (BLOCKED.has(e.key)) e.preventDefault();
+  };
+  const holdPos = (): void => {
+    if (Math.abs(window.scrollY - lockY) > 1) window.scrollTo(0, lockY);
+  };
+  const lock = (): void => {
+    window.addEventListener("wheel", stop, { passive: false });
+    window.addEventListener("touchmove", stop, { passive: false });
+    window.addEventListener("keydown", stopKey);
+    window.addEventListener("scroll", holdPos, { passive: true });
+    document.documentElement.classList.add("gallery-locked");
+  };
+  const unlock = (): void => {
+    window.removeEventListener("wheel", stop);
+    window.removeEventListener("touchmove", stop);
+    window.removeEventListener("keydown", stopKey);
+    window.removeEventListener("scroll", holdPos);
+    document.documentElement.classList.remove("gallery-locked");
+  };
+  const sleep = (ms: number): Promise<void> => new Promise((r) => window.setTimeout(r, ms));
+  // The film plays live in the gallery itself: when it is first reached the page locks (however hard someone scrolls), the carousel runs the six slides in
+  // order (photos hold a few seconds, videos play out), then the page is released.
+  const runAutoplay = async (): Promise<void> => {
+    auto = "running";
+    const head = parseFloat(getComputedStyle(track).getPropertyValue("--header-h")) || 0;
+    const docTop = track.getBoundingClientRect().top + window.scrollY;
+    lockY = docTop - head + 1;
+    window.scrollTo(0, lockY);
+    lock();
+    const n = total();
+    for (let g = 0; g < n && current() > 0 && !dead; g++) {
+      press(-1);
+      await sleep(700);
+    }
+    for (let i = 0; i < n && !dead; i++) {
+      await sleep(options?.dwellMs[i] ?? 4500);
+      if (i < n - 1) {
+        press(1);
+        await sleep(1000); // the carousel's own move to the next slide
+      }
+    }
+    unlock();
+    if (dead) return;
+    auto = "done";
+    settling = true;
+    const travel = track.offsetHeight - pin.offsetHeight;
+    window.scrollTo({ top: docTop - head + REACH * travel, behavior: "smooth" }); // released: carry on down from the last slide
+  };
   const tick = (now: number): void => {
     if (!live) return;
     const n = total();
     const cur = current();
+    if (auto === "idle" && n > 1 && cur >= 0 && progress() > 0.001) void runAutoplay();
+    if (auto === "running") {
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+    if (settling) {
+      if (progress() >= REACH - 0.03) settling = false;
+      else {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+    }
     pin.style.setProperty("--film-x", (progress() * FILM_TRAVEL).toFixed(1)); // the film tape behind the gallery runs with the scroll
     if (cur >= 0 && cur !== lastCur) {
       if (lastCur >= 0 && n > 1 && (cur === 0 || cur === n - 1)) {
@@ -102,6 +176,8 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
   host.addEventListener("keydown", trusted, true);
   window.addEventListener("scroll", release, { passive: true });
   return () => {
+    dead = true;
+    unlock();
     live = false;
     cancelAnimationFrame(raf);
     io.disconnect();
