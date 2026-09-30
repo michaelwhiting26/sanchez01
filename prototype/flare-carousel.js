@@ -35,6 +35,7 @@ const CONFIG = {
     haloHeight: 0.16, haloStrength: 1.0,
   },
   optics: { aberration: 0.0035, aberrationVelocity: 0.0016, rim: 0.9 },
+  portrait: { below: 1.0, heroWidth: 0.54, restGap: 0.74, yawRest: 1.3, wallLength: 0.4, textScale: 1.45 },   /* phones/tablets held upright: smaller hero, neighbours tucked in and turned further, a short bell that starts inside the screen */
   motion: { omega: 8, omegaReduced: 20, dragPerCard: 0.26, wheelPerCard: 420, maxVelocity: 9, flick: 0.2, snapDelayMs: 140 },
 };
 
@@ -67,7 +68,7 @@ function start(root) {
 
   /* ---- layout curves: everything visible is derived from p = index - position ---- */
   const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const L = C.layout;
+  const L = Object.assign({}, C.layout);                                            /* fit() adjusts a few of these for portrait screens */
   const yawOf = (a) => (a <= L.yawFirstAt ? L.yawFirst * sm(0, L.yawFirstAt, a) : L.yawFirst + (L.yawRest - L.yawFirst) * sm(L.yawFirstAt, 1, a)) + L.yawBack * sm(1, 1.8, a);
   const flareOf = (a) => sm(L.flareFrom, L.flareTo, a) * (1 - sm(L.flareFade[0], L.flareFade[1], a));
   const cxOf = (a) => W * L.restGap * Math.pow(Math.min(a, 1), L.nearPow) + Math.max(0, a - 1) * W * 0.9;
@@ -90,15 +91,16 @@ function start(root) {
       g.globalCompositeOperation = "multiply"; g.drawImage(layer, 0, 0);
       g.globalCompositeOperation = "screen"; g.globalAlpha = 0.14; g.fillStyle = grad; g.fillRect(0, 0, TW, TH); g.globalAlpha = 1; g.globalCompositeOperation = "source-over";   /* lift the blacks toward the colour */
     }
-    const F = "Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif", M = 28 * K;
-    g.fillStyle = "rgba(255,255,255,0.95)"; g.font = "500 " + 20 * K + "px " + F; g.fillText(c.title, M, 52 * K);
-    g.fillStyle = "rgba(255,255,255,0.75)"; g.font = "400 " + 18 * K + "px " + F; if (c.sub) g.fillText(c.sub, M, 80 * K);
+    const TS = stage.clientWidth < stage.clientHeight ? C.portrait.textScale : 1;                 /* upright phone: the hero is smaller on screen, so the type is drawn larger */
+    const F = "Inter, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif", M = 28 * K * TS;
+    g.fillStyle = "rgba(255,255,255,0.95)"; g.font = "500 " + 20 * K * TS + "px " + F; g.fillText(c.title, M, 52 * K * TS);
+    g.fillStyle = "rgba(255,255,255,0.75)"; g.font = "400 " + 18 * K * TS + "px " + F; if (c.sub) g.fillText(c.sub, M, 80 * K * TS);
     if (c.pill) {
-      g.font = "500 " + 14 * K + "px " + F; const tw = g.measureText(c.pill).width, ph = 26 * K, pw = tw + 22 * K, px = TW - M - pw, py = 32 * K;
+      g.font = "500 " + 14 * K * TS + "px " + F; const tw = g.measureText(c.pill).width, ph = 26 * K * TS, pw = tw + 22 * K * TS, px = TW - M - pw, py = 32 * K * TS;
       g.fillStyle = "rgba(255,255,255,0.22)"; g.beginPath(); g.roundRect(px, py, pw, ph, ph / 2); g.fill();
-      g.fillStyle = "rgba(255,255,255,0.95)"; g.fillText(c.pill, px + 11 * K, py + 18 * K);
+      g.fillStyle = "rgba(255,255,255,0.95)"; g.fillText(c.pill, px + 11 * K * TS, py + 18 * K * TS);
     }
-    if (c.foot) { g.fillStyle = "rgba(255,255,255,0.92)"; g.font = "500 " + 17 * K + "px " + F; g.fillText(c.foot, M, TH - 30 * K); }
+    if (c.foot) { g.fillStyle = "rgba(255,255,255,0.92)"; g.font = "500 " + 17 * K * TS + "px " + F; g.fillText(c.foot, M, TH - 30 * K * TS); }
     const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; return t;
   }
 
@@ -229,9 +231,11 @@ function start(root) {
   function fit() {
     const w = stage.clientWidth || 1, h = stage.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
     const f = THREE.MathUtils.degToRad(cam.fov), visH = H / C.camera.heroHeightFraction;   /* on tall/narrow screens keep the hero within the width too */
-    const dH = visH / 2 / Math.tan(f / 2), dW = (W / 0.62) / 2 / (Math.tan(f / 2) * cam.aspect);
+    const portrait = cam.aspect < C.portrait.below;
+    L.restGap = portrait ? C.portrait.restGap : C.layout.restGap; L.yawRest = portrait ? C.portrait.yawRest : C.layout.yawRest;
+    const dH = visH / 2 / Math.tan(f / 2), dW = (W / (portrait ? C.portrait.heroWidth : 0.62)) / 2 / (Math.tan(f / 2) * cam.aspect);
     cam.position.set(0, 0, Math.max(dH, dW)); cam.lookAt(0, 0, 0); dirty = true;
-    const len = WL.length * Math.max(1, cam.aspect / 1.45);                          /* wider screens need a longer bell so it still runs off both edges */
+    const len = portrait ? C.portrait.wallLength : WL.length * Math.max(1, cam.aspect / 1.45);   /* wider screens need a longer bell so it still runs off both edges; upright screens a short one */
     slides.forEach((sl) => { sl.u.uLen.value = sl.hu.uLen.value = len; });
   }
   const ro = new ResizeObserver(fit); ro.observe(stage); fit();
@@ -288,5 +292,5 @@ function start(root) {
   }
   /* test handle: a hidden tab pauses requestAnimationFrame, so scripts can move and step the simulation by hand */
   window.__flare = { get pos() { return pos; }, destroy, go: (d) => { nudge(d); settle(); }, setPosition: (v) => { pos = target = v; vel = 0; dirty = true; }, set: (v) => { pos = target = v; vel = 0; dirty = true; },
-    step: (n = 1, dt = 1 / 60) => { for (let i = 0; i < n; i++) draw(dt); } };
+    resize: fit, step: (n = 1, dt = 1 / 60) => { for (let i = 0; i < n; i++) draw(dt); } };
 }

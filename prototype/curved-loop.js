@@ -20,6 +20,27 @@
     var SPRITE = root.getAttribute("data-star") || "assets/brand/sparkle-3d.png", FS = 64, SIZE = 60, stars = [], plen = 0;
     /* Placement is arithmetic, not browser queries: a star's distance along the curve = scroll offset + (repeat number x text width) + (width of the text
        before its gap) + half the gap, all measured once on the hidden straight copy of the text. */
+    /* Luxury finish, all in SVG: (1) the red body is deepened to oxblood and given a thin champagne rim, (2) a soft warm shadow sits under each star,
+       (3) a glint (a soft light band clipped to the star's own shape) sweeps across it as it travels. The PNG itself is untouched. */
+    function svgEl(name, attrs, parent) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+    var FX = id + "-fx", MASK = id + "-mask", GLINT = id + "-glint";
+    (function () {
+      var f = svgEl("filter", { id: FX, x: "-30%", y: "-30%", width: "160%", height: "175%", "color-interpolation-filters": "sRGB" }, defs);
+      svgEl("feColorMatrix", { in: "SourceGraphic", type: "matrix", values: "0.80 0 0 0 0  0 0.50 0 0 0  0 0 0.56 0 0  0 0 0 1 0", result: "body" }, f);               /* brick red -> oxblood, shading kept */
+      svgEl("feMorphology", { in: "SourceAlpha", operator: "erode", radius: "1.1", result: "core" }, f);
+      svgEl("feComposite", { in: "SourceAlpha", in2: "core", operator: "out", result: "edge" }, f);
+      svgEl("feFlood", { "flood-color": "#e4c9ab", "flood-opacity": "0.95", result: "champ" }, f);
+      svgEl("feComposite", { in: "champ", in2: "edge", operator: "in", result: "rim" }, f);                                                                              /* champagne rim */
+      svgEl("feGaussianBlur", { in: "SourceAlpha", stdDeviation: "3", result: "blur" }, f);
+      svgEl("feOffset", { in: "blur", dx: "0", dy: "4", result: "off" }, f);
+      svgEl("feFlood", { "flood-color": "#1a0a02", "flood-opacity": "0.6", result: "shc" }, f);
+      svgEl("feComposite", { in: "shc", in2: "off", operator: "in", result: "shadow" }, f);                                                                              /* warm soft shadow */
+      var m = svgEl("feMerge", {}, f); ["shadow", "body", "rim"].forEach(function (r) { svgEl("feMergeNode", { in: r }, m); });
+      var mk = svgEl("mask", { id: MASK, maskUnits: "userSpaceOnUse", x: "0", y: "0", width: SIZE, height: SIZE, style: "mask-type:alpha" }, defs);
+      svgEl("image", { href: SPRITE, width: SIZE, height: SIZE }, mk);                                                                                                       /* the star's own silhouette */
+      var g = svgEl("linearGradient", { id: GLINT, x1: "0", y1: "0", x2: "1", y2: "0" }, defs);
+      svgEl("stop", { offset: "0", "stop-color": "#fff3d6", "stop-opacity": "0" }, g); svgEl("stop", { offset: "0.5", "stop-color": "#fff3d6", "stop-opacity": "0.7" }, g); svgEl("stop", { offset: "1", "stop-color": "#fff3d6", "stop-opacity": "0" }, g);
+    })();
     function build(n) {
       while (tp.firstChild) tp.removeChild(tp.firstChild);
       stars.forEach(function (st) { if (st.img.parentNode) st.img.parentNode.removeChild(st.img); }); stars = [];
@@ -30,8 +51,10 @@
           if (i < pieces.length - 1) {
             tp.appendChild(document.createTextNode(GAP));
             var before = at ? measure.getSubStringLength(0, at) : 0, adv = measure.getSubStringLength(at, GAP.length);
-            var img = document.createElementNS(NS, "image"); img.setAttribute("href", SPRITE); img.setAttribute("width", SIZE); img.setAttribute("height", SIZE); img.style.pointerEvents = "none"; img.style.display = "none";
-            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img }); at += GAP.length;
+            var img = svgEl("g", {}); img.style.pointerEvents = "none"; img.style.display = "none";
+            svgEl("image", { href: SPRITE, width: SIZE, height: SIZE, filter: "url(#" + FX + ")" }, img);
+            var clip = svgEl("g", { mask: "url(#" + MASK + ")" }, img), glint = svgEl("rect", { x: "-30", y: "-6", width: "24", height: SIZE + 12, fill: "url(#" + GLINT + ")", transform: "rotate(18 30 30)" }, clip);
+            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img, glint: glint }); at += GAP.length;
           }
         });
       }
@@ -45,7 +68,9 @@
         var rot = Math.atan2(pb.y - pa.y, pb.x - pa.x), c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
         var cx = p0.x + up * sn, cy = p0.y - up * c;
         if (cx < -80 || cx > 1520) { st.img.style.display = "none"; continue; }
-        st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ") rotate(" + (rot * 180 / Math.PI).toFixed(2) + ") translate(" + (-SIZE / 2) + " " + (-SIZE / 2) + ")"); st.img.style.display = "";
+        var sx = 1 - 0.10 * Math.abs(Math.sin(rot * 1.6)), wob = 3 * Math.sin(cx / 150 + i);           /* turns a little like a metal object as it rides the curve */
+        st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ") rotate(" + (rot * 180 / Math.PI + wob).toFixed(2) + ") scale(" + sx.toFixed(3) + " 1) translate(" + (-SIZE / 2) + " " + (-SIZE / 2) + ")"); st.img.style.display = "";
+        var gp = (cx / 520 + i * 0.37) % 1; st.glint.setAttribute("x", (-30 + 96 * (gp < 0 ? gp + 1 : gp)).toFixed(1));            /* the glint sweeps across the star once every ~520px of travel */
       }
     }
     function setup() {
