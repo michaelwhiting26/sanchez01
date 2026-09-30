@@ -132,7 +132,9 @@
   }
 
   /* colour every dot on screen into one of NB shades (brightness x warmth), then draw each shade in one pass */
-  var lgcTrack = null, warpG = null, waveTabs = null, FLUFF = 2.2, sx0 = 0, sx1 = 0, sprayStart = 0, SPRAY_MS = 5200;
+  var lgcTrack = null, warpG = null, waveTabs = null;
+  function cloudN(a, b, c) { return sn ? 0.62 * sn.noise3D(a, b, c) + 0.38 * sn.noise3D(a * 2.3 + 9, b * 2.3, c * 1.6) : 0.6 * Math.sin(a * 5 + c * 20) * Math.cos(b * 4.3) + 0.4 * Math.sin((a + b) * 9); }
+  var sx0 = 0, sx1 = 0, sprayStart = 0, SPRAY_MS = 5200;
   function draw(t) {
     var sy = (typeof window.__sy === "number" ? window.__sy : scrollY) * dpr, sy0 = sy; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
     var tsec0 = t / 1000; var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 0.9;
@@ -219,8 +221,18 @@
               var xr = Math.round(xf), yr = Math.round(yf), mr = yr - r0;
               if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself */
             }
-            var reach = FLUFF + (pseed[base + x] - 0.5) * 1.5;                             /* the puff round the letters: a cloud edge, soft and grainy, still clearly the word */
-            if (dw <= reach) { var pf = 1 - dw / reach, lvF = Math.round(LEVELS * 0.5 * Math.min(1, pf * 1.3)); if (lvF > 0) b = lvF * WARMS; }
+            /* THE CLOUD BANK: the word sits in billowing cumulus, stippled in tan and shaded as if lit from the top left (bright tops, darker undersides), drifting very slowly.
+               Big mounds and gaps come from smooth noise; the cloud stops a hair off the outline so the letters stay crisp. */
+            var cl = 0;
+            if (dw > 2.6 && dw < 72) {
+              var cxn = x * 0.032, cyn = pr * 0.05, ctn = tn * 0.02, f1 = cloudN(cxn, cyn, ctn), f2 = cloudN(cxn - 0.06, cyn - 0.06, ctn), lim = 10 + 40 * (0.5 + 0.5 * f1) + 8 * (0.5 + 0.5 * cloudN(cxn * 2.4 + 5, cyn * 2.4, ctn * 1.4));   /* big round mounds, up to ~60 cells off the letters */
+              var cness = Math.min(1, (lim - dw) / 9);
+              if (cness > 0) {
+                var shade = Math.min(1, Math.max(0.12, 0.55 + (f2 - f1) * 5)), body = 0.4 + 0.6 * Math.min(1, (lim - dw) / lim + 0.25);
+                if (pseed[base + x] < 0.42 + 0.55 * cness * body) { cl = Math.round(LEVELS * Math.min(1, cness * (0.16 + 0.92 * shade * body))); }
+              }
+            }
+            if (cl > 0) b = cl * WARMS;
             else if (dw > 2.2) {
               var fxg = x / GS, fyg = y / GS, gx0 = Math.floor(fxg), gy0 = Math.floor(fyg), tx = fxg - gx0, ty = fyg - gy0, gi = gy0 * gcols + gx0;
               var wv = (warpG[gi] * (1 - tx) + warpG[gi + 1] * tx) * (1 - ty) + (warpG[gi + gcols] * (1 - tx) + warpG[gi + gcols + 1] * tx) * ty;
