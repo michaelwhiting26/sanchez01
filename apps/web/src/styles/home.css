@@ -921,7 +921,16 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
    independently of the transform the tether script sets on the button; it does one full barrel roll with the same easing as the rolling letters. */
 .orbit-submit { isolation: isolate; perspective: 900px; background: none !important; }
 .orbit-submit::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url("/assets/brand/bag-button.webp") center / 100% 100% no-repeat; transform-origin: 50% 50%; backface-visibility: visible; }
-.orbit-submit:hover:not(:disabled)::before, .orbit-submit:focus-visible::before { animation: bag-tumble .75s cubic-bezier(.215, .61, .355, 1); }
-.orbit-submit:hover:not(:disabled) .enq__clip, .orbit-submit:focus-visible .enq__clip { animation: bag-tumble .75s cubic-bezier(.215, .61, .355, 1); }
-@keyframes bag-tumble { 0% { transform: rotateX(0) scale(1); } 45% { transform: rotateX(200deg) scale(1.06); } 100% { transform: rotateX(360deg) scale(1); } }
-@media (prefers-reduced-motion: reduce) { .orbit-submit::before, .orbit-submit .enq__clip { animation: none !important; } }
+
+/* Submit hover, built the way landonorris.com (OFF+BRAND, Awwwards Site of the Year) does its buttons: every move is a reversible TRANSITION on one
+   curve (their GSAP "power3.out" = cubic-bezier(.165,.84,.44,1)), so leaving mid-way unwinds from exactly where it is instead of snapping.
+   Letters: each rolls up to its twin below with a 0.02s stagger over 0.6s (their text-hover timings), and rolls back on leave.
+   Bag: the whole bag does one full barrel roll with a slight lift and swell, on the same curve, and unrolls on leave. */
+.orbit-submit { --ease-lando: cubic-bezier(.165, .84, .44, 1); }
+.orbit-submit::before { transition: transform .95s var(--ease-lando); transform: rotateX(0deg) translate3d(0, 0, 0) scale(1); will-change: transform; }
+.orbit-submit:hover:not(:disabled)::before, .orbit-submit:focus-visible::before { transform: rotateX(360deg) translate3d(0, -6px, 0) scale(1.05); }
+.orbit-submit .enq__char { transition: transform .6s var(--ease-lando); transition-delay: calc(var(--i) * .02s); }
+.orbit-submit .enq__icon svg { transition: transform .6s var(--ease-lando) .08s; }
+.orbit-submit .enq__clip { transition: transform .95s var(--ease-lando); }
+.orbit-submit:hover:not(:disabled) .enq__clip, .orbit-submit:focus-visible .enq__clip { transform: translate3d(0, -6px, 0) scale(1.05); }
+@media (prefers-reduced-motion: reduce) { .orbit-submit::before, .orbit-submit .enq__char, .orbit-submit .enq__clip, .orbit-submit .enq__icon svg { transition: none; } }
