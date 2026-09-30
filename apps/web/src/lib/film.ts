@@ -109,12 +109,18 @@ export function makeTapeTexture(): HTMLCanvasElement {
 }
 
 export interface FilmOptions {
-  section: HTMLElement;
-  /** Scroll progress through the gallery, 0..1. */
-  progress: () => number;
+  /** The tornado starts at the bottom of this element (the hero) and ends at the bottom of `end` (the gallery track). */
+  start: HTMLElement;
+  end: HTMLElement;
   reduced: boolean;
 }
 
+/**
+ * A tornado of film: a vertical helix on the page's centre axis, tight and frequent, running from the bottom of the hero down through the page to the
+ * end of the gallery. The back of every coil is drawn as full film behind the page; the front is only an outline (about 5%), so nothing ever stands in
+ * front of the gallery. Two fixed viewport canvases show the window of the helix that is on screen, so the scroll carries you down the spiral and also
+ * rolls it round its axis.
+ */
 export class FilmHelix {
   private readonly back = document.createElement("canvas");
   private readonly front = document.createElement("canvas");
@@ -122,131 +128,168 @@ export class FilmHelix {
   private readonly fctx: CanvasRenderingContext2D | null;
   private readonly tex = makeTapeTexture();
   private raf = 0;
-  private live = false;
   private w = 0;
   private h = 0;
   private dpr = 1;
-  private readonly io: IntersectionObserver;
+  private active = false;
+  private readonly onScroll = (): void => this.kick();
   private readonly ro: ResizeObserver;
 
   constructor(private readonly o: FilmOptions) {
-    for (const [cv, z] of [[this.back, -1], [this.front, 6]] as const) {
-      cv.setAttribute("aria-hidden", "true");
-      cv.style.cssText = `position:absolute;inset:0;inline-size:100%;block-size:100%;pointer-events:none;z-index:${z}`;
-    }
+    const css = (z: number): string => `position:fixed;inset:0;inline-size:100%;block-size:100%;pointer-events:none;z-index:${z}`;
     this.back.className = "film film--back";
     this.front.className = "film film--front";
+    this.back.style.cssText = css(-1);
+    this.front.style.cssText = css(6);
+    for (const cv of [this.back, this.front]) cv.setAttribute("aria-hidden", "true");
     this.bctx = this.back.getContext("2d");
     this.fctx = this.front.getContext("2d");
-    o.section.prepend(this.back);
-    o.section.append(this.front);
-    this.ro = new ResizeObserver(() => this.resize());
-    this.ro.observe(o.section);
-    this.io = new IntersectionObserver((e) => {
-      this.live = e[0]?.isIntersecting ?? false;
-      if (this.live && !this.raf && !this.o.reduced) this.raf = requestAnimationFrame(this.loop);
-      if (this.o.reduced) this.draw();
-    });
-    this.io.observe(o.section);
+    document.body.append(this.back, this.front);
+    window.addEventListener("scroll", this.onScroll, { passive: true });
+    window.addEventListener("resize", this.onScroll);
+    this.ro = new ResizeObserver(this.onScroll);
+    this.ro.observe(document.body);
     this.resize();
+    this.kick();
   }
 
   destroy(): void {
     cancelAnimationFrame(this.raf);
-    this.io.disconnect();
+    window.removeEventListener("scroll", this.onScroll);
+    window.removeEventListener("resize", this.onScroll);
     this.ro.disconnect();
     this.back.remove();
     this.front.remove();
   }
 
-  private resize(): void {
-    const r = this.o.section.getBoundingClientRect();
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.w = Math.max(1, Math.round(r.width * this.dpr));
-    this.h = Math.max(1, Math.round(r.height * this.dpr));
-    for (const cv of [this.back, this.front]) {
-      cv.width = this.w;
-      cv.height = this.h;
-    }
-    this.draw();
+  private kick(): void {
+    if (this.raf) return;
+    this.raf = requestAnimationFrame(() => {
+      this.raf = 0;
+      this.draw();
+    });
   }
 
-  private readonly loop = (): void => {
-    this.raf = 0;
-    if (!this.live) return;
-    this.draw();
-    this.raf = requestAnimationFrame(this.loop);
-  };
+  private resize(): void {
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(window.innerWidth * this.dpr);
+    const h = Math.round(window.innerHeight * this.dpr);
+    if (w === this.w && h === this.h) return;
+    this.w = w;
+    this.h = h;
+    for (const cv of [this.back, this.front]) {
+      cv.width = w;
+      cv.height = h;
+    }
+  }
 
   draw(): void {
-    const { bctx, fctx, w, h } = this;
+    const { bctx, fctx } = this;
     if (!bctx || !fctx) return;
+    this.resize();
+    const { w, h, dpr } = this;
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
+    fctx.setTransform(1, 0, 0, 1, 0, 0);
     bctx.clearRect(0, 0, w, h);
     fctx.clearRect(0, 0, w, h);
-    const p = this.o.progress();
-    const R = h * 0.47; // the tape passes just inside the top and bottom of the section
-    const bandW = h * 0.085; // a fine ribbon: it defines the space, it does not dominate it
-    const f = R * 3.4; // camera distance
-    const TURNS = 2.4;
-    const N = 220;
-    const dphi = (TURNS * 2 * Math.PI) / N;
-    const spanX = w * 0.86;
-    const roll = p * Math.PI * 2 * 1.5; // the barrel roll: the whole ribbon rotates about the axis as the gallery scrolls
+    const scrollY = window.scrollY;
+    const yStart = this.o.start.getBoundingClientRect().bottom + scrollY;
+    const yEnd = this.o.end.getBoundingClientRect().bottom + scrollY;
+    const viewTop = scrollY;
+    const viewBot = scrollY + window.innerHeight;
+    this.active = viewBot > yStart && viewTop < yEnd;
+    if (!this.active || this.o.reduced) return;
+
+    const vh = window.innerHeight;
+    const R = Math.min(window.innerWidth * 0.36, vh * 0.3) * dpr; // a tight coil round the centre axis
+    const pitch = vh * 0.5 * dpr; // one full turn every half screen: frequent
+    const bandH = pitch * 0.4; // a fine ribbon, with air between the coils
+    const f = R * 3.6;
+    const N = 72; // slices per turn
+    const dphi = (Math.PI * 2) / N;
+    const dy = pitch / N;
+    const roll = (scrollY / vh) * Math.PI * 1.2; // the scroll also rolls the tornado round its axis
     const cx = w / 2;
-    const cy = h / 2;
-    const proj = (phi: number, x: number): { x: number; y: number; z: number } => {
-      const y = R * Math.cos(phi);
+    const sw = R * dphi * (TEX_H / bandH); // texture pixels per slice, so the numbers keep their proportions
+    const proj = (phi: number, yPage: number): { x: number; y: number; z: number } => {
       const z = R * Math.sin(phi);
       const s = f / (f - z);
-      return { x: cx + x * s, y: cy + y * s, z };
+      const yRel = (yPage - scrollY) * dpr - h / 2;
+      return { x: cx + R * Math.cos(phi) * s, y: h / 2 + yRel * s, z };
     };
+    // fade the coil in and out at both ends so it grows out of the hero and finishes at the gallery
+    const endFade = (yPage: number): number => Math.min(1, Math.max(0, Math.min((yPage - yStart) / (vh * 0.4), (yEnd - yPage) / (vh * 0.4))));
+
+    const pitchCss = pitch / dpr;
+    const dyCss = pitchCss / N;
+    const j0 = Math.max(0, Math.floor((viewTop - vh * 0.3 - yStart) / dyCss));
+    const j1 = Math.ceil((viewBot + vh * 0.3 - yStart) / dyCss);
     interface Seg {
       z: number;
       j: number;
     }
     const segs: Seg[] = [];
-    for (let j = 0; j < N; j++) {
+    for (let j = j0; j <= j1; j++) {
+      const yPage = yStart + j * dyCss;
+      if (yPage > yEnd) break;
       const phi = j * dphi + roll;
       segs.push({ z: R * Math.sin(phi + dphi / 2), j });
     }
     segs.sort((a, b) => a.z - b.z);
-    const arc = R * dphi; // world length of one slice
-    const sw = arc * (TEX_H / bandW); // texture pixels per slice, so the numbers keep their proportions
     for (const { z, j } of segs) {
+      const yPage = yStart + j * dyCss;
+      const fade = endFade(yPage);
+      if (fade <= 0.01) continue;
       const phi0 = j * dphi + roll;
       const phi1 = phi0 + dphi;
-      const xa = (j / N - 0.5) * spanX;
-      const xb = ((j + 1) / N - 0.5) * spanX;
-      const a = proj(phi0, xa - bandW / 2);
-      const b = proj(phi1, xb - bandW / 2);
-      const c = proj(phi0, xa + bandW / 2);
-      const ctx = z < 0 ? bctx : fctx;
+      const ya = yPage - bandH / dpr / 2;
+      const yb = yPage + dyCss - bandH / dpr / 2;
+      const a = proj(phi0, ya);
+      const b = proj(phi1, yb);
+      const c = proj(phi0, ya + bandH / dpr);
+      const d2 = proj(phi1, yb + bandH / dpr);
+      const back = z < 0;
+      const ctx = back ? bctx : fctx;
       const u0 = (j * sw) % TEX_W;
-      const draw = (sx: number, sWidth: number, off: number): void => {
+      // the front of a coil is almost glass (5%): just an outline; the back is full film
+      ctx.globalAlpha = (back ? 1 : 0.05) * fade;
+      const paint = (sx: number, sWidth: number, off: number): void => {
         const k = sWidth / sw;
         ctx.setTransform(((b.x - a.x) * k) / sWidth, ((b.y - a.y) * k) / sWidth, (c.x - a.x) / TEX_H, (c.y - a.y) / TEX_H, a.x + (b.x - a.x) * off, a.y + (b.y - a.y) * off);
         ctx.drawImage(this.tex, sx, 0, sWidth, TEX_H, 0, 0, sWidth + 0.8, TEX_H);
       };
-      if (u0 + sw <= TEX_W) draw(u0, sw, 0);
+      if (u0 + sw <= TEX_W) paint(u0, sw, 0);
       else {
         const first = TEX_W - u0;
-        draw(u0, first, 0);
-        draw(0, sw - first, first / sw);
+        paint(u0, first, 0);
+        paint(0, sw - first, first / sw);
       }
-      // depth: the far side of the loop sits in shadow, the near side catches the light
-      const depth = (z + R) / (2 * R);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      const d2 = proj(phi1, xb + bandW / 2);
-      ctx.lineTo(d2.x, d2.y);
-      ctx.lineTo(c.x, c.y);
-      ctx.closePath();
-      ctx.fillStyle = `rgba(6,3,1,${(0.62 * (1 - depth)).toFixed(3)})`;
-      ctx.fill();
+      if (back) {
+        const depth = (z + R) / (2 * R);
+        ctx.globalAlpha = fade;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.lineTo(d2.x, d2.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(6,3,1,${(0.55 * (1 - depth)).toFixed(3)})`;
+        ctx.fill();
+      } else {
+        // the thin outline of the front strip: the two long edges
+        ctx.globalAlpha = 0.3 * fade;
+        ctx.strokeStyle = "rgba(255,181,112,1)";
+        ctx.lineWidth = Math.max(1, dpr * 0.8);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(d2.x, d2.y);
+        ctx.stroke();
+      }
     }
-    bctx.setTransform(1, 0, 0, 1, 0, 0);
-    fctx.setTransform(1, 0, 0, 1, 0, 0);
+    bctx.globalAlpha = 1;
+    fctx.globalAlpha = 1;
   }
 }

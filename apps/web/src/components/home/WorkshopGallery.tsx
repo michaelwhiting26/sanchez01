@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { attachGalleryNote, attachGalleryRuler, attachGalleryScroll, FILM_TRAVEL } from "./gallery-behaviours";
+import { attachGalleryNote, attachGalleryRuler, attachGalleryScroll } from "./gallery-behaviours";
 import { FilmHelix } from "@/lib/film";
 import { GALLERY_SLIDES } from "./gallery-slides";
 
@@ -38,12 +38,12 @@ export function WorkshopGallery() {
       .then(() => {
         if (cancelled) return;
         const notes = new Map(GALLERY_SLIDES.map((s) => [s.title, s.note] as const));
-        const film = new FilmHelix({
-          section: pin,
-          progress: () => Math.min(1, Math.max(0, (parseFloat(pin.style.getPropertyValue("--film-x")) || 0) / FILM_TRAVEL)),
-          reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-        });
-        cleanup = [attachGalleryScroll(track, host, pin), attachGalleryRuler(host, GALLERY_SLIDES.length), attachGalleryNote(host, notes), () => film.destroy()];
+        const hero = document.querySelector<HTMLElement>("[data-hero-rings]");
+        const film = hero
+          ? new FilmHelix({ start: hero, end: track, reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches })
+          : null;
+        if (process.env.NODE_ENV !== "production") (window as Window & { __film?: FilmHelix | null }).__film = film;
+        cleanup = [attachGalleryScroll(track, host, pin), attachGalleryRuler(host, GALLERY_SLIDES.length), attachGalleryNote(host, notes), () => film?.destroy()];
       })
       .catch(() => {
         /* the gallery is decorative; the page stands without it */
