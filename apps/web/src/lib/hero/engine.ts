@@ -26,6 +26,7 @@ import {
   type Rgb,
 } from "./config";
 import { FlagLookup, loadFlagIndices } from "./flag";
+import { WaterPaint } from "./water";
 import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
 import { createSeededNoise, fbm3, hashSeed, type Noise3 } from "./noise";
 import { createWaveTables, fillWaveTables, hash1 } from "./waves";
@@ -123,6 +124,9 @@ export class HeroEngine {
   private sprayStart = 0;
   private intro: IntroSprites | null = null;
   private ti = 0;
+  private water: WaterPaint | null = null;
+  private lastT = 0;
+  private readonly stats = { letters: 0, coat: 0, halo: 0 };
   private sigEl: HTMLElement | null = null;
   private introGeom: IntroGeom | null = null;
   private cursor = { x: 0, y: 0, active: false };
@@ -185,6 +189,10 @@ export class HeroEngine {
         else this.hero.classList.remove("is-intro"); // assets missing: show the plain hero
       });
     }
+    if (!this.reduce) {
+      const flag = this.flag;
+      this.water = new WaterPaint({ mw: this.mw, mh: this.mh, letters: this.mapLetters, outline: this.mapOutline, dist: this.mapDist, colourAt: (u, v) => flag.colour(u, v), sx0: this.sx0, span: Math.max(1, this.sx1 - this.sx0), slope: SPRAY.slope });
+    }
     if (this.reduce) this.draw(0);
     else this.raf = requestAnimationFrame(this.loop);
   }
@@ -205,6 +213,13 @@ export class HeroEngine {
     this.fpB = (((h >> 10) & 1023) / 1023) * 6.28;
     this.fpC = (((h >> 20) & 511) / 511) * 6.28;
     if (this.ridgeDist.length) this.buildFingerprint();
+  }
+
+  /** Paint dots of the last frame: in the lettering, and outside it (second coat over the outline plus stray halo). `overflow` is the outside share. */
+  measure(): { letters: number; outside: number; overflow: number } {
+    const { letters, coat, halo } = this.stats;
+    const outside = coat + halo;
+    return { letters, outside, overflow: letters + outside > 0 ? outside / (letters + outside) : 0 };
   }
 
   /** Draw one frame now (a hidden tab pauses requestAnimationFrame, so tests and screenshots call this). */
@@ -571,6 +586,10 @@ export class HeroEngine {
     const waveTabs = this.waveTables;
     const BINS = WAVES.bins;
 
+    const stats = this.stats;
+    stats.letters = 0;
+    stats.coat = 0;
+    stats.halo = 0;
     for (let y = 0, i = 0; y < this.nRows; y++) {
       const pr = topRow + y;
       const m = pr - r0;
@@ -587,7 +606,8 @@ export class HeroEngine {
             if (sp >= 1 || FF2 - ps2 + (ps0 - 0.5) * 6 > 0) {
               const h3 = (ps0 * 3571.7) % 1;
               const d3 = densAt(x, m);
-              if (h3 < 0.5 + 0.3 * d3) {
+              if (h3 < SPRAY.outlineCoat * (0.6 + 0.8 * d3)) {
+                stats.coat++;
                 const sl3 = flag.at((x - sx0) / span + (h3 - 0.5) * 0.006, m / mh + (ps0 - 0.5) * 0.018);
                 b = ps0 < 0.3 + 0.7 * d3 ? nb0 + sl3 : nb0 + NEON + 1 + sl3; // tan still shows through where the coat is thin
               }
@@ -603,7 +623,12 @@ export class HeroEngine {
               if (ps0 < (SPRAY.coverage + (1 - SPRAY.coverage) * dens) * covp) {
                 // at least 84% of the letters are always sprayed; the hand only changes how dense and bright
                 const sl = flag.at((x - sx0) / span + (h2 - 0.5) * 0.006, m / mh + (ps0 - 0.5) * 0.018);
-                b = h2 < 0.22 + 0.78 * dens ? nb0 + sl : nb0 + NEON + 1 + sl;
+                stats.letters++;
+                // wet paint: travelling swells whose crests sharpen to a head (lit, with a flash of foam), troughs sit dim
+                const swell = Math.sin(x * 0.09 + m * 0.05 - tn * 1.6) + 0.6 * Math.sin(x * 0.05 - m * 0.09 + tn * 1.1 + 1.7);
+                const wet = reduce || sp <= 0 ? 0 : ((swell + 1.6) / 3.2) ** 3.5;
+                if (wet > 0.8 && h2 < 0.4) b = nb0 + 2; // foam at the crest: the flag's white
+                else b = h2 < 0.22 + 0.78 * dens + 0.7 * wet - 0.2 * (1 - wet) ? nb0 + sl : nb0 + NEON + 1 + sl;
               }
             }
           } else {
@@ -667,10 +692,13 @@ export class HeroEngine {
             }
             // the overspray halo just outside the outline
             let halo = -1;
-            if (cf < 1 && dw > CLOUDS.innerCells && dw < 10 && (sp >= 1 || FF2 - (x - sx0 + SLOPE * m) > 0)) {
+            if (cf < 1 && dw > CLOUDS.innerCells && dw < CLOUDS.innerCells + SPRAY.haloReach && (sp >= 1 || FF2 - (x - sx0 + SLOPE * m) > 0)) {
               const hd = densAt(x, m);
               const hh3 = (ps0 * 5813.3) % 1;
-              if (hh3 < (1 - (dw - CLOUDS.innerCells) / 7.4) * (0.35 + 0.4 * hd)) halo = nb0 + NEON + 1 + flag.at((x - sx0) / span, m / mh);
+              if (hh3 < (1 - (dw - CLOUDS.innerCells) / SPRAY.haloReach) * SPRAY.haloShare * (0.5 + hd)) {
+                stats.halo++;
+                halo = nb0 + NEON + 1 + flag.at((x - sx0) / span, m / mh);
+              }
             }
             if (cl > 0) b = cl * warms;
             else if (halo >= 0) b = halo;
@@ -738,6 +766,11 @@ export class HeroEngine {
       }
     }
     this.paint(sp, cf, sweeping, { hx, hy, hI, hR, FF, SLOPE, PSMAX, span, sy0 });
+    if (this.water && !reduce && sp > 0) {
+      this.water.advance(t - this.lastT, sp >= 1 ? PSMAX + 40 : FF);
+      this.water.draw(this.ctx, cell, this.ox, this.r0, sy0);
+    }
+    this.lastT = t;
     this.drawIntro(ti, sy0, PSMAX, SLOPE);
   }
 

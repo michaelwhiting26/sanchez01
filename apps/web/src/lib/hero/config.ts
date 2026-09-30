@@ -67,6 +67,13 @@ export const SPRAY = {
   dimCoat: 0.55,
   /** The clouds melt away over this long once the first pass has finished. */
   cloudFadeMs: 2500,
+  /**
+   * Paint stays in the lettering: over the outline and outside it only in tiny places.
+   * `outlineCoat` is the share of outline dots that get a second coat (was 0.5+), `haloReach` how far past the outline stray paint goes (cells), `haloShare` how likely.
+   */
+  outlineCoat: 0.06,
+  haloReach: 3.4,
+  haloShare: 0.07,
 } as const;
 
 /**
