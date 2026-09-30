@@ -503,3 +503,10 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .waitlist.is-done .waitlist__msg { font: 800 clamp(1.4rem, 5vw, 2rem)/1.1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .08em; text-transform: uppercase; color: #f3eadc; }
 @media (max-width: 520px) { .waitlist__row { grid-template-columns: 1fr; } .waitlist__btn { inline-size: 100%; } }
 @media (prefers-reduced-motion: reduce) { .waitlist__bar::after { animation: none; } }
+
+/* phones: the panel runs all the way to the bottom of the page. The artwork (which stops at 92svh) fades into the card colour, which continues to the end, so there is no seam or hard bottom line. */
+@media (max-width: 760px) {
+  .rise__card { background: #0a0b0d; }
+  .rise__surface { -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 70%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0, #000 70%, transparent 100%); filter: none; }
+  .rise__card::before { display: none; }
+}
