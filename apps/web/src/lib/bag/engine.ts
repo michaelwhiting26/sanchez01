@@ -82,6 +82,8 @@ export class BagEngine {
   private override: BagProduct | null = null;
   private readonly partBoxes = new Map<FocusPart, THREE.Box3>();
   private focusPart: FocusPart = "whole";
+  /** Half the height of the frame, in scene units: smaller is closer. The home page shows the bag with room below it; the builder frames it tight. */
+  private half = 1.42;
   private readonly home = { pos: new THREE.Vector3(0.35, 0.9, 4), look: new THREE.Vector3(0, 0.66, 0) };
   private readonly camGoal = { pos: new THREE.Vector3(0.35, 0.9, 4), look: new THREE.Vector3(0, 0.66, 0) };
   private readonly camLook = new THREE.Vector3(0, 0.66, 0);
@@ -340,6 +342,12 @@ export class BagEngine {
 
   // ----------------------------------------------------------------- camera
 
+  /** Frame the whole bag tighter or looser (the builder wants it big). */
+  setFraming(half: number): void {
+    this.half = half;
+    this.fit();
+  }
+
   /** Fly the camera in on a part of the bag (and, for the patch, turn the bag to face it), or back out to the whole bag. */
   focus(part: FocusPart): void {
     this.focusPart = part;
@@ -379,10 +387,10 @@ export class BagEngine {
     this.cam.aspect = w / h;
     this.cam.updateProjectionMatrix();
     const f = THREE.MathUtils.degToRad(this.cam.fov);
-    const half = 1.42;
+    const half = this.half;
     const d = Math.max(half / Math.tan(f / 2), 0.55 / (Math.tan(f / 2) * this.cam.aspect));
     this.home.pos.set(0.35, 0.9, d);
-    this.home.look.set(0, 0.66, 0); // looks a little low, so the product sits high and the name has room below it
+    this.home.look.set(0, 0.66 + (1.42 - half) * 0.33, 0); // looks a little low (and lower still when framed tight, so the top of the bag is not cropped), so the product sits high and the name has room below it
     this.aim(true);
   }
 
