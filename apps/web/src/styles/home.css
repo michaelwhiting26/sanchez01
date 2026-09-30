@@ -12,64 +12,8 @@
   font: 600 .72rem/1 var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .4em; text-transform: uppercase; color: rgb(243 234 220 / .55); transition: opacity .6s ease; }
 .bag-punch.was-hit .bag-punch__hint { opacity: 0; }
 
-/* Home landing hero: globe + chrome SANCHEZ (globe-hero.js). Scoped to .globe-hero. */
-.globe-hero { position: relative; overflow: hidden; block-size: calc(100svh - var(--header-h, 72px)); min-block-size: 30rem;
-  background: radial-gradient(70% 60% at 50% 46%, #0d1f45 0%, #060a1a 55%, #02030a 100%); color: #f3eadc; isolation: isolate; }
-.globe-hero__view { position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s ease; }
-.globe-hero.is-ready .globe-hero__view { opacity: 1; }
-.globe-hero__copy { position: absolute; inset-inline: 0; inset-block-end: clamp(20px, 5vh, 56px); z-index: 2; display: grid; justify-items: center; gap: 18px; padding-inline: var(--gutter, 1rem); text-align: center; }
-.globe-hero__tag { margin: 0; font: 500 clamp(.7rem, .64rem + .3vw, .9rem)/1.4 var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .36em; text-transform: uppercase; color: #b7c4e6; text-shadow: 0 2px 14px rgb(0 0 0 / .8); }
-.globe-hero__cta { display: inline-flex; align-items: center; min-block-size: 52px; padding: 0 30px; border-radius: 999px; background: #f3eadc; color: #14100d; text-decoration: none;
-  font: 700 .82rem/1 var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .18em; text-transform: uppercase; box-shadow: 0 14px 34px -14px #000; transition: transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s; }
-.globe-hero__cta:hover { transform: translateY(-2px); box-shadow: 0 18px 38px -14px #000, 0 0 30px rgb(140 180 255 / .35); }
-.globe-hero__cta:focus-visible { outline: 2px solid #c9a45c; outline-offset: 4px; }
-.globe-hero__scroll { position: absolute; inset-inline-start: 50%; inset-block-end: 10px; z-index: 2; inline-size: 1px; block-size: 26px; background: linear-gradient(#b7c4e6, transparent); opacity: .6; }
-/* no WebGL: still shows the Earth and the name */
-.globe-hero.is-fallback .globe-hero__view { opacity: 1; background: url(/assets/globe/earth-day.jpg) center / auto min(70%, 40rem) no-repeat; border-radius: 50%; }
-.globe-hero__name { position: absolute; inset: 0; display: none; place-items: center; font: 800 clamp(3rem, 12vw, 9rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .1em; text-transform: uppercase; color: #e9edf5; text-shadow: 0 6px 40px rgb(0 0 0 / .6); }
-.globe-hero.is-fallback .globe-hero__name { display: grid; }
-@media (prefers-reduced-motion: reduce) { .globe-hero__view { transition: none; } .globe-hero__cta { transition: none; } }
-
-/* depth, borrowed from the award-winning sites: film grain and a soft vignette over the sky */
-.globe-hero::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
-.globe-hero::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(120% 90% at 50% 46%, transparent 55%, rgb(0 0 0 / .55) 100%); }
-.globe-hero__copy, .globe-hero__scroll { z-index: 2; }
-/* one signature ease (the Awwwards SOTY pattern) for every movement on the hero */
-.globe-hero { --ease-io: cubic-bezier(.65, .05, 0, 1); --ease-out: cubic-bezier(.19, 1, .22, 1); }
-.globe-hero__cta { transition: transform .75s var(--ease-io), box-shadow .75s var(--ease-io), background-color .3s; }
-.globe-hero__copy > * { animation: gh-rise 1.1s var(--ease-out) both; }
-.globe-hero__tag { animation-delay: 2.4s; clip-path: inset(0 0 0 0); }
-.globe-hero__cta { animation-delay: 2.7s; }
-@keyframes gh-rise { from { opacity: 0; transform: translateY(18px); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); } }
-@media (prefers-reduced-motion: reduce) { .globe-hero__copy > * { animation: none; } }
-
-/* a very faint, slow, flowing line at the foot of the hero */
-.globe-hero__flow { position: absolute; inset-inline: 0; inset-block-end: clamp(14px, 4vh, 44px); inline-size: 100%; block-size: clamp(60px, 11vh, 120px); z-index: 2; pointer-events: none; opacity: 0; animation: gh-flow-in 2.4s var(--ease-out, cubic-bezier(.19,1,.22,1)) 2.6s forwards; overflow: visible; }
-.gh-line { stroke-dasharray: 1 0; }
-.gh-line--a { animation: gh-drift 16s ease-in-out infinite alternate; }
-.gh-line--b { animation: gh-drift 22s ease-in-out infinite alternate-reverse; opacity: .7; }
-@keyframes gh-flow-in { to { opacity: .55; } }
-@keyframes gh-drift { from { transform: translateX(-18px) translateY(2px); } to { transform: translateX(18px) translateY(-3px); } }
-@media (prefers-reduced-motion: reduce) { .globe-hero__flow { animation: none; opacity: .45; } .gh-line--a, .gh-line--b { animation: none; } }
-
 /* ---- Workshop carousel (Liquid Glass Carousel, Tailwind classes it uses, re-created locally) ---- */
 .lgc-section { background: #090706; padding-block: clamp(24px, 5vh, 64px); }
-.lgc { position: relative; block-size: min(86svh, 760px); min-block-size: 440px; }
-.lgc .relative { position: relative; } .lgc .absolute { position: absolute; } .lgc .inset-0 { inset: 0; }
-.lgc .h-full { block-size: 100%; } .lgc .w-full { inline-size: 100%; } .lgc .overflow-hidden { overflow: hidden; } .lgc .outline-none { outline: none; }
-.lgc .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-.lgc .pointer-events-none { pointer-events: none; } .lgc .z-10 { z-index: 10; } .lgc .z-20 { z-index: 20; } .lgc .m-0 { margin: 0; } .lgc .text-center { text-align: center; }
-.lgc .left-1\/2 { left: 50%; } .lgc .left-0 { left: 0; } .lgc .top-0 { top: 0; } .lgc .top-\[4\.5\%\] { top: 4.5%; } .lgc .bottom-\[6\%\] { bottom: 6%; } .lgc .right-\[4\%\] { right: 4%; }
-.lgc .opacity-0 { opacity: 0; } .lgc .tabular-nums { font-variant-numeric: tabular-nums; }
-.lgc .font-medium { font-weight: 500; } .lgc .text-\[13px\] { font-size: 13px; } .lgc .text-\[15px\] { font-size: 15px; }
-.lgc [class*="text-["] { font-family: var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .18em; text-transform: uppercase; }
-.lgc .text-black { color: #f3eadc !important; }
-.lgc .mix-blend-exclusion { mix-blend-mode: difference; }
-.lgc button { background: none; border: 0; cursor: pointer; padding: 6px 2px; }
-.lgc .flex { display: flex; } .lgc .items-center { align-items: center; } .lgc .justify-center { justify-content: center; } .lgc .px-4 { padding-inline: 1rem; } .lgc .text-sm { font-size: .875rem; }
-.lgc > div:focus-visible { box-shadow: inset 0 0 0 2px rgb(201 164 92 / .6); }
-@media (min-width: 640px) { .lgc .sm\:text-\[17px\] { font-size: 17px; } .lgc .sm\:text-\[15px\] { font-size: 15px; } }
 
 /* ---- Big SANCHEZ marquee ---- */
 .sz-marquee { display: grid; gap: clamp(2px, .7vh, 10px); overflow: hidden; background: #090706; padding-block: clamp(6px, 1.5vh, 16px) clamp(8px, 2vh, 20px); }
@@ -81,14 +25,6 @@
 
 /* ---- Black wordmark hero (top of the home page) ---- */
 .wm-hero { display: grid; place-items: center; min-block-size: calc(100svh - var(--header-h, 72px)); padding: clamp(24px, 6vw, 96px) var(--gutter, 1rem); background: #000; overflow: hidden; }
-.wm-hero__mark { inline-size: min(88vw, 1500px); block-size: auto; animation: wm-hero-in 1.4s cubic-bezier(.19, 1, .22, 1) both; }
-@keyframes wm-hero-in { from { opacity: 0; transform: translateY(24px) scale(.97); clip-path: inset(0 0 100% 0); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); } }
-@media (prefers-reduced-motion: reduce) { .wm-hero__mark { animation: none; } }
-
-/* ---- Dithered SANCHEZ in the hero ---- */
-.wm-hero__dither { inline-size: min(92vw, 1500px); aspect-ratio: 3072 / 1188; max-block-size: 70svh; cursor: crosshair; }
-.wm-hero__dither > div { position: relative; inline-size: 100%; block-size: 100%; }
-.wm-hero__dither canvas { position: absolute; inset: 0; display: block; inline-size: 100%; block-size: 100%; touch-action: none; }
 
 /* ---- "Custom" signature over the dithered SANCHEZ ---- */
 .wm-hero { position: relative; }
@@ -102,27 +38,6 @@
 @keyframes sig-fill { to { fill-opacity: 1; stroke-opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; } }
 @media (max-width: 767px) { .wm-hero__sig { inline-size: 56vw; transform: translate(-24%, 32%) rotate(-7deg); } }   /* phones: Custom nudged down and right */
-
-/* ---- Glow cards (Uiverse.io by alexruix, MIT) ---- */
-.glow-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(20px, 3vw, 40px); padding: clamp(48px, 9vh, 110px) var(--gutter, 1rem); background: #000; }
-.glow-card {
- --background: linear-gradient(to left, #f7ba2b 0%, #ea5358 100%);
- width: 190px; height: 254px; padding: 5px; border-radius: 1rem; overflow: visible;
- background: #f7ba2b; background: var(--background); position: relative; z-index: 1; text-decoration: none;
-}
-.glow-card::after {
- position: absolute; content: ""; top: 30px; left: 0; right: 0; z-index: -1; height: 100%; width: 100%;
- transform: scale(0.8); filter: blur(25px); background: #f7ba2b; background: var(--background); transition: opacity .5s;
-}
-.glow-card__info {
- --color: #181818; background: var(--color); color: var(--color);
- display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; overflow: visible; border-radius: .7rem;
-}
-.glow-card__title { font-weight: bold; letter-spacing: .1em; font-family: var(--font-display, "Barlow Condensed", sans-serif); text-transform: uppercase; font-size: 1.25rem; text-align: center; padding: 0 12px; }
-.glow-card:hover::after { opacity: 0; }
-.glow-card:hover .glow-card__info { color: #f7ba2b; transition: color 1s; }
-.glow-card:focus-visible { outline: 2px solid #f7ba2b; outline-offset: 4px; }
-.glow-card:focus-visible .glow-card__info { color: #f7ba2b; }
 
 /* ---- Depth cards (depth-card.js) ---- */
 .depth-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(20px, 3vw, 36px); padding: clamp(24px, 6vh, 80px) var(--gutter, 1rem) clamp(56px, 10vh, 120px); background: #000; }
@@ -138,115 +53,26 @@
 .depth-card__spot { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s; background: radial-gradient(420px circle at var(--mx) var(--my), rgb(255 240 220 / .22), transparent 45%); mix-blend-mode: screen; }
 .depth-card:hover .depth-card__spot { opacity: 1; }
 .depth-card:focus-visible { outline: 2px solid #c4553a; outline-offset: 4px; }
-
-/* ---- Scroll portal (scroll-portal.js) ---- */
 .portal { --scenes: 4; position: relative; block-size: calc(var(--scenes) * 100svh); background: #000; }
-.portal__pin { position: sticky; inset-block-start: 0; block-size: 100svh; overflow: hidden; perspective: 1000px; perspective-origin: 50% 50%; }
-.portal__stage { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
-.portal__frame { --dim: 0; position: absolute; left: 50%; top: 50%; inline-size: min(78vw, 1100px); aspect-ratio: 16 / 10; max-block-size: 70svh;
-  border-radius: 16px; overflow: hidden; border: 1px solid rgb(196 85 58 / .45); box-shadow: 0 40px 90px -40px #000; background: #0a0a0a; will-change: transform, opacity; }
-.portal__bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.portal__frame::after { content: ""; position: absolute; inset: 0; background: #000; opacity: var(--dim); }
-.portal__frame::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgb(0 0 0 / .8), transparent 55%); }
-.portal__copy { position: absolute; z-index: 2; inset-inline: clamp(20px, 4vw, 48px); inset-block-end: clamp(20px, 4vw, 44px); display: grid; gap: 8px; color: #f3eadc;
-  opacity: 0; transform: translateY(18px); transition: opacity .6s cubic-bezier(.19,1,.22,1), transform .6s cubic-bezier(.19,1,.22,1); }
-.portal__frame.is-active .portal__copy { opacity: 1; transform: none; }
-.portal__n { font: 600 .72rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; color: #c4553a; }
-.portal__t { font: 800 clamp(2rem, 1.2rem + 3vw, 4.2rem)/.95 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; }
-.portal__s { font: 500 clamp(.9rem, .8rem + .3vw, 1.1rem)/1.4 var(--font-text, Barlow, sans-serif); color: rgb(243 234 220 / .8); }
-/* reduced motion: plain stacked scenes */
-.portal.is-flat { block-size: auto; }
-.portal.is-flat .portal__pin { position: static; block-size: auto; perspective: none; overflow: visible; }
-.portal.is-flat .portal__stage { position: static; display: grid; gap: 24px; padding: 48px var(--gutter, 1rem); justify-items: center; }
-.portal.is-flat .portal__frame { position: relative; left: auto; top: auto; transform: none !important; }
-.portal.is-flat .portal__copy { opacity: 1; transform: none; }
-
-/* ---- Tech text (tech-text.js) ---- */
-.tech-text { background: #000; padding: clamp(40px, 10vh, 120px) var(--gutter, 1rem); cursor: crosshair; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
-.tech-text.is-dragging { cursor: grabbing; }
-.tech-text__svg { display: block; inline-size: min(100%, 1400px); margin-inline: auto; overflow: visible; }
-.tech-text__glyph { font-family: var(--font-display, "Barlow Condensed", "Arial Narrow", sans-serif); font-weight: 800; letter-spacing: 0; }
-.tech-text__frame, .tech-text__label { transition: opacity .25s; }
-.tech-text__label { font: 600 13px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .14em; text-transform: uppercase; }
-
-/* ---- Hero 2: full-screen dot field with SANCHEZ knocked out ---- */
-.wm-hero--field { padding: 0; }
-.wm-hero__field { position: relative; inline-size: 100%; block-size: calc(100svh - var(--header-h, 72px)); cursor: crosshair; }
-.wm-hero__field > div { position: absolute; inset: 0; }
-.wm-hero__field canvas { position: absolute; inset: 0; display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
 
 /* Hero 3: premium rings (hero-rings.js). Canvas fills the section; a soft dark pool clears space for "Custom". */
 .wm-hero--rings { position: relative; padding: 0; block-size: 100svh; overflow: visible; background: #000; }
-.wm-hero__rings { position: absolute; inset: 0 0 auto 0; pointer-events: none; display: block; inline-size: 100%; block-size: 100%; opacity: 0; transition: opacity 1.2s ease; }
-.wm-hero--rings.is-ready .wm-hero__rings { opacity: 1; }
 .wm-hero__pool { position: absolute; left: 50%; top: 50%; inline-size: min(60vw, 900px); aspect-ratio: 2.2 / 1; transform: translate(-22%, 2%) rotate(-7deg); background: radial-gradient(closest-side, rgb(0 0 0 / .88), rgb(0 0 0 / .6) 55%, transparent); pointer-events: none; z-index: 1; }
 @media (max-width: 767px) { .wm-hero__pool { inline-size: 80vw; transform: translate(-30%, 6%) rotate(-7deg); } }
 
 /* Home: the nav floats over the rev-3 hero and hides while the hero is on screen (class toggled in hero-rings.js).
    Keyboard focus into the header always brings it back. */
 body:has([data-page-home]) .site-header { margin-block-end: calc(-1 * var(--header-h)); transition: transform .5s cubic-bezier(.2,.7,.2,1), opacity .4s ease; }
-body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 .wm-hero--rings { block-size: 100svh; }
-.wm-hero__rings { touch-action: pan-y; }
 @media (prefers-reduced-motion: reduce) { body:has([data-page-home]) .site-header { transition: none; } }
-
-/* Carousel ruler cursor (lgc-ruler.js): mouse/trackpad only. Hides the system cursor and the carousel's own "View" label. */
-@media (hover: hover) and (pointer: fine) {
-  .lgc, .lgc * { cursor: none !important; }
-  .lgc [class~="left-0"][class~="top-0"][class~="z-20"] { display: none; }
-}
-.lgc-ruler { position: absolute; left: 0; top: 0; z-index: 40; pointer-events: none; opacity: 0; transition: opacity .25s ease; will-change: transform; filter: drop-shadow(0 1px 3px rgb(0 0 0 / .9)); }
-.lgc-ruler.is-on { opacity: 1; }
-.lgc-ruler svg { display: block; overflow: visible; }
-.lgc-ruler__ink { stroke: #f3eadc; stroke-linecap: square; }
-.lgc-ruler__arrow { fill: none; stroke: #f3eadc; stroke-width: 1.2; stroke-linejoin: round; }
-.lgc-ruler__fill { fill: #a83e26; transition: width .45s cubic-bezier(.2,.7,.2,1); }
-.lgc-ruler__num, .lgc-ruler__unit { fill: #f3eadc; font: 500 13px/1 var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
-.lgc-ruler__unit { font-size: 11px; opacity: .7; }
-.lgc-ruler__num.is-active { fill: #c4553a; font-weight: 700; font-size: 16px; }
-.lgc-ruler.is-down .lgc-ruler__ink { stroke: #c4553a; }
 .lgc-section { position: relative; }
 
 /* Hero cursor (hero-cursor.js): stitched ring + red centre dot. Mouse/trackpad only. */
 @media (hover: hover) and (pointer: fine) { .wm-hero--rings, .wm-hero--rings * { cursor: none; } }
-.hero-cursor { position: fixed; inset: 0 auto auto 0; z-index: 60; pointer-events: none; opacity: 0; transition: opacity .3s ease; }
-.hero-cursor.is-on { opacity: 1; }
-.hero-cursor__ring, .hero-cursor__dot { position: absolute; left: 0; top: 0; will-change: transform; }
-.hero-cursor__ring { inline-size: 44px; block-size: 44px; margin: -22px 0 0 -22px; }
-.hero-cursor__ring svg { display: block; inline-size: 100%; block-size: 100%; overflow: visible; animation: hero-cursor-spin 14s linear infinite; }
-.hero-cursor__ring circle { fill: none; stroke: #f3eadc; stroke-opacity: .8; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1.1 .9; filter: drop-shadow(0 0 3px rgb(0 0 0 / .9)); }
-.hero-cursor__dot { inline-size: 6px; block-size: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #c4553a; box-shadow: 0 0 0 1.5px rgb(0 0 0 / .7), 0 0 10px rgb(196 85 58 / .6); }
-@keyframes hero-cursor-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .hero-cursor__ring svg { animation: none; } }
 
 /* Workshop carousel driven by page scroll (lgc-scroll.js): a tall track, the carousel pinned inside it. 65svh of scroll per slide change. */
 .lgc-track { position: relative; block-size: calc(100svh - var(--header-h) + var(--lgc-steps, 5) * 40svh); background: #090706; }
 .lgc-track .lgc-section { position: sticky; inset-block-start: var(--header-h); block-size: calc(100svh - var(--header-h)); padding-block: 0; display: flex; align-items: center; }
-.lgc-track .lgc { inline-size: 100%; block-size: min(calc(100svh - var(--header-h) - 32px), 760px); }
-
-/* Paragraph shown under a focused carousel image (lgc-note.js). Text comes from each item's "note" in data-items. */
-.lgc-note { position: absolute; left: 50%; bottom: clamp(10px, 3vh, 32px); z-index: 30; inline-size: min(60ch, calc(100% - 48px)); margin: 0; transform: translate(-50%, 8px); text-align: center; pointer-events: none;
-  font: 400 clamp(.8rem, .74rem + .2vw, .95rem)/1.55 var(--font-text, Barlow, Arial, sans-serif); color: rgb(243 234 220 / .82); opacity: 0; transition: opacity .5s ease .25s, transform .5s ease .25s; }
-.lgc-note.is-on { opacity: 1; transform: translate(-50%, 0); }
-/* In the focus view the carousel lifts its title above its own box; let it show instead of being sliced by the top edge. */
-.lgc-track .lgc > div { overflow: visible; }
-
-/* Phones: the pinned gallery fills the screen, so a vertical swipe on it must scroll the page (which drives the slides);
-   horizontal drags still reach the carousel. The carousel sets touch-action:none on its canvas by itself, so override it. */
-.lgc, .lgc > div, .lgc canvas { touch-action: pan-y !important; }
-
-/* Work in progress page banner */
-.wip-banner { background: #000; padding-block: clamp(28px, 6vh, 64px) clamp(20px, 4vh, 40px); border-block-end: 1px dashed rgb(243 234 220 / .18); }
-.wip-banner h1 { font: 800 clamp(2rem, 1rem + 4vw, 3.6rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; margin: .2em 0 .4em; }
-.wip-banner p { color: rgb(243 234 220 / .72); max-inline-size: 60ch; }
-.wip-banner a { color: #c4553a; }
-
-/* "Work in progress" button block on the home page (where the removed sections used to sit) */
-.wip-cta { background: #000; text-align: center; padding-block: clamp(48px, 10vh, 112px); border-block: 1px dashed rgb(243 234 220 / .16); }
-.wip-cta .container { display: flex; flex-direction: column; align-items: center; gap: var(--space-3, 12px); }
-.wip-cta__title { font: 800 clamp(2rem, 1rem + 4vw, 3.4rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; margin-block-end: var(--space-2, 8px); }
-
-
 
 /* Product switcher on the punch bag section (bag-punch.js). Quiet on purpose: hairlines, small tracked capitals, one solid button. */
 .bag-punch__switch { position: absolute; inset-inline: clamp(14px, 4vw, 56px); inset-block-start: 46%; display: flex; justify-content: space-between; pointer-events: none; transform: translateY(-50%); z-index: 3; }
@@ -284,38 +110,9 @@ body:has([data-page-home]), body:has([data-page-wip]) { background: transparent;
 .wm-field.is-ready { opacity: 1; }
 .wm-hero--rings { background: transparent !important; overflow: visible; }
 .curved-loop { background: transparent; }
-.lgc-track, .lgc-section, .lgc { background: transparent !important; }
+.lgc-track, .lgc-section { background: transparent !important; }
 .sz-marquee { background: transparent !important; }
 .bag-punch { background: radial-gradient(50% 55% at 50% 45%, rgb(26 21 17 / .5) 0%, transparent 72%) !important; }
-
-/* Blobs button embed (CodePen by hilwat), end of the home page */
-.blob-embed { background: #000; padding-block: clamp(24px, 6vh, 64px); }
-.blob-embed__frame { display: block; inline-size: min(100%, 900px); block-size: 340px; margin-inline: auto; border: 0; background: transparent; color-scheme: dark; }
-
-/* Button library (button-library.js): grid of live CodePen button frames */
-.btn-library { background: #000; padding-block: clamp(40px, 8vh, 96px); border-block-start: 1px dashed rgb(243 234 220 / .14); }
-.btn-library__title { font: 800 clamp(1.8rem, 1rem + 3vw, 3rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .03em; text-transform: uppercase; color: #f3eadc; margin: .2em 0 .3em; }
-.btn-library__note { color: rgb(243 234 220 / .6); margin-block-end: 28px; max-inline-size: 60ch; }
-.btn-library__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
-.btn-library__card { margin: 0; display: flex; flex-direction: column; border: 1px solid rgb(243 234 220 / .12); background: rgb(243 234 220 / .03); }
-.btn-library__frame { display: block; inline-size: 100%; block-size: 240px; border: 0; background: #14110f; color-scheme: dark; }
-.btn-library__card figcaption { padding: 10px 12px; font: 400 .78rem/1.35 var(--font-text, Barlow, sans-serif); color: rgb(243 234 220 / .82); }
-.btn-library__n { color: #c9a45c; font-variant-numeric: tabular-nums; margin-inline-end: .35em; }
-.btn-library__by { display: block; color: rgb(243 234 220 / .5); font-size: .72rem; }
-.btn-library__by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.btn-library__by a:hover { color: #f3eadc; }
-
-/* Button 85: a dark button with a slowly moving rainbow glow round its edge (our own CSS for the effect) */
-.btn-library__stage { display: grid; place-items: center; block-size: 240px; background: #14110f; }
-.button-85 { position: relative; z-index: 0; padding: .75em 2.2em; border: 0; outline: 0; border-radius: 10px; color: #fff; background: #111; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; font: 500 1rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .04em; }
-.button-85::before { content: ""; position: absolute; z-index: -1; inset: -2px; border-radius: 12px; filter: blur(5px); background-size: 400%; opacity: 1; transition: opacity .3s ease-in-out;
-  background-image: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); animation: glowing-button-85 20s linear infinite; }
-.button-85::after { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: 10px; background: #222; transition: background .3s ease; }
-.button-85:hover::after { background: transparent; }
-.button-85:active { transform: scale(.98); }
-.button-85:focus-visible { outline: 2px solid #c9a45c; outline-offset: 4px; }
-@keyframes glowing-button-85 { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
-@media (prefers-reduced-motion: reduce) { .button-85::before { animation: none; } }
 
 /* No navbar on the home page or the Work in progress page. The header is removed (footer links and the page's own buttons do the navigating),
    and everything that sat below it (the pinned gallery, sticky bits) starts at the very top. */
@@ -325,39 +122,12 @@ body:has([data-page-home]) .site-header, body:has([data-page-wip]) .site-header 
 /* DNA core (dna-core.js): fixed at the centre of the page, above the fingerprint field, below the sections' content */
 .dna-core { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 
-/* Fold carousel (fold-carousel.js) */
-.fold-carousel { background: #000; padding-block: clamp(32px, 7vh, 88px) clamp(28px, 6vh, 72px); border-block-start: 1px dashed rgb(243 234 220 / .14); overflow: hidden; }
-.fold-carousel__stage { position: relative; inline-size: 100%; block-size: clamp(360px, 68vh, 660px); margin-inline: auto; opacity: 0; transition: opacity 1s ease; outline: none; cursor: grab; }
-.fold-carousel.is-ready .fold-carousel__stage { opacity: 1; }
-.fold-carousel__stage:active { cursor: grabbing; }
-.fold-carousel__stage:focus-visible { outline: 1px solid #c9a45c; outline-offset: 6px; }
-.fold-carousel__stage.is-fallback { opacity: 1; display: grid; place-items: center; } .fold-carousel__stage.is-fallback img { max-block-size: 100%; max-inline-size: 60%; border-radius: 18px; }
-.fold-carousel__bar { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 40px); margin-block-start: 20px; }
-.fold-carousel__cap { text-align: center; min-inline-size: min(52vw, 320px); }
-.fold-carousel__title { margin: 0; font: 500 clamp(1rem, .9rem + .5vw, 1.25rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .3em; text-indent: .3em; text-transform: uppercase; color: #f3eadc; }
-.fold-carousel__sub { margin: .8em 0 0; font: 400 .66rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .28em; text-indent: .28em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
-.fold-carousel__btn { inline-size: 44px; block-size: 44px; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; color: rgb(243 234 220 / .7); background: transparent; border: 1px solid rgb(243 234 220 / .22); transition: color .35s ease, border-color .35s ease; }
-.fold-carousel__btn svg { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: square; }
-.fold-carousel__btn:hover, .fold-carousel__btn:focus-visible { color: #f3eadc; border-color: rgb(243 234 220 / .7); outline: none; }
-.fold-carousel__btn:focus-visible { outline: 1px solid #c9a45c; outline-offset: 4px; }
-
-/* Flare carousel, embedded (flare-carousel.js). The stage fills the section; the black void is part of the effect. */
-.flare--embed { position: relative; block-size: clamp(520px, 92vh, 900px); background: transparent; overflow: hidden; margin: 0; padding: 0; }
-.flare--embed .flare__stage { position: absolute; inset: 0; cursor: grab; user-select: none; }
-.flare--embed .flare__stage.is-drag { cursor: grabbing; }
-.flare--embed .flare__stage canvas { display: block; inline-size: 100%; block-size: 100%; }
-.flare--embed .flare__stage:focus, .flare--embed .flare__stage:focus-visible { outline: none; }
-.flare--embed .flare__hint { position: absolute; inset-inline: 0; bottom: 28px; margin: 0; text-align: center; font: 400 12px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .02em; color: rgb(255 255 255 / .72); pointer-events: none; }
-.flare--embed .flare__stage.is-fallback { display: grid; place-items: center; }
-
 /* Rise panel (rise-panel.js). Pinned stage + a card that rises with --rise (0 parked below, 1 covering the stage). */
 .rise { --rise: 1; position: relative; background: var(--color-bg); }
 .rise__stage { position: relative; min-block-size: 720px; }
 .rise__card { position: relative; isolation: isolate; inline-size: 100%; block-size: 100%; min-block-size: 720px; overflow: hidden; }
 .rise__surface { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: fill; pointer-events: none; user-select: none; filter: drop-shadow(0 18px 26px rgb(0 0 0 / .6)); }
 .rise__panel { position: relative; z-index: 2; inline-size: calc(100% - 48px); margin-inline: auto; padding: clamp(92px, 7.5vw, 154px) clamp(24px, 5vw, 80px) 40px; min-block-size: 720px; display: flex; flex-direction: column; align-items: center; }
-.rise__statement { margin: clamp(28px, 3.6vw, 64px) 0 0; text-align: center; font: 700 clamp(48px, 8vw, 128px)/.9 var(--font-display); letter-spacing: .01em; text-transform: uppercase; color: #fff; }
-.rise__statement em { font-style: normal; color: var(--color-accent-text, #c4553a); }
 /* one-shot copy reveal */
 .rise__logo, .rise__cta { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)), transform .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)); }
 .rise.is-in .rise__logo, .rise.is-in .rise__cta { opacity: 1; transform: none; }
@@ -367,18 +137,11 @@ body:has([data-page-home]) .site-header, body:has([data-page-wip]) .site-header 
 .rise.is-pinned .rise__stage { position: sticky; top: 0; block-size: 100vh; overflow: hidden; }
 .rise.is-pinned .rise__card { block-size: auto; min-block-size: 100vh; transform: translate3d(0, calc((1 - var(--rise, 0)) * 100vh - var(--more, 0) * var(--overflow, 0px)), 0); will-change: transform; }
 
-@media (max-width: 760px) {
-  /* phones: the section melts into the page above and below instead of ending in a hard box */
-  .flare--embed { block-size: clamp(500px, 72svh, 680px); -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%); }
-  .flare--embed .flare__hint { bottom: 14%; }
-}
-
 /* the real site footer, living inside the rise panel: same content, no box of its own */
 .rise { --more: 0; --overflow: 0px; }
 .rise__card { background: #0a0b0d; }
 .rise__surface { block-size: max(100vh, 720px); inset-block-end: auto; }
 .rise__panel { align-items: stretch; }
-.rise__statement { align-self: center; }
 .rise__cta { align-self: center; }
 .rise .site-footer { background: transparent; border: 0; margin: 0; padding-block: clamp(48px, 6vw, 96px) var(--space-6, 32px); inline-size: 100%; }
 
@@ -402,7 +165,6 @@ body:has([data-page-home]) .site-header, body:has([data-page-wip]) .site-header 
 
 /* the heading sits fully on the card: the card's top edge is 11.1% down the surface artwork (128/1152), so start below it */
 .rise__panel { padding-block-start: calc(max(100vh, 720px) * 0.111 + clamp(28px, 4vw, 64px)); }
-.rise__statement { margin-block-start: 0; }
 
 /* deterministic: the artwork keeps its own 2048:1152 shape, so its top edge (128/1152) is always 6.25vw down; the heading starts well below that */
 .rise__surface { block-size: auto; aspect-ratio: 2048 / 1152; }
@@ -443,7 +205,6 @@ body:has([data-page-home]) .site-header, body:has([data-page-wip]) .site-header 
 .rise .site-footer { padding-block-end: clamp(16px, 2.5vh, 28px); }
 
 /* the panel is a layer coming up ON TOP of the page: the carousel stays pinned behind it and dims, the panel casts a shadow upward and has a lit top edge */
-html.rise-pinned .flare--embed { position: sticky; top: 0; z-index: 0; }
 html.rise-pinned .rise { position: relative; z-index: 2; pointer-events: none; }
 html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .rise.is-pinned .rise__stage { background: transparent; overflow: visible; }
@@ -476,12 +237,9 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .waitlist::before, .waitlist::after { content: ""; position: absolute; inset-inline: clamp(16px, 5vw, 64px); block-size: 0; border-block-start: 1px dashed rgb(201 164 92 / .3); }
 .waitlist::before { inset-block-start: clamp(16px, 4vh, 40px); } .waitlist::after { inset-block-end: clamp(16px, 4vh, 40px); }
 .waitlist__inner { position: relative; max-inline-size: 640px; margin-inline: auto; text-align: center; display: grid; justify-items: center; gap: clamp(16px, 2.6vh, 26px); }
-.waitlist__eyebrow { margin: 0; font: 500 .72rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .42em; text-transform: uppercase; color: #c9a45c; }
 .waitlist__title { margin: 0; font: 800 clamp(2.6rem, 9vw, 5.2rem)/.95 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .02em; text-transform: uppercase; color: #f3eadc; }
-.waitlist__lede { margin: 0; max-inline-size: 34ch; font: 400 1.05rem/1.5 var(--font-text, Barlow, sans-serif); color: #a99f92; }
 .waitlist__reveal { list-style: none; margin: clamp(6px, 1.4vh, 14px) 0; padding: 0; inline-size: min(100%, 360px); display: grid; gap: 12px; text-align: start; }
 .waitlist__reveal li { display: flex; align-items: center; gap: 16px; padding-block-end: 12px; border-block-end: 1px dashed rgb(201 164 92 / .22); }
-.waitlist__n { font: 500 .72rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; color: #6f665b; }
 .waitlist__t { font: 700 1.05rem/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .18em; text-transform: uppercase; color: #f3eadc; }
 .waitlist__bar { block-size: .9rem; inline-size: 9rem; border-radius: 2px; background: repeating-linear-gradient(90deg, #1b1a18 0 6px, #24221f 6px 9px); position: relative; overflow: hidden; }
 .waitlist__bar--long { inline-size: 13rem; }
@@ -499,8 +257,6 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .waitlist__btn { margin: 0; }
 .waitlist__msg { margin: 0; min-block-size: 1.4em; font: 500 .95rem/1.4 var(--font-text, Barlow, sans-serif); color: #c9a45c; }
 .waitlist__msg.is-error { color: #e07a5f; }
-.waitlist__fine { margin: 0; font: 400 .78rem/1.5 var(--font-text, Barlow, sans-serif); color: #6f665b; }
-.waitlist__fine a { color: #a99f92; }
 .waitlist.is-done .waitlist__row { display: none; }
 .waitlist.is-done .waitlist__msg { font: 800 clamp(1.4rem, 5vw, 2rem)/1.1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .08em; text-transform: uppercase; color: #f3eadc; }
 @media (max-width: 520px) { .waitlist__row { grid-template-columns: 1fr; } .waitlist__btn { inline-size: 100%; } }
@@ -528,12 +284,8 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .waitlist__method span { display: block; padding: 8px 18px; border-radius: 999px; font: 500 .74rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: #8d8375; transition: background .25s ease, color .25s ease; }
 .waitlist__method input:checked + span { background: #f3eadc; color: #0b0b0b; }
 .waitlist__method input:focus-visible + span { outline: 2px solid #c9a45c; outline-offset: 2px; }
-.waitlist__priv { justify-self: center; font: 400 .7rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: #6f665b; text-decoration: none; }
-.waitlist__priv:hover, .waitlist__priv:focus-visible { color: #a99f92; text-decoration: underline; }
 
 /* workshop gallery: fills the pinned screen (was capped at 760px with a 32px margin) and is a touch brighter */
-.lgc { block-size: min(94svh, 1100px); }
-.lgc-track .lgc { block-size: min(calc(100svh - var(--header-h) - 12px), 1100px); filter: brightness(1.2) saturate(1.04); }
 
 /* whatever section precedes the rise panel is pinned under it: the panel rides up and over it, no dead space */
 .rise-under { position: sticky; z-index: 0; }
@@ -563,38 +315,21 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 
 /* the film tape runs with the gallery scroll (--film-x set by the gallery) and flicks when it reaches either end */
 .lgc-track .lgc-section::before, .lgc-track .lgc-section::after { background-position: calc(var(--film-x, 0) * -1px) center, 0 0; }
-.lgc-track .lgc-section.is-flick::before, .lgc-track .lgc-section.is-flick::after { animation: film-flick .55s cubic-bezier(.2,.9,.3,1); }
-@keyframes film-flick {
-  0% { transform: translateX(0); filter: brightness(1); }
-  18% { transform: translateX(22px) skewX(-3deg); filter: brightness(1.7); }
-  42% { transform: translateX(-11px) skewX(1.5deg); filter: brightness(1.25); }
-  68% { transform: translateX(5px); filter: brightness(1.1); }
-  100% { transform: translateX(0); filter: brightness(1); }
-}
-@media (prefers-reduced-motion: reduce) { .lgc-track .lgc-section.is-flick::before, .lgc-track .lgc-section.is-flick::after { animation: none; } }
 
 /* the flat tape bands are replaced by the 3D barrel-roll ribbon (lib/film.ts) */
 .lgc-track .lgc-section::before, .lgc-track .lgc-section::after { content: none; }
-.lgc-track .lgc-section.is-flick .film { animation: film-jolt .5s cubic-bezier(.2,.9,.3,1); }
-@keyframes film-jolt { 0% { transform: translateX(0) rotate(0); } 20% { transform: translateX(18px) rotate(.5deg); } 45% { transform: translateX(-9px) rotate(-.3deg); } 100% { transform: none; } }
 
 /* phones: the gallery takes the whole screen (edge to edge, top to bottom); the film is only a fine edge definition */
 @media (max-width: 767px) {
   .lgc-track { block-size: calc(100svh + var(--lgc-steps, 5) * 55svh); }
   .lgc-track .lgc-section { inset-block-start: 0; block-size: 100svh; inline-size: 100vw; margin-inline: calc(50% - 50vw); padding: 0; }
-  .lgc-track .lgc { block-size: 100svh; inline-size: 100vw; }
   .lgc-track .lgc-section::before { inset-block-start: env(safe-area-inset-top, 0px); }
   .lgc-track .lgc-section::after { inset-block-end: 0; }
-  .reel__title { font-size: clamp(22px, 7vw, 34px); }
 }
 
 /* the bag at the foot of the footer panel, like the portrait on MR-2's: anchored bottom-centre, behind the copy */
 .rise__bag { position: absolute; z-index: 1; inset-inline-start: 50%; inset-block-end: 0; transform: translateX(-50%); block-size: min(78vh, 900px); inline-size: auto; max-inline-size: 60%; object-fit: contain; object-position: bottom center; pointer-events: none; user-select: none; filter: drop-shadow(0 24px 40px rgb(0 0 0 / .55)); }
 @media (max-width: 760px) { .rise__bag { block-size: 46vh; opacity: .9; } }
-
-
-/* while the gallery plays through on its own the page is held; stop rubber-banding from moving it */
-html.gallery-locked { overscroll-behavior: none; }
 
 /* no canvas (or it failed): a plain wordmark stands in for the field; "Custom" is already a static SVG */
 .wm-hero__static { display: none; position: absolute; inset: 0; place-items: center; font: 800 clamp(64px, 16vw, 220px)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .04em; color: transparent; -webkit-text-stroke: 2px #d6b588; z-index: 0; }
@@ -614,10 +349,6 @@ html.gallery-locked { overscroll-behavior: none; }
   .rise__bag { display: none; }
 }
 @media (min-width: 761px) { .globe-slot { --bag-h: 400px; margin-block: 40px 8px; } .globe-slot .footer-globe { inline-size: 400px; block-size: 400px; } }
-
-/* the guided tour's hint: small, bottom-centre, only while the site is playing itself */
-.tour-hint { position: fixed; inset-inline: 0; inset-block-end: max(18px, env(safe-area-inset-bottom)); z-index: 40; margin-inline: auto; inline-size: max-content; max-inline-size: 90vw; padding: 9px 16px; border-radius: 999px; border: 1px solid rgb(243 234 220 / .22); background: rgb(9 7 6 / .62); color: rgb(243 234 220 / .82); font: 500 11px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(8px); transition: opacity .6s ease, transform .6s ease; pointer-events: none; }
-.tour-hint.is-on { opacity: 1; transform: none; }
 
 /* the price line under the product name */
 .bag-punch__price { margin: 6px 0 0; font: 600 15px/1.2 var(--font-text, Barlow, sans-serif); letter-spacing: .14em; color: #f3eadc; }
@@ -684,13 +415,6 @@ html.gallery-locked { overscroll-behavior: none; }
 .bag-punch__cta { margin-block-start: 30px; }
 .bag-punch__cta--again { margin-block-start: 20px; }
 @media (max-width: 600px) { .bag-punch { --cta-zone: 440px; } }
-
-/* Skip: bottom right, shown only while the gallery holds the page AND from slide 2 on (html.gallery-locked.gallery-skippable) */
-.gallery-skip { display: none; position: fixed; z-index: 70; inset-inline-end: clamp(20px, 3.4vw, 44px); inset-block-end: clamp(18px, 3.4vh, 38px); align-items: center; padding: 10px 4px; border: 0; background: transparent; cursor: pointer; color: #f3eadc; font: 500 15px/1 var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .18em; text-transform: uppercase; opacity: .85; transition: opacity .3s ease; }   /* typography identical to the gallery heading (Barlow 500, uppercase, .18em, 15px / 17px); no pill */
-html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
-.gallery-skip:hover, .gallery-skip:focus-visible { opacity: 1; outline: none; }
-.gallery-skip:focus-visible { outline: 1px solid #c9a45c; outline-offset: 6px; }
-@media (min-width: 640px) { .gallery-skip { font-size: 17px; } }
 
 /* Bag section text block: lifted up off the bottom edge, with room to breathe between every line and button */
 .bag-punch { --cta-zone: 500px; }
@@ -842,11 +566,9 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .jesse-2d { position: relative; z-index: 1; display: grid; place-items: center; padding-block: clamp(32px, 8svh, 96px); }
 .jesse-2d img { display: block; block-size: min(72svh, 620px); inline-size: auto; max-inline-size: 92vw; object-fit: contain; }
 
-/* Submit tethered to the globe (replaces the orbit): a wide bar floating above the globe, a fine tether down to the globe's top edge */
+/* Submit tethered to the globe (replaces the orbit): a wide bar floating above the globe, no visible tether (owner, 30 Sep 19:25) */
 .globe-slot { padding-block-start: 150px; }
 .orbit-layer { overflow: visible; }
-.orbit-tether { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; pointer-events: none; z-index: 2; }
-.orbit-tether { display: none; } /* owner, 30 Sep 19:25: no visible line between the globe and Submit; the bar still floats and is pulled by the globe */
 .orbit-submit { inline-size: min(78vw, 360px); block-size: 64px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 14px; transform-origin: 50% 50%; will-change: transform; pointer-events: auto; z-index: 3; opacity: 1 !important;
   font: 800 1.15rem/1 "Mona Sans", var(--font-display), Arial, sans-serif; font-variation-settings: "wdth" 86; letter-spacing: .02em; text-transform: uppercase; background: #a24a2e; border-color: #a24a2e; color: #fff; box-shadow: 0 14px 34px rgb(0 0 0 / .5); }
 .orbit-submit svg { inline-size: 20px; block-size: 20px; }

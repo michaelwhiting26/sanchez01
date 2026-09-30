@@ -22,7 +22,7 @@ function subscribe(l: () => void): () => void {
   return () => void listeners.delete(l);
 }
 
-// Tethered Submit: a wide Submit bar floats just above the globe, held to its top edge by a short tether, as if the globe's pull holds it in place.
+// Tethered Submit: a wide Submit bar floats just above the globe, held in place by the globe's pull (no visible line: owner, 30 Sep 19:25).
 // It bobs and leans a little on its own, is drawn towards the cursor when the pointer comes close, and always springs back to the globe.
 const GAP = 64; // px from the globe's top edge to the bar's bottom when at rest
 const TILT_DEG = -9; // the bar's resting lean (from the sketch: rising to the right)
@@ -33,15 +33,13 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
   const { busy, done } = useSyncExternalStore(subscribe, () => state, () => INITIAL);
   const layer = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
-  const tether = useRef<SVGLineElement>(null);
 
   useEffect(() => {
     const host = layer.current;
     const el = btn.current;
-    const line = tether.current;
-    if (!host || !el || !line) return;
+    if (!host || !el) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let top = { x: 0, y: 0, r: 100 }; // the globe's top point and radius, in layer coordinates
+    let top = { x: 0, y: 0 }; // the globe's top point, in layer coordinates
     let px = -1e9;
     let py = -1e9;
     let ox = 0; // the bar's offset from rest (springs)
@@ -58,7 +56,7 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
       const hr = host.getBoundingClientRect();
       const gr = globe.getBoundingClientRect();
       if (gr.width < 10) return;
-      top = { x: gr.left - hr.left + gr.width / 2, y: gr.top - hr.top + gr.height * 0.03, r: gr.width / 2 };
+      top = { x: gr.left - hr.left + gr.width / 2, y: gr.top - hr.top + gr.height * 0.03 };
     };
 
     const place = (now: number, dt: number): void => {
@@ -66,7 +64,7 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
       const w = el.offsetWidth;
       const h = el.offsetHeight;
       const t = reduce.matches ? 0 : (now - t0) / 1000;
-      // rest: centred over the globe's top, a little off-centre so the tether leans like the sketch
+      // rest: centred over the globe's top, a little off-centre, leaning like the sketch
       const restX = top.x - w * 0.06;
       const restY = top.y - GAP - h / 2;
       // cursor attraction, capped; otherwise zero
@@ -97,14 +95,6 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
       const cy = restY + oy + bob;
       const lean = TILT_DEG + Math.sin(t * 0.9) * 2 + ox * 0.08;
       el.style.transform = `translate3d(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px, 0) rotate(${lean.toFixed(2)}deg)`;
-      // tether: from the middle of the bar's underside to the globe's top edge
-      const rad = (lean * Math.PI) / 180;
-      const ax = cx - Math.sin(rad) * (h / 2);
-      const ay = cy + Math.cos(rad) * (h / 2);
-      line.setAttribute("x1", ax.toFixed(1));
-      line.setAttribute("y1", ay.toFixed(1));
-      line.setAttribute("x2", (top.x - top.r * 0.18).toFixed(1));
-      line.setAttribute("y2", (top.y + top.r * 0.04).toFixed(1));
     };
 
     let last = performance.now();
@@ -152,9 +142,6 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
 
   return (
     <div className="orbit-layer" ref={layer}>
-      <svg className="orbit-tether" aria-hidden="true">
-        <line ref={tether} x1="0" y1="0" x2="0" y2="0" />
-      </svg>
       <button ref={btn} className={`orbit-submit${done ? " is-done" : ""}`} type="submit" form={WAITLIST_FORM_ID} disabled={busy || done} aria-label={done ? "You're on the list" : label}>
         {done ? (
           <>

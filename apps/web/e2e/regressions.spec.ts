@@ -326,9 +326,8 @@ test("f. the bag stays visible: it is ready, revealed and fully opaque, before a
 // ---------------------------------------------------------------------------------------------------------------------------------- g. dead artefacts
 test("g. dead artefacts stay dead", async ({ page }) => {
   await scrollToY(page, layout.scrollHeight, { heroMs: "end" });
-  // owner, 30 Sep 19:25: no visible line between the globe and Submit
-  const tethers = await page.locator(".orbit-tether").evaluateAll((els) => els.filter((e) => getComputedStyle(e).display !== "none" && getComputedStyle(e).visibility !== "hidden" && e.getBoundingClientRect().width > 0).length);
-  expect(tethers, "a visible orbit tether").toBe(0);
+  // owner, 30 Sep 19:25: no visible line between the globe and Submit. The element is not in the DOM at all (not merely hidden by CSS).
+  await expect(page.locator(".orbit-tether"), "the orbit tether must not be in the DOM").toHaveCount(0);
   // no auto-tour, so no tour hint; no magnet on the waitlist
   await expect(page.locator(".tour-hint")).toHaveCount(0);
   await expect(page.locator(".waitlist__magnet")).toHaveCount(0);
