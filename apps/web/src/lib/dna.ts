@@ -84,8 +84,13 @@ export class DnaCore {
     this.canvas.style.width = `${this.w}px`;
     this.canvas.style.height = `${this.h}px`;
     this.dirty = true;
+    this.measureEnd();
+  }
+
+  /** Where the spiral's field ends (the foot of the bag section), in page px. Read live: the gallery, the spacers and the bag section all set their heights after load, so a value measured once at start-up is too short and the spiral vanished before the SANCHEZ rows. */
+  private measureEnd(): void {
     let end = 0;
-    document.querySelectorAll(".bag-punch, .lgc-track, .sz-marquee, .sz-options, .curved-loop, [data-hero-rings]").forEach((e) => {
+    document.querySelectorAll(".bag-punch, .lgc-track, .sz-marquee, .sz-options, .sz-handoff, .curved-loop, [data-hero-rings]").forEach((e) => {
       end = Math.max(end, e.getBoundingClientRect().bottom + window.scrollY);
     });
     this.fieldEnd = end || 3000;
@@ -95,6 +100,7 @@ export class DnaCore {
     this.raf = requestAnimationFrame(this.loop);
     if (!this.visible || (this.coarse && now - this.last < 33)) return;
     this.last = now;
+    this.measureEnd();
     if (window.scrollY > this.fieldEnd) {
       if (!this.cleared) {
         this.ctx.clearRect(0, 0, this.w, this.h);
