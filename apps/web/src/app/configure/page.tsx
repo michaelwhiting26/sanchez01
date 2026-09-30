@@ -1,4 +1,4 @@
-import { PageShell } from "@/components/pages/PageShell";
+import { BuildShell } from "@/components/pages/PageShell";
 import { Builder } from "@/components/build/Builder";
 import { PRESETS, type Preset } from "@/lib/configurator/schema";
 
@@ -9,8 +9,8 @@ export default async function ConfigurePage({ searchParams }: { searchParams: Pr
   const { preset } = await searchParams;
   const initial: Preset = (PRESETS as readonly string[]).includes(preset ?? "") ? (preset as Preset) : "plain";
   return (
-    <PageShell eyebrow="Build" title="Build your bag">
+    <BuildShell>
       <Builder initialPreset={initial} />
-    </PageShell>
+    </BuildShell>
   );
 }

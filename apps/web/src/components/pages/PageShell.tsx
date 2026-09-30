@@ -23,3 +23,23 @@ export function PageShell({ eyebrow, title, children }: { eyebrow?: string; titl
     </div>
   );
 }
+
+/** The builder's shell: no title block, so the bag gets the screen. A slim bar with the mark and a way back; the heading is there for screen readers only. */
+export function BuildShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="pg pg--build">
+      <header className="pg__head pg__head--slim">
+        <Link href="/" className="pg__brand" aria-label="Sanchez Custom Boxing Equipment, home">
+          <img src={LOGO_SRC} alt="" width={64} height={55} />
+        </Link>
+        <Link href="/product" className="pg__back">
+          Back
+        </Link>
+      </header>
+      <main id="main">
+        <h1 className="visually-hidden">Build your bag</h1>
+        {children}
+      </main>
+    </div>
+  );
+}

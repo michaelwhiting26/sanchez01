@@ -15,7 +15,7 @@ export function lookFor(cfg: BagConfig): BagProduct {
 }
 
 /** The interactive 3D bag, always on screen while building: drag to spin, tap to hit it. It follows every choice. */
-export function BagPreview({ cfg }: { cfg: BagConfig }) {
+export function BagPreview({ cfg, caption }: { cfg: BagConfig; caption: string }) {
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const engine = useRef<BagEngine | null>(null);
@@ -45,6 +45,7 @@ export function BagPreview({ cfg }: { cfg: BagConfig }) {
     <div className="bd__bag" ref={root}>
       <div className="bd__bag-host" ref={host} />
       {fallback && <img className="bd__bag-still" src="/assets/brand/bag-footer.webp" alt="A Sanchez heavy bag" width={400} height={600} />}
+      <p className="bd__caption">{caption}</p>
       <p className="bd__bag-hint" aria-hidden="true">Drag to spin · tap to hit</p>
     </div>
   );

@@ -43,15 +43,26 @@
 .bd__bar strong { font: 800 22px/1 var(--nf-display, "Barlow Condensed", sans-serif); letter-spacing: .04em; }
 .bd__bar small { font: 500 10px/1.2 var(--nf-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: rgb(243 234 220 / .55); }
 
-/* the live bag: pinned above the steps on a phone, beside them on a wide screen, so it is always in view */
-.bd__view { position: sticky; inset-block-start: 0; z-index: 20; margin-inline: -24px; background: linear-gradient(#0a0b0d 88%, rgb(10 11 13 / 0)); }
-.bd__bag { position: relative; block-size: 38svh; min-block-size: 240px; }
+/* the bag is the hero: half the screen, in a warm spotlight, pinned while the controls sheet slides beneath it */
+.pg--build { background: #0a0b0d; }
+.pg__head--slim { position: absolute; inset-inline: 0; inset-block-start: 0; z-index: 30; padding-block-end: 0; }
+.pg__head--slim .pg__brand img { block-size: 38px; }
+.bd { padding-block-end: 0; }
+.bd__view { position: sticky; inset-block-start: 0; z-index: 10; block-size: min(56svh, 560px); background: radial-gradient(62% 52% at 50% 46%, rgb(232 168 90 / .20), rgb(232 168 90 / .06) 55%, transparent 78%), radial-gradient(90% 70% at 50% 100%, rgb(0 0 0 / .5), transparent 70%), #0a0b0d; }
+.bd__bag { position: relative; block-size: 100%; min-block-size: 0; }
 .bd__bag-host { position: absolute; inset: 0; }
-.bd__bag-still { position: absolute; inset: 0; margin: auto; block-size: 90%; inline-size: auto; }
-.bd__bag-hint { position: absolute; inset-inline: 0; inset-block-end: 4px; margin: 0; text-align: center; font: 500 10px/1 var(--nf-text, Barlow, sans-serif); letter-spacing: .24em; text-transform: uppercase; color: rgb(243 234 220 / .45); pointer-events: none; }
+.bd__bag-still { position: absolute; inset: 0; margin: auto; block-size: 88%; inline-size: auto; }
+.bd__caption { position: absolute; inset-inline: 0; inset-block-end: 26px; margin: 0; text-align: center; font: 700 15px/1 var(--nf-display, "Barlow Condensed", sans-serif); letter-spacing: .28em; text-transform: uppercase; color: #f3eadc; text-shadow: 0 2px 16px rgb(0 0 0 / .8); pointer-events: none; }
+.bd__bag-hint { position: absolute; inset-inline: 0; inset-block-end: 8px; margin: 0; text-align: center; font: 500 9px/1 var(--nf-text, Barlow, sans-serif); letter-spacing: .26em; text-transform: uppercase; color: rgb(243 234 220 / .4); pointer-events: none; }
+.bd__panel { position: relative; z-index: 11; margin-block-start: -22px; padding: 22px 22px 150px; background: #0a0b0d; border-radius: 26px 26px 0 0; box-shadow: 0 -24px 48px rgb(0 0 0 / .7); border-block-start: 1px solid rgb(243 234 220 / .08); }
+.bd__yours { margin: 6px 0 4px; font: 800 clamp(44px, 12vw, 72px)/.9 var(--nf-display, "Barlow Condensed", sans-serif); text-transform: uppercase; color: #e8a85a; }
+.pg__btn--pay { flex: 1 1 auto; min-block-size: 56px; background: #ba4a2a; color: #fff; font-size: 15px; box-shadow: 0 10px 30px -8px rgb(186 74 42 / .7); }
+.pg__btn--pay:disabled { opacity: .5; box-shadow: none; }
 @media (min-width: 900px) {
-  .pg__main:has(.bd) { max-inline-size: 1120px; }
-  .bd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; }
-  .bd__view { margin-inline: 0; inset-block-start: 24px; background: none; }
-  .bd__bag { block-size: min(78svh, 760px); }
+  .pg__main:has(.bd), .pg--build main { max-inline-size: none; }
+  .bd { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr); min-block-size: 100svh; }
+  .bd__view { block-size: 100svh; inset-block-start: 0; }
+  .bd__panel { margin-block-start: 0; border-radius: 0; box-shadow: none; border-block-start: 0; border-inline-start: 1px solid rgb(243 234 220 / .08); padding: 96px 40px 150px; }
+  .bd__bar { inset-inline-start: 0; }
+  .bd__caption { font-size: 18px; inset-block-end: 40px; }
 }

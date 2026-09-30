@@ -101,7 +101,7 @@ export function Builder({ initialPreset }: { initialPreset: Preset }) {
   return (
     <div className="bd">
       <div className="bd__view">
-        <BagPreview cfg={cfg} />
+        <BagPreview cfg={cfg} caption={`${PRESET_LABEL[cfg.preset]} · ${cfg.sizeFt} ft · ${COLOURS.find((c) => c.id === cfg.bodyColour)?.name ?? ""}${cfg.quantity > 1 ? ` · ×${cfg.quantity}` : ""}`} />
       </div>
       <div className="bd__panel">
       <ol className="bd__steps" aria-label="Build steps">
@@ -160,6 +160,8 @@ export function Builder({ initialPreset }: { initialPreset: Preset }) {
       )}
       {step === 4 && !checkout && (
         <>
+          <h2 className="bd__yours">Yours.</h2>
+          <p className="pg__lead">Made by hand, for you.</p>
           <dl className="bd__sum">
             <dt>Design</dt><dd>{PRESET_LABEL[cfg.preset]}, {cfg.sizeFt} ft, {cfg.material}</dd>
             <dt>Fill</dt><dd>{cfg.fill === "filled" ? "Filled" : "Unfilled, filled on site"} ({cfg.country})</dd>
@@ -175,10 +177,11 @@ export function Builder({ initialPreset }: { initialPreset: Preset }) {
           {errors.map((i) => <p key={i.code} className="pg__note" role="alert">{i.message}</p>)}
           {price?.status === "unpriced" && <p className="pg__note">{price.reason} Ordering opens once prices are set. Join the waitlist meanwhile.</p>}
           {error && <p className="pg__note" role="alert">{error}</p>}
-          <div className="pg__actions">
-            <button className="pg__btn" type="button" disabled={!canPay || busy} onClick={() => void startCheckout()}>{busy ? "Working…" : "Continue to the deposit"}</button>
-            <a className="pg__btn pg__btn--ghost" href="/#waitlist">Join the waitlist</a>
-          </div>
+          {!canPay && (
+            <div className="pg__actions">
+              <a className="pg__btn pg__btn--ghost" href="/#waitlist">Join the waitlist</a>
+            </div>
+          )}
         </>
       )}
       {step === 4 && checkout && (
@@ -200,6 +203,11 @@ export function Builder({ initialPreset }: { initialPreset: Preset }) {
           {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
         </select>
         {step < 4 && !checkout && <button className="pg__btn" type="button" onClick={() => setStep((s) => Math.min(4, s + 1))}>Next</button>}
+        {step === 4 && !checkout && (
+          <button className="pg__btn pg__btn--pay" type="button" disabled={!canPay || busy} onClick={() => void startCheckout()}>
+            {busy ? "One moment…" : "Make it mine"}
+          </button>
+        )}
       </div>
     </div>
   );
