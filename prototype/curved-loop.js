@@ -45,17 +45,18 @@
     function build(n) {
       while (tp.firstChild) tp.removeChild(tp.firstChild);
       stars.forEach(function (st) { if (st.img.parentNode) st.img.parentNode.removeChild(st.img); }); stars = [];
+      var chars = 0;                                                            /* running character index in the whole text, so each star knows which characters are its gap */
       for (var k = 0; k < n; k++) {
         var at = 0;
         pieces.forEach(function (piece, i) {
-          if (piece) { tp.appendChild(document.createTextNode(piece)); at += piece.length; }
+          if (piece) { tp.appendChild(document.createTextNode(piece)); at += piece.length; chars += piece.length; }
           if (i < pieces.length - 1) {
-            tp.appendChild(document.createTextNode(GAP));
+            var gapA = chars; tp.appendChild(document.createTextNode(GAP)); chars += GAP.length;
             var before = at ? measure.getSubStringLength(0, at) : 0, adv = measure.getSubStringLength(at, GAP.length);
             var img = svgEl("g", {}); img.style.pointerEvents = "none"; img.style.display = "none";
             svgEl("image", { href: SPRITE, width: SIZE, height: SIZE, filter: "url(#" + FX + ")" }, img);
             var clip = svgEl("g", { mask: "url(#" + MASK + ")" }, img), glint = svgEl("rect", { x: "-30", y: "-6", width: "24", height: SIZE + 12, fill: "url(#" + GLINT + ")", transform: "rotate(18 30 30)" }, clip);
-            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img, glint: glint }); at += GAP.length;
+            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img, glint: glint, a: gapA, b: gapA + GAP.length - 1 }); at += GAP.length;
           }
         });
       }
@@ -66,7 +67,11 @@
         var st = stars[i], d = offset + st.d0;
         if (d < 0 || d > plen) { st.img.style.display = "none"; continue; }
         var p0 = path.getPointAtLength(d), pa = path.getPointAtLength(Math.max(0, d - 2)), pb = path.getPointAtLength(Math.min(plen, d + 2));
-        var rot = Math.atan2(pb.y - pa.y, pb.x - pa.x), c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
+        var rot = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+        /* Prefer where the browser really laid the gap out on the curve (some phone browsers measure runs of spaces differently from how they draw them); fall back to the arithmetic */
+        try { var g1 = t.getStartPositionOfChar(st.a), g2 = t.getEndPositionOfChar(st.b), gr = t.getRotationOfChar(st.a);
+          if (isFinite(g1.x + g1.y + g2.x + g2.y + gr) && (g1.x || g1.y) && (g2.x || g2.y)) { p0 = { x: (g1.x + g2.x) / 2, y: (g1.y + g2.y) / 2 }; rot = gr * Math.PI / 180; } } catch (err) {}
+        var c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
         var cx = p0.x + up * sn, cy = p0.y - up * c;
         if (cx < -80 || cx > VW + 80) { st.img.style.display = "none"; continue; }
         var sx = 1 - 0.10 * Math.abs(Math.sin(rot * 1.6)), wob = 3 * Math.sin(cx / 150 + i);           /* turns a little like a metal object as it rides the curve */
