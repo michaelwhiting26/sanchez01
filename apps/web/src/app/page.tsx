@@ -25,6 +25,7 @@ export default function HomePage() {
         <DnaCore />
         <CurvedLoop text="SANCHEZ • CUSTOM ✦ " />
         <WorkshopGallery />
+        <div className="sz-transit" aria-hidden="true" data-transit="" />
         <Marquee />
         <BagPunch />
         <RisePanel>

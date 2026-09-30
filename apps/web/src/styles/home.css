@@ -720,3 +720,24 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .pg-bar { inline-size: min(280px, 60vw); block-size: 2px; background: rgb(243 234 220 / .2); }
 .pg-bar > div { block-size: 100%; background: #e8a85a; transform: scaleX(0); transform-origin: left; }
 @media (prefers-reduced-motion: reduce) { .pg-viewport { overflow-x: auto; } .pg-strip { padding-inline: 8vw; } }
+
+/* ---- Gallery -> bag: a long, quiet hand-over ----
+   1) the gallery's film, counter and bar fade out completely (film.ts, WorkshopGallery.tsx) before anything else arrives;
+   2) .sz-transit is empty dark field: the fixed gold spiral (lib/dna.ts) keeps turning down it with the scroll, so the visitor feels the change of place;
+   3) the SANCHEZ rows rise (the spiral steps behind them), then it narrows slowly into the bag's chain, with clear air around the pill and the bag. */
+.sz-transit { block-size: 130svh; pointer-events: none; }
+@media (min-width: 768px) { .sz-transit { block-size: 120svh; } }
+
+/* wordmark rows: twice the former size, allowed to bleed off both edges (the section clips), with real air above and below */
+.sz-marquee { overflow: hidden; gap: clamp(10px, 2.4svh, 28px); padding-block: clamp(3rem, 9svh, 8rem) clamp(7rem, 20svh, 15rem) !important; }
+.sz-marquee__track span { font-size: clamp(5rem, 2rem + 16vw, 16rem); margin-inline-end: clamp(2.5rem, 6vw, 6rem); }
+
+/* the pill gets its own band between the wordmark and the bag; the bag (and its chain) starts below it */
+.bag-punch { --pill-zone: clamp(96px, 15svh, 150px); }
+.bag-punch__cats { inset-block-start: clamp(24px, 4.5svh, 48px); }
+.bag-punch__view { inset-block-start: var(--pill-zone); }
+.bag-punch__still { inset-block-start: calc(var(--pill-zone) + 16px); }
+.bag-punch__switch { inset-block-start: calc(var(--pill-zone) + (100% - var(--cta-zone) - var(--pill-zone)) * .46); }
+.bag-punch__view { transition: opacity 1.8s cubic-bezier(.2, .6, .2, 1); }
+@media (prefers-reduced-motion: reduce) { .bag-punch__view { transition: none; } }
+.bag-punch { block-size: calc(min(100svh, 980px) + var(--cta-zone) + var(--pill-zone)); }

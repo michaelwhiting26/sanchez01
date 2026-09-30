@@ -121,6 +121,16 @@ export class DnaCore {
       const r = view.getBoundingClientRect();
       ringY = r.top + r.height * 0.118;
     }
+    let holdTop = 1e9; // where the wordmark rows end: the thread stays full width above, and only starts to narrow once it has cleared them
+    let wmTop = 1e9;
+    let wmBot = -1e9;
+    const wm = document.querySelector(".sz-marquee");
+    if (wm) {
+      const wr = wm.getBoundingClientRect();
+      wmTop = wr.top;
+      wmBot = wr.bottom;
+      holdTop = wr.bottom;
+    }
     let lgcK = 1; // gone while the workshop gallery is being scrolled through
     const lgc = document.querySelector(".lgc-track");
     if (lgc) {
@@ -138,11 +148,15 @@ export class DnaCore {
     const turn = ((y / pitch) * 2 * Math.PI * 0.55) + tilt + this.phase0;
     const step = 4;
     const n = Math.ceil((h + 40) / step) + 1;
-    const taperLen = Math.min(h * 0.55, 420);
+    // from the foot of the wordmark to the chain ring the thread narrows slowly and evenly (a long, quiet settle rather than a sudden pinch)
+    const taperLen = Math.max(Math.min(h * 0.55, 420), Math.min(ringY - holdTop, h * 1.4));
     const ampAt = (yv: number): number => {
       const t = Math.max(0, Math.min(1, (ringY - yv) / taperLen));
       return amp * t * t * (3 - 2 * t); // full width far above the ring, a single thread at the ring
     };
+    // the thread steps back behind the big SANCHEZ rows so the wordmark reads on its own, and comes back below them
+    const wmFade = 0.14;
+    const seeAt = (yv: number): number => (yv > wmTop - 40 && yv < wmBot + 40 ? wmFade + (1 - wmFade) * (1 - Math.min(1, Math.min(yv - (wmTop - 40), wmBot + 40 - yv) / 60)) : 1);
     const A: Pt[] = [];
     const B: Pt[] = [];
     for (let i = 0; i < n; i++) {
@@ -166,17 +180,17 @@ export class DnaCore {
       const x2 = cx - am2 * Math.sin(ra);
       if (am2 < 3) continue;
       ctx.lineWidth = 1;
-      ctx.strokeStyle = rgba(CREAM, alpha * (0.06 + 0.22 * Math.abs(dep)));
+      ctx.strokeStyle = rgba(CREAM, alpha * seeAt(ry) * (0.06 + 0.22 * Math.abs(dep)));
       ctx.beginPath();
       ctx.moveTo(x1, ry);
       ctx.lineTo(x2, ry);
       ctx.stroke();
       // the little knots where a rung meets a strand
-      ctx.fillStyle = rgba(dep > 0 ? RUST : GOLD, alpha * (0.25 + 0.5 * Math.abs(dep)));
+      ctx.fillStyle = rgba(dep > 0 ? RUST : GOLD, alpha * seeAt(ry) * (0.25 + 0.5 * Math.abs(dep)));
       ctx.beginPath();
       ctx.arc(x1, ry, 1.6 + 1.2 * Math.max(0, dep), 0, 7);
       ctx.fill();
-      ctx.fillStyle = rgba(dep > 0 ? GOLD : RUST, alpha * (0.25 + 0.5 * Math.abs(dep)));
+      ctx.fillStyle = rgba(dep > 0 ? GOLD : RUST, alpha * seeAt(ry) * (0.25 + 0.5 * Math.abs(dep)));
       ctx.beginPath();
       ctx.arc(x2, ry, 1.6 + 1.2 * Math.max(0, -dep), 0, 7);
       ctx.fill();
@@ -189,7 +203,7 @@ export class DnaCore {
         if (!p || !q) continue;
         const k = 0.5 + 0.5 * ((p.depth + q.depth) / 2); // 0 far to 1 near
         if (Math.floor(i / 2) % 3 === 2) continue; // the gap in the running stitch
-        ctx.strokeStyle = rgba(col, alpha * (0.18 + 0.82 * k));
+        ctx.strokeStyle = rgba(col, alpha * seeAt(p.y) * (0.18 + 0.82 * k));
         ctx.lineWidth = 1 + 2.2 * k;
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);

@@ -20,6 +20,7 @@ export function WorkshopGallery() {
   const stripRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLParagraphElement>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
   const countRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
@@ -43,7 +44,13 @@ export function WorkshopGallery() {
     let travel = 0;
 
     const update = (): void => {
-      const d = travel > 0 ? clamp01(-track.getBoundingClientRect().top / travel) : 0; // read live: nothing above the gallery can throw it off
+      const tr = track.getBoundingClientRect();
+      const d = travel > 0 ? clamp01(-tr.top / travel) : 0; // read live: nothing above the gallery can throw it off
+      // the counter, bar and title are gone (faded, not just scrolled) before the section releases, so nothing of the gallery is left on screen for the next section
+      const vhNow = window.innerHeight || 1;
+      const leave = smooth(clamp01((tr.bottom - vhNow * 0.55) / (vhNow * 0.45)));
+      if (hudRef.current) hudRef.current.style.opacity = leave.toFixed(3);
+      if (titleRef.current) titleRef.current.style.opacity = leave.toFixed(3);
       strip.style.transform = `translate3d(${(-travel * d).toFixed(1)}px,0,0)`;
       const vw = window.innerWidth || 1;
       let best = 0;
@@ -111,7 +118,7 @@ export function WorkshopGallery() {
             ))}
           </div>
         </div>
-        <div className="pg-hud" aria-hidden="true">
+        <div className="pg-hud" aria-hidden="true" ref={hudRef}>
           <p ref={countRef}>01 / {String(GALLERY_SLIDES.length).padStart(2, "0")}</p>
           <div className="pg-bar">
             <div ref={barRef} />
