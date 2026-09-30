@@ -53,6 +53,37 @@ export interface BuildOptions {
   font: "classic" | "block" | "script" | "stencil";
 }
 
+export type SceneId = "studio" | "gym" | "garage" | "outdoor" | "room";
+export const SCENES: ReadonlyArray<{ id: SceneId; label: string }> = [
+  { id: "studio", label: "Studio" },
+  { id: "gym", label: "Boxing gym" },
+  { id: "garage", label: "Home garage" },
+  { id: "outdoor", label: "Outdoor" },
+  { id: "room", label: "Your room" },
+];
+
+interface SceneDef {
+  /** Top-to-bottom wall/sky gradient stops as CSS colours; null = transparent (the page shows through). */
+  wall: readonly string[] | null;
+  pattern: "none" | "brick" | "panels";
+  floor: "none" | "mat" | "concrete" | "deck";
+  floorTint: number;
+  keyColor: number;
+  keyI: number;
+  rimColor: number;
+  rimI: number;
+  env: number;
+  exposure: number;
+}
+
+const SCENE_DEFS: Record<SceneId, SceneDef> = {
+  studio: { wall: null, pattern: "none", floor: "none", floorTint: 0xffffff, keyColor: 0xfff1dc, keyI: 2.2, rimColor: 0xc9a45c, rimI: 1.6, env: 0.9, exposure: 1.05 },
+  gym: { wall: ["#1b1512", "#2d211b", "#3a2a20"], pattern: "brick", floor: "mat", floorTint: 0xffffff, keyColor: 0xffc98a, keyI: 2.8, rimColor: 0x9a6a3a, rimI: 1.0, env: 0.55, exposure: 1.0 },
+  garage: { wall: ["#5b6168", "#79808a", "#8b929b"], pattern: "panels", floor: "concrete", floorTint: 0xffffff, keyColor: 0xdfeaff, keyI: 2.4, rimColor: 0x9db4d6, rimI: 1.1, env: 0.8, exposure: 1.0 },
+  outdoor: { wall: ["#5d78a8", "#d79a7c", "#f2c88f"], pattern: "none", floor: "deck", floorTint: 0xffffff, keyColor: 0xffd9a8, keyI: 2.6, rimColor: 0x9cc0ff, rimI: 1.4, env: 1.15, exposure: 1.1 },
+  room: { wall: null, pattern: "none", floor: "none", floorTint: 0xffffff, keyColor: 0xfff1dc, keyI: 2.2, rimColor: 0xc9a45c, rimI: 1.6, env: 0.9, exposure: 1.05 },
+};
+
 const isBody = (n: string): boolean => /^(body|crown)/.test(n);
 
 type AnyMesh = THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
@@ -126,6 +157,13 @@ export class BagEngine {
   private readonly camLook = new THREE.Vector3(0, 0.66, 0);
   private spinGoal: number | null = null;
   private lastFrame = performance.now();
+  private readonly key = new THREE.DirectionalLight(0xfff1dc, 2.2);
+  private readonly rimLight = new THREE.DirectionalLight(0xc9a45c, 1.6);
+  private sceneId: SceneId = "studio";
+  private bagBottom = 0;
+  private readonly sceneTex = new Map<string, THREE.CanvasTexture>();
+  private floorMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial> | null = null;
+  private blobMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> | null = null;
 
   constructor(o: BagEngineOptions) {
     this.root = o.root;
@@ -147,11 +185,9 @@ export class BagEngine {
     const pm = new THREE.PMREMGenerator(r);
     this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.9;
-    const key = new THREE.DirectionalLight(0xfff1dc, 2.2);
-    key.position.set(-2.5, 4, 3);
-    const rim = new THREE.DirectionalLight(0xc9a45c, 1.6);
-    rim.position.set(3, 2, -2.5);
-    this.scene.add(key, rim);
+    this.key.position.set(-2.5, 4, 3);
+    this.rimLight.position.set(3, 2, -2.5);
+    this.scene.add(this.key, this.rimLight);
 
     // the tiger colourway material set: satin body so the stitching reads instead of a glossy haze
     this.bodyMaterial = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, clearcoat: 0.08, clearcoatRoughness: 0.4 });
@@ -195,6 +231,16 @@ export class BagEngine {
     cancelAnimationFrame(this.raf);
     this.timers.forEach((t) => window.clearTimeout(t));
     this.textures.forEach((t) => t.dispose());
+    this.sceneTex.forEach((t) => t.dispose());
+    this.scene.background = null;
+    if (this.floorMesh) {
+      this.floorMesh.geometry.dispose();
+      this.floorMesh.material.dispose();
+    }
+    if (this.blobMesh) {
+      this.blobMesh.geometry.dispose();
+      this.blobMesh.material.dispose();
+    }
     this.ring.geometry.dispose();
     this.ring.material.dispose();
     this.renderer.dispose();
@@ -299,6 +345,8 @@ export class BagEngine {
     });
     this.bandTopBox = bt.isEmpty() ? null : bt;
     this.aspect = this.cylindricalUV(model);
+    this.bagBottom = new THREE.Box3().setFromObject(model).min.y;
+    this.applyScene(); // the floor sits under whatever size of bag is now hanging
     this.applyOptions();
   }
 
@@ -599,6 +647,167 @@ export class BagEngine {
       this.bandBottom.needsUpdate = true;
     };
     draw();
+  }
+
+  // ------------------------------------------------------------------ scenes
+
+  /** Swap the virtual room the bag hangs in, instantly. Safe before the model loads: the floor is re-seated when it does. */
+  setScene(id: SceneId): void {
+    this.sceneId = id;
+    this.applyScene();
+  }
+
+  /** Render one frame right now and hand back the canvas, so the caller can drawImage it synchronously (no preserveDrawingBuffer needed). */
+  capture(): HTMLCanvasElement {
+    this.renderer.render(this.scene, this.cam);
+    return this.renderer.domElement;
+  }
+
+  private sceneTexture(key: string, w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, repeat = false): THREE.CanvasTexture {
+    const hit = this.sceneTex.get(key);
+    if (hit) return hit;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d");
+    if (g) draw(g);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    if (repeat) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.anisotropy = this.anisotropy;
+    }
+    this.sceneTex.set(key, t);
+    return t;
+  }
+
+  private wallTexture(id: SceneId, d: SceneDef): THREE.CanvasTexture | null {
+    const stops = d.wall;
+    if (!stops) return null;
+    return this.sceneTexture(`wall:${id}`, 512, 512, (g) => {
+      const grad = g.createLinearGradient(0, 0, 0, 512);
+      stops.forEach((c, i) => grad.addColorStop(stops.length === 1 ? 0 : i / (stops.length - 1), c));
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 512, 512);
+      if (d.pattern === "brick") {
+        g.strokeStyle = "rgba(0,0,0,0.28)";
+        g.lineWidth = 2;
+        for (let y = 0, row = 0; y < 512; y += 32, row++) {
+          g.beginPath();
+          g.moveTo(0, y);
+          g.lineTo(512, y);
+          g.stroke();
+          for (let x = row % 2 ? 32 : 0; x < 512; x += 64) {
+            g.beginPath();
+            g.moveTo(x, y);
+            g.lineTo(x, y + 32);
+            g.stroke();
+          }
+        }
+      } else if (d.pattern === "panels") {
+        g.strokeStyle = "rgba(0,0,0,0.16)";
+        g.lineWidth = 2;
+        for (let x = 0; x < 512; x += 64) {
+          g.beginPath();
+          g.moveTo(x, 0);
+          g.lineTo(x, 512);
+          g.stroke();
+        }
+      }
+    });
+  }
+
+  private floorTexture(kind: "mat" | "concrete" | "deck"): THREE.CanvasTexture {
+    return this.sceneTexture(`floor:${kind}`, 256, 256, (g) => {
+      if (kind === "mat") {
+        g.fillStyle = "#1c1c1e";
+        g.fillRect(0, 0, 256, 256);
+        g.strokeStyle = "rgba(255,255,255,0.10)";
+        g.lineWidth = 3;
+        g.strokeRect(0, 0, 256, 256);
+        g.strokeStyle = "rgba(255,255,255,0.03)";
+        for (let i = 16; i < 256; i += 16) {
+          g.beginPath();
+          g.moveTo(i, 0);
+          g.lineTo(i, 256);
+          g.stroke();
+        }
+      } else if (kind === "concrete") {
+        g.fillStyle = "#8a8d92";
+        g.fillRect(0, 0, 256, 256);
+        for (let i = 0; i < 2200; i++) {
+          g.fillStyle = Math.random() < 0.5 ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)";
+          g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+        }
+        g.strokeStyle = "rgba(0,0,0,0.25)";
+        g.lineWidth = 2;
+        g.strokeRect(0, 0, 256, 256);
+      } else {
+        for (let y = 0; y < 256; y += 32) {
+          g.fillStyle = y % 64 ? "#6a4a33" : "#75523a";
+          g.fillRect(0, y, 256, 32);
+          g.fillStyle = "rgba(0,0,0,0.35)";
+          g.fillRect(0, y, 256, 2);
+        }
+      }
+    }, true);
+  }
+
+  private blobTexture(): THREE.CanvasTexture {
+    return this.sceneTexture("blob", 128, 128, (g) => {
+      const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, "rgba(0,0,0,0.55)");
+      grad.addColorStop(0.5, "rgba(0,0,0,0.22)");
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 128, 128);
+    });
+  }
+
+  private applyScene(): void {
+    const id = this.sceneId;
+    const d = SCENE_DEFS[id];
+    this.scene.background = this.wallTexture(id, d);
+    this.key.color.setHex(d.keyColor);
+    this.key.intensity = d.keyI;
+    this.rimLight.color.setHex(d.rimColor);
+    this.rimLight.intensity = d.rimI;
+    this.scene.environmentIntensity = d.env;
+    this.renderer.toneMappingExposure = d.exposure;
+    this.renderer.setClearColor(0x000000, 0);
+
+    const floorY = this.bagBottom - 0.12;
+    if (d.floor === "none") {
+      if (this.floorMesh) this.floorMesh.visible = false;
+    } else {
+      if (!this.floorMesh) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0 }));
+        m.rotation.x = -Math.PI / 2;
+        this.floorMesh = m;
+        this.scene.add(m);
+      }
+      const tex = this.floorTexture(d.floor);
+      tex.repeat.set(d.floor === "deck" ? 10 : 20, d.floor === "deck" ? 10 : 20);
+      this.floorMesh.material.map = tex;
+      this.floorMesh.material.color.setHex(d.floorTint);
+      this.floorMesh.material.needsUpdate = true;
+      this.floorMesh.position.set(0, floorY, 0);
+      this.floorMesh.visible = true;
+    }
+    // studio is exactly the original look: no blob. Every other scene (room included) gets a soft fake contact shadow.
+    if (id === "studio") {
+      if (this.blobMesh) this.blobMesh.visible = false;
+    } else {
+      if (!this.blobMesh) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.7), new THREE.MeshBasicMaterial({ map: this.blobTexture(), transparent: true, depthWrite: false }));
+        m.rotation.x = -Math.PI / 2;
+        m.renderOrder = 1;
+        this.blobMesh = m;
+        this.scene.add(m);
+      }
+      this.blobMesh.position.set(0, floorY + 0.004, 0);
+      this.blobMesh.visible = true;
+    }
   }
 
   // ----------------------------------------------------------------- camera

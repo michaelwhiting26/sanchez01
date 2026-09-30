@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BagPreview } from "./BagPreview";
+import { BagPreview, type BagHandle } from "./BagPreview";
+import { SCENES, type SceneId } from "@/lib/bag/engine";
 import { PaymentStep, type CheckoutResult } from "./PaymentStep";
 import { BagConfigSchema, COLOURS, DEFAULT_BAG, type BagConfig, type Issue, type Preset } from "@/lib/configurator/schema";
 import { CURRENCIES, formatMoney, type Currency } from "@/lib/commerce/money";
@@ -54,6 +55,12 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [backToReview, setBackToReview] = useState(false);
+  const [scene, setScene] = useState<SceneId>("studio");
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [adjust, setAdjust] = useState(false);
+  const bag = useRef<BagHandle>(null);
+  const sheetEl = useRef<HTMLElement>(null);
+  const rootEl = useRef<HTMLDivElement>(null);
   const ready = useRef(false);
   const seq = useRef(0);
   const timer = useRef(0);
@@ -76,9 +83,48 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
       const saved = loadSaved();
       if (saved && (saved.answered.length || saved.skipped.length)) setResume(saved);
     }
+    try {
+      const sc = window.localStorage.getItem("sanchez-scene");
+      const found = SCENES.find((x) => x.id === sc);
+      if (found) setScene(found.id);
+    } catch { /* storage unavailable: stay on the default scene */ }
     ready.current = true;
     return () => window.clearTimeout(timer.current);
   }, []);
+
+  const photoRef = useRef<string | null>(null);
+  useEffect(() => () => { if (photoRef.current) URL.revokeObjectURL(photoRef.current); }, []);
+
+  const chooseScene = (id: SceneId): void => {
+    setScene(id);
+    if (id !== "room") setAdjust(false);
+    try { window.localStorage.setItem("sanchez-scene", id); } catch { /* ignore */ }
+  };
+  const onPhoto = (f: File | undefined): void => {
+    if (!f) return;
+    if (photoRef.current) URL.revokeObjectURL(photoRef.current);
+    const url = URL.createObjectURL(f);
+    photoRef.current = url;
+    setPhoto(url);
+    setAdjust(false);
+  };
+  async function savePicture(): Promise<void> {
+    const c = bag.current?.snapshot();
+    if (!c) { setError("Could not make the picture. Please try again."); return; }
+    const blob = await new Promise<Blob | null>((res) => c.toBlob((b) => res(b), "image/png"));
+    if (!blob) { setError("Could not make the picture. Please try again."); return; }
+    const file = new File([blob], "sanchez-bag.png", { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); } catch { /* cancelled */ }
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "sanchez-bag.png";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
 
   useEffect(() => {
     if (!ready.current || resume) return;
@@ -176,11 +222,23 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const skippedLeft = steps.filter((s) => s.answer.kind !== "review" && stateOf(s.id) === "skipped");
   const sheet = Boolean(resume) || Boolean(checkout) || last;
 
+  const reviewSheet = sheet && !resume && !checkout;
+  useEffect(() => {
+    const r = rootEl.current;
+    const el = sheetEl.current;
+    if (!r || !el) return undefined;
+    const apply = (): void => r.style.setProperty("--sheet-h", `${el.offsetHeight}px`);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [sheet, resume, checkout]);
+
   return (
-    <div className="ck">
+    <div className="ck" ref={rootEl} data-sheet={sheet ? "open" : undefined}>
       <h1 className="visually-hidden">Build your bag</h1>
       <div className="ck__stage">
-        <BagPreview cfg={cfg} focus={def.part} />
+        <BagPreview ref={bag} cfg={cfg} focus={def.part} scene={scene} photo={photo} adjust={adjust && reviewSheet} />
       </div>
 
       <header className="ck__top">
@@ -199,7 +257,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
       </header>
 
       {sheet && (
-        <section className="ck__sheet" aria-label="Build summary">
+        <section className="ck__sheet" aria-label="Build summary" ref={sheetEl}>
           {resume ? (
             <>
               <p className="ck__tele">Saved build found</p>
@@ -219,6 +277,18 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
             </>
           ) : (
             <>
+              <p className="ck__tele">Scene</p>
+              <div className="ck__scroll ck__scenes" role="radiogroup" aria-label="Scene">
+                {SCENES.map((o) => <button key={o.id} type="button" role="radio" aria-checked={o.id === scene} onClick={() => chooseScene(o.id)}>{o.label}</button>)}
+              </div>
+              {scene === "room" && (
+                <div className="ck__room">
+                  <label className="ck__chip">{photo ? "Change photo" : "Add photo"}<input type="file" accept="image/*" onChange={(e) => { onPhoto(e.target.files?.[0]); e.target.value = ""; }} /></label>
+                  {photo && <button type="button" className="ck__chip" aria-pressed={adjust} onClick={() => setAdjust((v) => !v)}>{adjust ? "Done adjusting" : "Adjust photo"}</button>}
+                  <p className="ck__note">Your photo stays on your phone.</p>
+                </div>
+              )}
+              <button type="button" className="ck__chip ck__chip--save" onClick={() => void savePicture()}>Save picture</button>
               <h2 className="ck__sq ck__sq--yours">Yours.</h2>
               <ul className="ck__list">
                 {steps.filter((s) => s.answer.kind !== "review").map((s) => (
