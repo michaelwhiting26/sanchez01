@@ -207,7 +207,6 @@ export class FilmHelix {
     const f = R * 3.6;
     const N = 72; // slices per turn
     const dphi = (Math.PI * 2) / N;
-    const dy = pitch / N;
     const roll = (scrollY / vh) * Math.PI * 1.2; // the scroll also rolls the tornado round its axis
     const cx = w / 2;
     const sw = R * dphi * (TEX_H / bandH); // texture pixels per slice, so the numbers keep their proportions

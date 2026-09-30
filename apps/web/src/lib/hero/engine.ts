@@ -124,6 +124,7 @@ export class HeroEngine {
   private sprayStart = 0;
   private intro: IntroSprites | null = null;
   private ti = 0;
+  private waveCells: Array<[number, number]> = [];
   private lastIntroTi = -1;
   private water: WaterPaint | null = null;
   private lastT = 0;
@@ -189,10 +190,6 @@ export class HeroEngine {
         if (ok) this.intro = sprites;
         else this.hero.classList.remove("is-intro"); // assets missing: show the plain hero
       });
-    }
-    if (!this.reduce) {
-      const flag = this.flag;
-      this.water = new WaterPaint({ mw: this.mw, mh: this.mh, letters: this.mapLetters, outline: this.mapOutline, dist: this.mapDist, colourAt: (u, v) => flag.colour(u, v), sx0: this.sx0, span: Math.max(1, this.sx1 - this.sx0), slope: SPRAY.slope });
     }
     if (this.reduce) this.draw(0);
     else this.raf = requestAnimationFrame(this.loop);
@@ -280,6 +277,8 @@ export class HeroEngine {
     }
     this.sx0 = lo;
     this.sx1 = hi;
+    this.waveCells = [];
+    for (let y = 0; y < mh; y += 2) for (let x = 0; x < mw; x += 2) if (this.mapLetters[y * mw + x]) this.waveCells.push([x, y]);
   }
 
   private attach(): void {
@@ -588,6 +587,22 @@ export class HeroEngine {
     const waveTabs = this.waveTables;
     const BINS = WAVES.bins;
 
+    const waves: Array<{ cx: number; cy: number; ca: number; sa: number; size: number; a: number; k: number }> = [];
+    if (!reduce && sp > 0 && this.waveCells.length) {
+      // a new peak every ~0.65s at a random spot in the wet lettering; each lives ~2.6s: rises, curls, breaks and falls back
+      const PERIOD = 650;
+      const LIFE = 2600;
+      const k1 = Math.floor(tp / PERIOD);
+      for (let k = Math.max(0, k1 - Math.floor(LIFE / PERIOD)); k <= k1; k++) {
+        const p = (tp - k * PERIOD) / LIFE;
+        if (p < 0 || p > 1) continue;
+        const cell2 = this.waveCells[Math.floor(hash1(k * 7.31) * this.waveCells.length)];
+        if (!cell2) continue;
+        if (cell2[0] - sx0 + SLOPE * cell2[1] > FF - 12) continue; // only where the paint is already wet
+        const ang = -0.9 + 1.8 * hash1(k * 3.17);
+        waves.push({ cx: cell2[0], cy: cell2[1], ca: Math.cos(ang), sa: Math.sin(ang), size: 9 + 8 * hash1(k * 5.93), a: Math.sin(Math.PI * p) ** 0.75, k });
+      }
+    }
     const stats = this.stats;
     stats.letters = 0;
     stats.coat = 0;
@@ -627,10 +642,28 @@ export class HeroEngine {
                 const sl = flag.at((x - sx0) / span + (h2 - 0.5) * 0.006, m / mh + (ps0 - 0.5) * 0.018);
                 stats.letters++;
                 // wet paint: travelling swells whose crests sharpen to a head (lit, with a flash of foam), troughs sit dim
-                const swell = Math.sin(x * 0.09 + m * 0.05 - tn * 1.6) + 0.6 * Math.sin(x * 0.05 - m * 0.09 + tn * 1.1 + 1.7);
-                const wet = reduce || sp <= 0 ? 0 : ((swell + 1.6) / 3.2) ** 3.5;
-                if (wet > 0.8 && h2 < 0.4) b = nb0 + 2; // foam at the crest: the flag's white
-                else b = h2 < 0.22 + 0.78 * dens + 0.7 * wet - 0.2 * (1 - wet) ? nb0 + sl : nb0 + NEON + 1 + sl;
+                b = h2 < 0.22 + 0.78 * dens ? nb0 + sl : nb0 + NEON + 1 + sl;
+                // Hokusai's wave: now and then a peak stands up out of the paint, a dark body with a white curling lip and clawed foam fingers
+                if (waves.length) {
+                  for (let wi = 0; wi < waves.length; wi++) {
+                    const wv2 = waves[wi];
+                    if (!wv2) continue;
+                    const dx = x - wv2.cx;
+                    const dy = m - wv2.cy;
+                    const U = (dx * wv2.ca + dy * wv2.sa) / wv2.size;
+                    const V = (-dx * wv2.sa + dy * wv2.ca) / wv2.size;
+                    if (U < -1.1 || U > 1.6 || V < -1 || V > 1) continue;
+                    const a = wv2.a;
+                    const lip = 0.12 + 0.5 * a * (1 - V * V);
+                    if (U < lip - 0.2 * a) {
+                      if (U > -0.95 && Math.abs(V) < 0.85 * a * (1 - 0.2 * U * U) && Math.sin(V * 11 + U * 5 + wv2.k) > 0.05) b = nb0 + NEON + 1; // the dark body, with striations
+                    } else if (U < lip + 0.12) {
+                      b = nb0 + 2; // the curling lip
+                    } else if (U < lip + 0.42 * a) {
+                      if (Math.sin(V * 7.5 + wv2.k * 2) > 0.3 && h2 < 0.78) b = nb0 + 2; // foam fingers reaching over
+                    } else if (U < lip + 1.0 * a && h2 < 0.05 * a) b = nb0 + 2; // spray flung off the crest
+                  }
+                }
               }
             }
           } else {
@@ -773,10 +806,6 @@ export class HeroEngine {
       }
     }
     this.paint(sp, cf, sweeping, { hx, hy, hI, hR, FF, SLOPE, PSMAX, span, sy0 });
-    if (this.water && !reduce && sp > 0) {
-      this.water.advance(t - this.lastT, sp >= 1 ? PSMAX + 40 : FF);
-      this.water.draw(this.ctx, cell, this.ox, this.r0, sy0);
-    }
     this.lastT = t;
     this.drawIntro(ti, sy0, PSMAX, SLOPE);
   }
