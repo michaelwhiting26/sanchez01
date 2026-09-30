@@ -198,11 +198,9 @@ export class HeroEngine {
     const { levels, warms } = RIDGES;
     const [r, g, b] = TAN;
     for (let lv = 0; lv <= levels; lv++) {
-      for (let w = 0; w < warms; w++) {
-        const k = lv / levels;
-        this.styles.push(`rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`); // tan for both ends of the old cream-to-gold ramp
-        void w;
-      }
+      const k = lv / levels;
+      const shade = `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`; // the warm grades are all tan now (both ends of the old cream-to-gold ramp)
+      for (let w = 0; w < warms; w++) this.styles.push(shade);
     }
     for (const c of FLAG_PALETTE) this.styles.push(`rgb(${c[0]},${c[1]},${c[2]})`);
     this.styles.push(`rgb(${r},${g},${b})`); // the tan outline, kept separate from the paint
@@ -502,7 +500,8 @@ export class HeroEngine {
     const span = Math.max(1, sx1 - sx0);
 
     // ---- wave sets (one per quarter) and the smooth noise flow
-    fillWaveTables(this.waveTables, tp / 1000 - 0.0 + 0, reduce); // seconds since the spray started, plus the same 0.7 lead the prototype used
+    const waveSeconds = (t - (this.sprayStart || t)) / 1000 - (SPRAY.durationMs / 1000) * 0.7 - 0.7; // the first set starts just after the spray intro, as in the prototype
+    fillWaveTables(this.waveTables, waveSeconds, reduce);
     const wcx = (sx0 + sx1) / 2;
     const wcy = mh / 2;
     const GS = FLOW.gridStep;
