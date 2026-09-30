@@ -57,24 +57,73 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
   let settling = false;
   let lockY = 0;
   const BLOCKED = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Spacebar"]);
-  const stop = (e: Event): void => e.preventDefault();
-  const stopKey = (e: KeyboardEvent): void => {
-    if (BLOCKED.has(e.key)) e.preventDefault();
+  // Resistance, not a wall: scroll attempts push against the held page (it bounces) and a few hard swipes break through and release it.
+  const THRESH = 1800;
+  const DECAY = 1200; // units of push that drain away every second
+  let energy = 0;
+  let energyAt = 0;
+  let lastBump = 0;
+  let touchY = 0;
+  let skip = false;
+  const bump = (dir: number, k: number): void => {
+    const d = 5 + 30 * Math.min(1, k);
+    pin.style.transition = "transform 70ms ease-out";
+    pin.style.transform = `translate3d(0, ${(-dir * d).toFixed(1)}px, 0)`;
+    window.setTimeout(() => {
+      pin.style.transition = "transform .55s cubic-bezier(.2,1.9,.35,1)"; // springs back past centre and settles
+      pin.style.transform = "";
+    }, 80);
+  };
+  const push = (amount: number, dir: number): void => {
+    const now = performance.now();
+    energy = Math.max(0, energy - ((now - energyAt) / 1000) * DECAY) + amount;
+    energyAt = now;
+    if (energy >= THRESH) {
+      skip = true; // enough hard pushing: let go
+      unlock();
+      auto = "done";
+      return;
+    }
+    if (now - lastBump > 90) {
+      lastBump = now;
+      bump(dir, energy / THRESH);
+    }
+  };
+  const onWheel = (e: WheelEvent): void => {
+    e.preventDefault();
+    push(Math.abs(e.deltaY), Math.sign(e.deltaY) || 1);
+  };
+  const onTouchStart = (e: TouchEvent): void => {
+    touchY = e.touches[0]?.clientY ?? 0;
+  };
+  const onTouchMove = (e: TouchEvent): void => {
+    e.preventDefault();
+    const y = e.touches[0]?.clientY ?? touchY;
+    const dy = touchY - y;
+    touchY = y;
+    if (dy) push(Math.abs(dy) * 1.6, Math.sign(dy));
+  };
+  const onKey = (e: KeyboardEvent): void => {
+    if (!BLOCKED.has(e.key)) return;
+    e.preventDefault();
+    push(260, e.key === "ArrowUp" || e.key === "PageUp" || e.key === "Home" ? -1 : 1);
   };
   const holdPos = (): void => {
     if (Math.abs(window.scrollY - lockY) > 1) window.scrollTo(0, lockY);
   };
   const lock = (): void => {
-    window.addEventListener("wheel", stop, { passive: false });
-    window.addEventListener("touchmove", stop, { passive: false });
-    window.addEventListener("keydown", stopKey);
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", holdPos, { passive: true });
     document.documentElement.classList.add("gallery-locked");
   };
   const unlock = (): void => {
-    window.removeEventListener("wheel", stop);
-    window.removeEventListener("touchmove", stop);
-    window.removeEventListener("keydown", stopKey);
+    window.removeEventListener("wheel", onWheel);
+    window.removeEventListener("touchstart", onTouchStart);
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("keydown", onKey);
     window.removeEventListener("scroll", holdPos);
     document.documentElement.classList.remove("gallery-locked");
   };
@@ -89,19 +138,19 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     window.scrollTo(0, lockY);
     lock();
     const n = total();
-    for (let g = 0; g < n && current() > 0 && !dead; g++) {
+    for (let g = 0; g < n && current() > 0 && !dead && !skip; g++) {
       press(-1);
       await sleep(700);
     }
-    for (let i = 0; i < n && !dead; i++) {
+    for (let i = 0; i < n && !dead && !skip; i++) {
       await sleep(options?.dwellMs[i] ?? 4500);
-      if (i < n - 1) {
+      if (i < n - 1 && !skip) {
         press(1);
         await sleep(1000); // the carousel's own move to the next slide
       }
     }
     unlock();
-    if (dead) return;
+    if (dead || skip) return; // the reader pushed through: they carry on from wherever they are
     auto = "done";
     settling = true;
     const travel = track.offsetHeight - pin.offsetHeight;
