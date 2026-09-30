@@ -16,11 +16,12 @@
   var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25, FLOOR = 0.26;
   var CREAM = [214, 181, 136], GOLD = [214, 181, 136];   /* Tan #D6B588: the whole pattern, the SANCHEZ outline and the ridges, in one colour (brightness still fades with distance) */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
-  var LEVELS = 20, WARMS = 6, NB = (LEVELS + 1) * WARMS, styles = [];
+  var LEVELS = 20, WARMS = 6, NB = (LEVELS + 1) * WARMS + 1, styles = [];   /* the last shade is reserved for the SANCHEZ outline */
   for (var lv = 0; lv <= LEVELS; lv++) for (var w = 0; w < WARMS; w++) {
     var k = lv / LEVELS, t = w / (WARMS - 1);
     styles.push("rgb(" + Math.round((CREAM[0] + (GOLD[0] - CREAM[0]) * t) * k) + "," + Math.round((CREAM[1] + (GOLD[1] - CREAM[1]) * t) * k) + "," + Math.round((CREAM[2] + (GOLD[2] - CREAM[2]) * t) * k) + ")");
   }
+  styles.push("rgb(" + Math.round(0.75 * 255 + 0.25 * CREAM[0]) + "," + Math.round(0.75 * 255 + 0.25 * CREAM[1]) + "," + Math.round(0.75 * 255 + 0.25 * CREAM[2]) + ")");   /* the outline wording: 75% bright white, 25% tan */
   var cursor = { x: 0, y: 0, active: false }, ripples = [], cell = 1, ox = 0, dpr = 1, moving = false, fieldEnd = 1e9, cw = 0, ch = 0;
 
   function load() {
@@ -138,7 +139,7 @@
       for (var x = 0; x < MW; x++, i++) {
         var b = -1;
         if (pr < R) {
-          if (inMap && bp[m * MW + x]) { if (pseed[base + x] < 0.9) b = LEVELS * WARMS; }            /* the outline: full cream */
+          if (inMap && bp[m * MW + x]) { if (pseed[base + x] < 0.9) b = NB - 1; }            /* the outline: its own bright white-tan shade */
           else if (!(inMap && bl[m * MW + x])) {
             var dw = ddw[base + x], tv = thv[base + x], vf = 0;
             if (env > 0.01) {
