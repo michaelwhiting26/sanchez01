@@ -131,6 +131,8 @@ export const ORBIT = {
   flowScroll: 0.022,
   /** The long axis of the oval, radians (top-left to bottom-right). */
   axis: 0.62,
+  /** Extra ridge width (cells) added far from the swirl while the orbit is on, so the whole gallery backdrop is dense. */
+  denseBoost: 5.6,
 } as const;
 
 export const CLOUDS = {

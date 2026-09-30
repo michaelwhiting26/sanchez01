@@ -729,7 +729,7 @@ export class HeroEngine {
               const rel = dw - drift * (1 - env) + flow;
               const ring = Math.floor(rel / period);
               const ph = rel - ring * period;
-              const WE = width * (1 + 0.55 * wv1) + 1.8 * Math.max(0, wv); // thicker in places where the flow swells
+              const WE = width * (1 + 0.55 * wv1) + 1.8 * Math.max(0, wv) + ORBIT.denseBoost * env * (1 - vf); // in the orbit the far field thickens so the corners are dense too // thicker in places where the flow swells
               const hr = hash1(ring * 45.164);
               const DL = Math.min(stitch + gap - 1.6, stitch * (1 + 1.5 * hr * hr)); // some ridges get much longer dashes
               const run = (tv * (dw + 34)) / (stitch + gap) + ring * 0.37 + ((Math.sin(ring * 12.9898) * 43758.5453) % 1);
@@ -740,7 +740,8 @@ export class HeroEngine {
               const dpos = (run - seg) * (stitch + gap);
               const dcv = Math.min(1, Math.min(dpos + 0.6 + 1.0 * wv1, DL + 1 * wv1 - dpos + 0.6));
               if (cov > 0.02 && dcv > 0.02 && !gone) {
-                const fade = floor + (1 - floor) * Math.exp(-dw / (maxD * 0.34));
+                const fade0 = floor + (1 - floor) * Math.exp(-dw / (maxD * 0.34));
+                const fade = fade0 + env * 0.8 * (1 - fade0);
                 const kk = Math.min(1, (0.4 * fade + wav * 0.55 * fade) * (1 + 1.3 * vf) * (cov * dcv) ** 0.7 * 1.2 * (1 + 0.5 * wv1));
                 const warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));
                 const lv2 = Math.round(kk * levels);
