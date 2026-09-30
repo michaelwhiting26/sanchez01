@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=hold1">
+  <link rel="stylesheet" href="globe-hero.css?v=min4">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
-  <script src="app.js?v=1790708958" defer></script>
+  <script src="app.js?v=min3" defer></script>
 </head>
 <body data-page="home">
 <header class="site-header" data-chrome="header"></header>
@@ -99,68 +99,7 @@
   <script src="marquee.js?v=1790704185" defer></script>
 
 
-  <!-- WORK IN PROGRESS: the way to the sections taken off the home screen (scroll portal, tech text, video hero, original sections, globe, saved hero revisions) -->
-  <section class="wip-cta" aria-labelledby="wip-cta-title">
-    <div class="container">
-      <p class="eyebrow">Still taking shape</p>
-      <h2 id="wip-cta-title" class="wip-cta__title">Work in progress</h2>
-      <a class="btn btn--secondary btn--lg" href="work-in-progress.html">See what we are working on <svg class="icon icon--dir" aria-hidden="true"><use href="#i-arrow-right"></use></svg></a>
-    </div>
-  </section>
 
-  <!-- QUOTE FORM (real Wix fields: "Request a Quote from the Owner") -->
-  <section class="section section--surface" id="quote" aria-labelledby="quote-title">
-    <div class="container container--narrow">
-      <div class="section-head">
-        <p class="eyebrow">Talk to Jesse</p>
-        <h2 class="display-2" id="quote-title">Request a quote from the owner</h2>
-        <p class="muted">Fields marked <span class="accent-text">*</span> are required.</p>
-      </div>
-      <form class="stack stack--lg" data-validate data-success="Thanks. Your request is in (prototype: nothing was sent)." aria-labelledby="quote-title">
-        <div class="error-summary" data-error-summary hidden tabindex="-1"></div>
-        <div class="notice notice--success" data-form-success hidden tabindex="-1"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg><div>Request received. Jesse replies by your chosen method. <span class="ph">PLACEHOLDER: response time</span></div></div>
-        <div class="field__row">
-          <div class="field">
-            <label class="field__label" for="q-name">First name</label>
-            <input class="input" id="q-name" name="firstName" type="text" autocomplete="given-name">
-          </div>
-          <div class="field">
-            <label class="field__label" for="q-email">Email <span class="req" aria-hidden="true">*</span></label>
-            <input class="input" id="q-email" name="email" type="email" autocomplete="email" required>
-          </div>
-        </div>
-        <div class="field__row">
-          <div class="field">
-            <label class="field__label" for="q-phone">Phone</label>
-            <input class="input" id="q-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">
-          </div>
-          <div class="field">
-            <label class="field__label" for="q-gym">Gym name</label>
-            <input class="input" id="q-gym" name="gym" type="text" autocomplete="organization">
-          </div>
-        </div>
-        <label class="check" for="q-today"><input type="checkbox" id="q-today" name="urgent"><span>I need a quote today</span></label>
-        <div class="field">
-          <label class="field__label" for="q-need">What do you need</label>
-          <textarea class="textarea" id="q-need" name="need" rows="4"></textarea>
-        </div>
-        <div class="field" style="max-inline-size:16rem">
-          <label class="field__label" for="q-date">When do you need it by</label>
-          <input class="input" id="q-date" name="neededBy" type="date">
-        </div>
-        <fieldset class="field">
-          <legend>Contact me via</legend>
-          <div class="check-group check-group--row">
-            <label class="check" for="q-via-text"><input type="checkbox" id="q-via-text" name="via" value="text"><span>Text</span></label>
-            <label class="check" for="q-via-call"><input type="checkbox" id="q-via-call" name="via" value="call"><span>Call</span></label>
-            <label class="check" for="q-via-email"><input type="checkbox" id="q-via-email" name="via" value="email"><span>Email</span></label>
-          </div>
-        </fieldset>
-        <p class="xsmall muted">We use your details only to reply to this request. See our <a href="legal-privacy.html">privacy policy</a>.</p>
-        <div><button class="btn btn--primary btn--lg" type="submit">Send</button></div>
-      </form>
-    </div>
-  </section>
   <!-- FLARE CAROUSEL (flare-carousel.js): one hero card, neighbours flare into huge curved walls. Card copy reuses the grounded wording of the old carousel; "PLACEHOLDER" = client names still need written consent. -->
   <section id="flare" class="flare flare--embed" data-flare data-embed aria-roledescription="carousel" aria-label="Sanchez in pictures" data-cards='[
       {"title":"The workshop","sub":"Pattaya","foot":"Handmade in Pattaya","src":"assets/carousel/clip1.jpg","colors":["#1f0a06","#902b1a","#c27446"],"dir":1},
@@ -191,7 +130,7 @@
           <img class="rise__logo" src="assets/site/images/3d2aa4_57957db32ff34fe8ac950b275e2e774b~mv2.webp" alt="Sanchez Custom Boxing Equipment">
           <a class="rollBtn rise__cta" href="contact.html" aria-label="Build your identity" data-roll="Build your identity"></a>
         </div>
-        <footer class="site-footer" data-chrome="footer"></footer>
+        <footer class="site-footer" data-chrome="footer" data-footer-min></footer>
       </div>
     </div>
   </div>

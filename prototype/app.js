@@ -208,7 +208,23 @@
     }
 
     var footer = $('[data-chrome="footer"]');
-    if (footer) {
+    if (footer && footer.hasAttribute("data-footer-min")) {
+      /* minimal footer (home page rise panel): brand block, then the copyright line with Terms / Privacy / Cookies. Nothing else. */
+      footer.innerHTML =
+        '<div class="container">' +
+        '<div class="footer-top footer-top--min">' +
+        '<div class="footer-brand"><div class="footer-logo-row"><img src="' + D.logo + '" alt="Sanchez Custom Boxing Equipment" width="96" height="83" loading="lazy">' +
+        '<div class="footer-globe" data-footer-globe aria-hidden="true"></div></div>' +
+        '<p class="origin-line">' + D.origin + "</p>" +
+        '<ul class="footer-cities" aria-label="Where we work">' + ["London", "Dubai", "Thailand", "Sydney"].map(function (c) { return "<li>" + c + "</li>"; }).join("") + "</ul>" +
+        '<ul class="social-links" aria-label="Instagram">' + D.socials.map(function (s) {
+          return '<li><a href="' + s.href + '" rel="noopener" target="_blank">' + ic("instagram") + s.handle + '<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>';
+        }).join("") + "</ul></div></div>" +
+        '<div class="footer-bottom footer-bottom--min">' +
+        "<p>© " + new Date().getFullYear() + " Sanchez Custom Boxing Equipment.</p>" +
+        '<ul class="legal-links" aria-label="Legal">' + D.legal.map(function (l) { return '<li><a href="' + l[0] + '">' + l[1] + "</a></li>"; }).join("") + "</ul>" +
+        "</div></div>";
+    } else if (footer) {
       footer.innerHTML =
         '<div class="container">' +
         '<div class="footer-top">' +
