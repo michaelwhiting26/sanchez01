@@ -5,9 +5,10 @@
  * One fixed layer behind the page; the scroll position is the only input. Draws only while visible; reduced motion draws a still frame.
  */
 type Rgb = readonly [number, number, number];
-const RUST: Rgb = [196, 85, 58];
-const GOLD: Rgb = [201, 164, 92];
-const CREAM: Rgb = [243, 234, 220];
+// the film's colours (the developed-film brown and amber of the gallery tape): strand A the deep brown-orange base, strand B the warm amber, rungs the pale highlight
+const RUST: Rgb = [176, 96, 38];
+const GOLD: Rgb = [236, 164, 86];
+const CREAM: Rgb = [255, 212, 164];
 
 const smooth = (a: number, b: number, x: number): number => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));

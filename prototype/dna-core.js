@@ -7,7 +7,7 @@
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, coarse = matchMedia("(pointer: coarse)").matches;
   var cv = document.createElement("canvas"); cv.className = "dna-core"; cv.setAttribute("aria-hidden", "true");
   document.body.insertBefore(cv, document.body.firstChild ? document.body.firstChild.nextSibling : null); var ctx = cv.getContext("2d");
-  var RUST = [196, 85, 58], GOLD = [201, 164, 92], CREAM = [243, 234, 220];
+  var RUST = [176, 96, 38], GOLD = [236, 164, 86], CREAM = [255, 212, 164];   /* the film's brown and amber */
   var W = 0, H = 0, dpr = 1, pitch = 210, phase0 = 0, dirty = true, t0 = performance.now(), fieldEnd = 3000, last = 0;
   function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   window.SZ_DNA = { setSeed: function (s) { var h = hash(String(s || "sanchez")); pitch = 170 + (h & 255) / 255 * 90; phase0 = ((h >> 8) & 1023) / 1023 * 6.283; dirty = true; } };
