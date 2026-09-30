@@ -9,7 +9,6 @@ const STORE_KEY = "sz.waitlist";
 const METHODS: readonly { value: WaitlistMethod; label: string }[] = [
   { value: "email", label: "Email" },
   { value: "gmail", label: "Gmail" },
-  { value: "other", label: "Other" },
 ];
 
 /** Types the five FOMO lines into the field's placeholder on a loop; stops the moment the field is focused, resumes when it is left empty. */
