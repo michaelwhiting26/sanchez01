@@ -28,7 +28,7 @@ const TAN = new THREE.Color(0xc2a673);
 
 const host = document.querySelector("[data-stage]");
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 700 ? 1.5 : 2));   /* lighter on phones */
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 host.appendChild(renderer.domElement);
 renderer.domElement.style.cssText = "display:block;inline-size:100%;block-size:100%";
@@ -106,11 +106,15 @@ function build(model) {
 
   const tileGeo = new THREE.BoxGeometry(1, 1, 1);
   const tileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.05, envMapIntensity: 0.5 });
-  const letters = [], n = WORD.length, x0 = -((n - 1) * SLOT) / 2, cellL = LH / RL;
+  const letters = [], n = WORD.length, cellL = LH / RL;
+  /* layout: one row on wide screens; on a phone (portrait) two rows, SAN over CHEZ, so the letters stay big enough to read */
+  const portrait = (host.clientWidth || 1) / (host.clientHeight || 1) < 0.9;
+  const ROWSPEC = portrait ? [[0, 1, 2], [3, 4, 5, 6]] : [[0, 1, 2, 3, 4, 5, 6]], ROWGAP = LH * 1.3;
+  const slotOf = []; ROWSPEC.forEach((row, ri) => row.forEach((k, i) => { slotOf[k] = { x: (i - (row.length - 1) / 2) * SLOT, y: ((ROWSPEC.length - 1) / 2 - ri) * ROWGAP }; }));
 
   for (let k = 0; k < n; k++) {
     const hex = COLOURS[k % COLOURS.length], base = new THREE.Color(hex);
-    const { cells, cols } = letterGrid(WORD[k]), cx = x0 + k * SLOT;
+    const { cells, cols } = letterGrid(WORD[k]), cx = slotOf[k].x, cy0 = slotOf[k].y;
     /* cylinder skin sized to hold at least as many tiles as the letter has cells (extras hide just behind the letter) */
     const rows = Math.max(6, Math.round(Math.sqrt((cells.length * HB) / (2 * Math.PI * R)))), cc = Math.ceil(cells.length / rows), M = rows * cc;
     const lc = cells.slice(); while (lc.length < M) { const s = cells[Math.floor(rnd() * cells.length)]; lc.push({ ...s, hidden: true }); }
@@ -121,7 +125,7 @@ function build(model) {
     const dark = base.clone().multiplyScalar(0.3), light = base.clone().lerp(new THREE.Color(0xd2d5da), 0.7);   /* greyish highlights, as in the reference */
     const accent = new THREE.Color(k % 2 === 0 ? 0xc4202a : 0xdfe6f2);
     const tiles = lc.map((cell, i) => {
-      const cy = cyl[i], lx = cx + (cell.c - cols / 2 + 0.5) * cellL, ly = (RL / 2 - cell.r - 0.5) * cellL + 0.15;
+      const cy = cyl[i], lx = cx + (cell.c - cols / 2 + 0.5) * cellL, ly = (RL / 2 - cell.r - 0.5) * cellL + cy0;
       const dg = noise2((cell.c * 0.7 + cell.r * 0.5) * 0.05, (cell.c * 0.5 - cell.r * 0.7) * 0.11, k);   /* long diagonal streaks */
       const nz = dg * 0.75 + noise2(cell.c * 0.35, cell.r * 0.35, k + 9) * 0.25;
       const f = clamp01(nz * 1.5 - 0.3 + (rnd() - 0.5) * 0.14);   /* mostly deep colour, with a speckle, lighter streaks and an accent band */
@@ -130,7 +134,7 @@ function build(model) {
       if (!cell.edge && nz > 0.78 + (rnd() - 0.5) * 0.06) col.lerp(accent, 0.7);
       col.multiplyScalar(0.9 + rnd() * 0.2);
       const vn = 1 - cy.row / (rows - 1);                   /* 0 at the bottom of the bag, 1 at the top */
-      return { th: cy.th, cyY: byc + (vn - 0.5) * HB, lx, ly, lz: cell.hidden ? -0.12 : 0, col, cwx: ((2 * Math.PI * R) / cc) * 1.04, cwy: (HB / rows) * 1.04,
+      return { th: cy.th, cyY: cy0 + byc + (vn - 0.5) * HB, lx, ly, lz: cell.hidden ? -0.12 : 0, col, cwx: ((2 * Math.PI * R) / cc) * 1.04, cwy: (HB / rows) * 1.04,
         st: clamp01((cell.r / RL) * 0.55 + rnd() * 0.45), rnd: rnd(), hidden: !!cell.hidden };
     });
     const mesh = new THREE.InstancedMesh(tileGeo, tileMat, tiles.length); mesh.frustumCulled = false; mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -140,11 +144,11 @@ function build(model) {
     const g = new THREE.Group(), bodyG = new THREE.Group(), partsG = new THREE.Group(); g.add(bodyG, partsG); scene.add(g);
     const bm = bodyMat(hex);
     parts.forEach((p) => { const m = new THREE.Mesh(p.geo, p.isBody ? bm : pick(p.name)); (p.isBody ? bodyG : partsG).add(m); });
-    letters.push({ k, g, bodyG, partsG, mesh, tiles, cx, start: START + k * (MORPH + GAP), drop: 0.16 * k, dir: k % 2 ? -1 : 1 });
+    letters.push({ k, g, bodyG, partsG, mesh, tiles, cx, cy: cy0, start: START + k * (MORPH + GAP), drop: 0.16 * k, dir: k % 2 ? -1 : 1 });
   }
 
   /* camera: fit the whole word */
-  const W = (n - 1) * SLOT + LW, H = LH;
+  const W = Math.max(...ROWSPEC.map((r) => (r.length - 1) * SLOT + LW)), H = ROWSPEC.length * LH + (ROWSPEC.length - 1) * (ROWGAP - LH);
   const fit = () => {
     const w = host.clientWidth || 1, h = host.clientHeight || 1; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
     const f = THREE.MathUtils.degToRad(cam.fov), d = Math.max((H * 0.95) / Math.tan(f / 2), (W * 0.64) / (Math.tan(f / 2) * cam.aspect));
@@ -159,7 +163,7 @@ function build(model) {
       const inU = clamp01((t - L.drop) / INTRO), land = ease.out(inU), morphing = tau > 0;
       /* spin: a gentle idle turn, then it winds up into a few full turns during the morph and slows to a stop */
       const spin = L.dir * (t * 0.5 + (1 - land) * 10 + 3 * Math.PI * 2 * ease.io(tau));
-      L.g.position.set(L.cx, (1 - land) * 9, 0); L.g.scale.setScalar(SB); L.g.rotation.set(Math.sin(t * 1.3 + L.k) * 0.02 * (1 - tau), spin, 0);
+      L.g.position.set(L.cx, L.cy + (1 - land) * 9, 0); L.g.scale.setScalar(SB); L.g.rotation.set(Math.sin(t * 1.3 + L.k) * 0.02 * (1 - tau), spin, 0);
       L.bodyG.visible = !morphing;
       const fade = 1 - ease.io(clamp01(tau / 0.4)); L.partsG.scale.setScalar(Math.max(0.0001, fade)); L.partsG.visible = tau < 0.4;
       L.g.visible = tau < 1 && inU > 0; L.mesh.visible = morphing;
