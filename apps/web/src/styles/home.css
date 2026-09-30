@@ -841,3 +841,14 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 /* Jesse, 2D (from his own Instagram training footage), placed under the bag for now; the owner will reposition it */
 .jesse-2d { position: relative; z-index: 1; display: grid; place-items: center; padding-block: clamp(32px, 8svh, 96px); }
 .jesse-2d img { display: block; block-size: min(72svh, 620px); inline-size: auto; max-inline-size: 92vw; object-fit: contain; }
+
+/* Submit tethered to the globe (replaces the orbit): a wide bar floating above the globe, a fine tether down to the globe's top edge */
+.globe-slot { padding-block-start: 150px; }
+.orbit-layer { overflow: visible; }
+.orbit-tether { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; pointer-events: none; z-index: 2; }
+.orbit-tether line { stroke: #6fb4e8; stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 4px rgb(111 180 232 / .6)); }
+.orbit-submit { inline-size: min(78vw, 360px); block-size: 64px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 14px; transform-origin: 50% 50%; will-change: transform; pointer-events: auto; z-index: 3; opacity: 1 !important;
+  font: 800 1.15rem/1 "Mona Sans", var(--font-display), Arial, sans-serif; font-variation-settings: "wdth" 86; letter-spacing: .02em; text-transform: uppercase; background: #a24a2e; border-color: #a24a2e; color: #fff; box-shadow: 0 14px 34px rgb(0 0 0 / .5); }
+.orbit-submit svg { inline-size: 20px; block-size: 20px; }
+.orbit-submit:hover:not(:disabled) { background: #b8573a; border-color: #b8573a; }
+.orbit-submit.is-done { background: #f3eadc; border-color: #f3eadc; color: #0e0b09; }
