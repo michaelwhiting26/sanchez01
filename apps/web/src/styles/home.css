@@ -852,3 +852,9 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .orbit-submit svg { inline-size: 20px; block-size: 20px; }
 .orbit-submit:hover:not(:disabled) { background: #b8573a; border-color: #b8573a; }
 .orbit-submit.is-done { background: #f3eadc; border-color: #f3eadc; color: #0e0b09; }
+
+/* Sneaking runner on the ribbon (ribbon-sneak.ts): clipped sideways, free to rise above the ribbon's top edge */
+.curved-loop { overflow-x: clip; overflow-y: visible; }
+.ribbon-sneak { position: absolute; inset-block-start: 0; inset-inline-start: 0; inline-size: 0; block-size: 0; visibility: hidden; pointer-events: none; z-index: 2; will-change: transform; contain: layout style; }
+.ribbon-sneak__sheet { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 100% 100%; }
+@media (prefers-reduced-motion: reduce) { .ribbon-sneak { display: none; } }

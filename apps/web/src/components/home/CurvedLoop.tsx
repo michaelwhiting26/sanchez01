@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { CurvedLoop as Engine } from "@/lib/curved-loop";
+import { RibbonSneak } from "@/lib/ribbon-sneak";
 
 interface Props {
   /** Words separated by ✦. */
@@ -14,6 +15,7 @@ interface Props {
 /** SANCHEZ ✦ CUSTOM ✦ on an arc. Drag to push it or reverse it. */
 export function CurvedLoop({ text, curve = 140, speed = 1.6, starSrc = "/assets/brand/sparkle-3d.png" }: Props) {
   const rootRef = useRef<HTMLElement>(null);
+  const actorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -23,5 +25,23 @@ export function CurvedLoop({ text, curve = 140, speed = 1.6, starSrc = "/assets/
     return () => loop.destroy();
   }, [text, curve, speed, starSrc]);
 
-  return <section className="curved-loop" ref={rootRef} data-curved-loop="" />;
+  // the sneaking runner rides the ribbon on scroll; omitted entirely under reduced motion
+  useEffect(() => {
+    const root = rootRef.current;
+    const actor = actorRef.current;
+    if (!root || !actor || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const sneak = new RibbonSneak(root, actor);
+    sneak.start();
+    (window as unknown as { __ribbonSneak?: RibbonSneak }).__ribbonSneak = sneak;
+    return () => sneak.destroy();
+  }, []);
+
+  return (
+    <section className="curved-loop" ref={rootRef} data-curved-loop="">
+      <div className="ribbon-sneak" ref={actorRef} aria-hidden="true">
+        <div className="ribbon-sneak__sheet" data-sneak-walk="" />
+        <div className="ribbon-sneak__sheet" data-sneak-look="" style={{ display: "none" }} />
+      </div>
+    </section>
+  );
 }
