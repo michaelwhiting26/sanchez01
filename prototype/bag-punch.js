@@ -244,6 +244,7 @@ function start(root) {
   const base = new THREE.Vector3(1, 1, 1);
   let onScreen = true;   /* off screen: no drawing (a hidden WebGL scene still costs a phone real battery and frame rate) */
   new IntersectionObserver((e) => { onScreen = e[0].isIntersecting; }, { rootMargin: "150px" }).observe(root);
+  const DNA_RATE = (2 * Math.PI * 0.55) / 210;   /* radians per pixel of scroll: exactly how fast the DNA helix turns */
   const loop = () => {
     requestAnimationFrame(loop);
     if (!onScreen) return;
@@ -251,7 +252,10 @@ function start(root) {
       spin += spinVel; spinVel *= 0.94; if (Math.abs(spinVel) < 0.0004) spinVel = 0;
       if (!reduce && !hover && spinVel === 0 && performance.now() > resumeAt) spin += 0.003;   /* slow turn (about 35 s a revolution) while nobody is touching it */
     }
-    spinG.rotation.y = spin;
+    /* entry spin: as the bag scrolls up from the bottom of the screen it turns at the DNA's own rate (0.55 turn per 210px of scroll), and that rate tapers smoothly to zero as it settles into its place on the page */
+    let entry = 0;
+    if (!reduce) { const r = root.getBoundingClientRect(), vh = window.innerHeight || 1, k = Math.max(0, (r.top + r.height / 2 - vh / 2) / vh); entry = -(DNA_RATE * vh / 2) * k * k; }
+    spinG.rotation.y = spin + entry;
     pivot.rotation.z = S.swingZ; pivot.rotation.x = S.swingX; twist.rotation.y = S.twist;
     const d = S.dent * 0.045; bodyGroup.scale.set((base.x - d) * SW.k, (base.y + d * 0.35) * SW.k, (base.z - d) * SW.k);
     ring.material.opacity = S.ring > 0 && S.ring < 1 ? (1 - S.ring) * 0.8 : 0; ring.scale.setScalar(0.4 + S.ring * 1.8);

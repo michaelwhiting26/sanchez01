@@ -3,10 +3,11 @@
   document.querySelectorAll("[data-curved-loop]").forEach(function (root) {
     var NS = "http://www.w3.org/2000/svg", text = (root.getAttribute("data-text") || "SANCHEZ ✦ ").replace(/ /g, " ");
     var STAR = "\u2726", GAP = "\u00a0\u00a0\u00a0\u00a0", pieces = text.split(STAR); text = pieces.join(GAP);   /* the star glyph is not in our font, so each phone draws it from a different fallback with a different width; a run of spaces in our own font is the same everywhere */
-    var curve = Number(root.getAttribute("data-curve") || 400), speed = Number(root.getAttribute("data-speed") || 1.6);
+    var VW = (root.clientWidth || window.innerWidth) < 700 ? 640 : 1440;   /* the drawing is VW units wide and scaled to the screen: on a phone a narrower drawing keeps the letters big */
+    var curve = Number(root.getAttribute("data-curve") || 400) * (VW < 1440 ? 0.6 : 1), speed = Number(root.getAttribute("data-speed") || 1.6);
     var id = "cl-" + Math.random().toString(36).slice(2, 8);
-    var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 1440 " + (70 + curve / 2)); svg.setAttribute("class", "curved-loop__svg"); svg.setAttribute("aria-hidden", "true");
-    var path = document.createElementNS(NS, "path"); path.setAttribute("id", id); path.setAttribute("d", "M-100,50 Q720," + (50 + curve) + " 1540,50"); path.setAttribute("fill", "none");
+    var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 " + VW + " " + (70 + curve / 2)); svg.setAttribute("class", "curved-loop__svg"); svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS(NS, "path"); path.setAttribute("id", id); path.setAttribute("d", "M-100,50 Q" + VW / 2 + "," + (50 + curve) + " " + (VW + 100) + ",50"); path.setAttribute("fill", "none");
     var measure = document.createElementNS(NS, "text"); measure.setAttribute("class", "curved-loop__text"); measure.style.visibility = "hidden"; measure.textContent = text;
     var t = document.createElementNS(NS, "text"); t.setAttribute("class", "curved-loop__text");
     var tp = document.createElementNS(NS, "textPath"); tp.setAttribute("href", "#" + id);
@@ -67,7 +68,7 @@
         var p0 = path.getPointAtLength(d), pa = path.getPointAtLength(Math.max(0, d - 2)), pb = path.getPointAtLength(Math.min(plen, d + 2));
         var rot = Math.atan2(pb.y - pa.y, pb.x - pa.x), c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
         var cx = p0.x + up * sn, cy = p0.y - up * c;
-        if (cx < -80 || cx > 1520) { st.img.style.display = "none"; continue; }
+        if (cx < -80 || cx > VW + 80) { st.img.style.display = "none"; continue; }
         var sx = 1 - 0.10 * Math.abs(Math.sin(rot * 1.6)), wob = 3 * Math.sin(cx / 150 + i);           /* turns a little like a metal object as it rides the curve */
         st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ") rotate(" + (rot * 180 / Math.PI + wob).toFixed(2) + ") scale(" + sx.toFixed(3) + " 1) translate(" + (-SIZE / 2) + " " + (-SIZE / 2) + ")"); st.img.style.display = "";
         var gp = (cx / 520 + i * 0.37) % 1; st.glint.setAttribute("x", (-30 + 96 * (gp < 0 ? gp + 1 : gp)).toFixed(1));            /* the glint sweeps across the star once every ~520px of travel */
@@ -89,7 +90,7 @@
       wrap(); tp.setAttribute("startOffset", offset + "px"); place(); requestAnimationFrame(step);
     }
     root.addEventListener("pointerdown", function (e) { drag = true; lastX = e.clientX; vel = 0; root.setPointerCapture(e.pointerId); });
-    root.addEventListener("pointermove", function (e) { if (!drag) return; var dx = e.clientX - lastX; lastX = e.clientX; offset += dx * (1440 / root.clientWidth); vel = dx; wrap(); tp.setAttribute("startOffset", offset + "px"); place(); });
+    root.addEventListener("pointermove", function (e) { if (!drag) return; var dx = e.clientX - lastX; lastX = e.clientX; offset += dx * (VW / root.clientWidth); vel = dx; wrap(); tp.setAttribute("startOffset", offset + "px"); place(); });
     function end() { if (!drag) return; drag = false; if (Math.abs(vel) > 0.5) dir = vel > 0 ? 1 : -1; }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(setup); else setup();

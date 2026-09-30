@@ -26,8 +26,9 @@
 
   function measure() {
     vh = window.innerHeight || 1;
-    if (!mq.matches) { root.style.height = ""; root.classList.remove("is-pinned"); root.style.setProperty("--rise", "1"); root.classList.add("is-in"); return; }
-    root.classList.add("is-pinned");
+    if (!mq.matches) { root.style.height = ""; root.style.marginTop = ""; document.documentElement.classList.remove("rise-pinned"); root.classList.remove("is-pinned"); root.style.setProperty("--rise", "1"); root.classList.add("is-in"); return; }
+    root.classList.add("is-pinned"); document.documentElement.classList.add("rise-pinned");
+    var prev = document.getElementById("flare") || root.previousElementSibling; root.style.marginTop = prev ? -prev.offsetHeight + "px" : "";   /* start pinned the moment the carousel pins, so the panel rises over it */
     reveal = Math.round(vh * 1.4);                                   /* the extra scroll: rise, pause, rise again */
     over = Math.max(0, card.offsetHeight - vh);                      /* the footer is taller than the screen: after the rise, scroll on through it while the stage stays pinned */
     root.style.setProperty("--overflow", over + "px");

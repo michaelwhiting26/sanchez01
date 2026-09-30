@@ -9,8 +9,8 @@
   </style>
   <defs>
     <radialGradient id="cardFill" cx="50%" cy="18%" r="100%">
-      <stop offset="0" stop-color="#17181B"/>
-      <stop offset="0.55" stop-color="#111216"/>
+      <stop offset="0" stop-color="#26282E"/>
+      <stop offset="0.55" stop-color="#181A1F"/>
       <stop offset="1" stop-color="#0A0B0D"/>
     </radialGradient>
     <radialGradient id="redVignette" cx="50%" cy="92%" r="52%">
@@ -26,8 +26,8 @@
        made this entire opaque surface disappear, letting the gallery show
        through. The decorative drop shadow now lives in CSS (see .cf__grain). -->
   <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="url(#cardFill)"/>
-  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="1.4"/>
-  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="none" stroke="#F32231" stroke-opacity="0.20" stroke-width="0.9"/>
+  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="none" stroke="#F3EADC" stroke-opacity="0.55" stroke-width="2"/>
+  <path d="M60 128 H785 C835 128 837 88 910 88 H1138 C1211 88 1213 128 1263 128 H1988 C2010 128 2028 146 2028 168 V1152 H20 V168 C20 146 38 128 60 128 Z" fill="none" stroke="#C4553A" stroke-opacity="0.6" stroke-width="1.2"/>
   <g clip-path="url(#cardClip)">
     <rect x="20" y="128" width="2008" height="1004" fill="url(#redVignette)"/>
     <g class="st st-a" transform="translate(0 -22)" fill="none" stroke="#C9A45C" stroke-opacity="0.07" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="8 4 8 4 8 4 8 16">
