@@ -357,10 +357,10 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 .rise__statement { margin: clamp(28px, 3.6vw, 64px) 0 0; text-align: center; font: 700 clamp(48px, 8vw, 128px)/.9 var(--font-display); letter-spacing: .01em; text-transform: uppercase; color: #fff; }
 .rise__statement em { font-style: normal; color: var(--color-accent-text, #c4553a); }
 /* one-shot copy reveal */
-.rise__statement, .rise__cta { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)), transform .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)); }
-.rise.is-in .rise__statement, .rise.is-in .rise__cta { opacity: 1; transform: none; }
+.rise__logo, .rise__cta { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)), transform .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)); }
+.rise.is-in .rise__logo, .rise.is-in .rise__cta { opacity: 1; transform: none; }
 @media (max-width: 760px) { .rise__panel { inline-size: 100%; } }
-@media (prefers-reduced-motion: reduce) { .rise__statement, .rise__cta { opacity: 1; transform: none; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .rise__logo, .rise__cta { opacity: 1; transform: none; transition: none; } }
 /* desktop + motion: the stage pins for the tall section and the card rides --rise */
 .rise.is-pinned .rise__stage { position: sticky; top: 0; block-size: 100vh; overflow: hidden; }
 .rise.is-pinned .rise__card { block-size: auto; min-block-size: 100vh; transform: translate3d(0, calc((1 - var(--rise, 0)) * 100vh - var(--more, 0) * var(--overflow, 0px)), 0); will-change: transform; }
@@ -409,3 +409,9 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 /* Mona Sans (GitHub, SIL OFL) for the button, exactly as on mr-2: heavy, slightly condensed, no tracking */
 @font-face { font-family: "Mona Sans"; src: url("assets/fonts/MonaSans-Variable.woff2") format("woff2"); font-weight: 200 900; font-stretch: 75% 125%; font-style: normal; font-display: swap; }
 .enq__text { font-family: "Mona Sans", var(--font-display), Arial, sans-serif; font-weight: 800; font-variation-settings: "wdth" 86; font-size: 1rem; line-height: 1; letter-spacing: 0; text-transform: uppercase; }
+
+/* the logo replaces the big heading: logo and button dead centre of the first screen of the card, the footer follows below */
+.rise__panel { padding-block-start: 6.25vw; }
+.rise__hero { min-block-size: calc(100vh - 6.25vw); inline-size: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4vh, 44px); }
+.rise__logo { inline-size: clamp(220px, 26vw, 420px); block-size: auto; margin: 0; }
+.rise__hero .rollBtn { margin: 0; }
