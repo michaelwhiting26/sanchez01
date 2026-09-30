@@ -643,3 +643,12 @@ html.gallery-locked { overscroll-behavior: none; }
 
 /* "Waitlist" heading: the same heavy, slightly condensed Mona Sans in red as the mr-2 "Killer Kelly" button text (red = the site's accent) */
 .waitlist__title { font-family: "Mona Sans", var(--font-display), Arial, sans-serif; font-weight: 800; font-variation-settings: "wdth" 86; letter-spacing: 0; color: var(--color-accent-text, #c4553a); }
+
+/* "Order" button: the Button 85 look, a dark rounded button with a slowly shifting rainbow glow round it (the ghost button keeps its plain outline) */
+.bag-punch__btn:not(.bag-punch__btn--ghost) { position: relative; z-index: 0; border: 0; border-radius: 14px; background: transparent; color: #fff; }
+.bag-punch__btn:not(.bag-punch__btn--ghost)::before { content: ""; position: absolute; inset: -2px; z-index: -2; border-radius: 16px; background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; filter: blur(7px); opacity: .9; animation: bp-glow 20s linear infinite; transition: filter .35s ease, opacity .35s ease; }
+.bag-punch__btn:not(.bag-punch__btn--ghost)::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 14px; background: #222; }
+.bag-punch__btn:not(.bag-punch__btn--ghost):hover, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible { background: transparent; color: #fff; }
+.bag-punch__btn:not(.bag-punch__btn--ghost):hover::before, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible::before { filter: blur(11px); opacity: 1; }
+@keyframes bp-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .bag-punch__btn:not(.bag-punch__btn--ghost)::before { animation: none; } }
