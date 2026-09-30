@@ -68,6 +68,8 @@ export function WorkshopGallery() {
     if (scrollDriven) track.dataset.pgSd = ""; // switches on the compositor-driven CSS animation (home.css)
 
     let travel = 0;
+    let f0 = 0.5; // where on screen (0..1) the highlight sits at the start: the first card's centre
+    let f1 = 0.5; // and at the end: the last card's centre once the strip stops (flush right)
     let start = 0; // track's top in document coordinates
     let trackH = 0;
     let vw = window.innerWidth || 1;
@@ -98,13 +100,14 @@ export function WorkshopGallery() {
         }
       }
       const shift = travel * d;
+      const fx = f0 + (f1 - f0) * d; // the focal point travels with the scroll, so the first card leads at the start and slide 6 at the end
       let bestI = 0;
       let bestF = -1;
       for (let i = 0; i < cards.length; i++) {
         const c = cards[i];
         if (!c) continue;
         const s = clamp01((c.centre - shift) / vw);
-        const focus = smooth(clamp01(1 - 2 * Math.abs(s - 0.5)));
+        const focus = smooth(clamp01(1 - 2 * Math.abs(s - fx)));
         if (Math.abs(focus - c.focus) > 0.004) {
           c.focus = focus;
           c.el.style.setProperty("--focus", focus.toFixed(3));
@@ -145,10 +148,11 @@ export function WorkshopGallery() {
       vw = window.innerWidth || 1;
       vh = window.innerHeight || 1;
       const stage = pin.offsetHeight;
-      // stop with the last card (slide 6) centred. Not strip.scrollWidth: the sprocket rails (::before/::after) reach 100vw past the strip's ends and
-      // would add a whole screen of empty travel after the last slide
+      // stop with the last card (slide 6) flush right, leaving a right margin equal to the gap between cards. Not strip.scrollWidth: the sprocket rails
+      // (::before/::after) reach 100vw past the strip's ends and would add a whole screen of empty travel after the last slide
       const lastCard = cards[cards.length - 1]?.el;
-      travel = lastCard ? Math.max(0, lastCard.offsetLeft + lastCard.offsetWidth / 2 - vp.clientWidth / 2) : Math.max(0, strip.scrollWidth - vp.clientWidth);
+      const gap = parseFloat(getComputedStyle(strip).columnGap) || 0;
+      travel = lastCard ? Math.max(0, lastCard.offsetLeft + lastCard.offsetWidth + gap + lastCard.offsetWidth * 0.05 - vp.clientWidth)   /* + 5% of a card: the neighbour is drawn smaller, so the visible gap is wider than the CSS gap */ : Math.max(0, strip.scrollWidth - vp.clientWidth);
       const h = stage + travel + Math.round(vh * 0.2); // the pinned stage + one pixel of scroll per pixel of sideways travel + a short tail
       if (track.style.height !== `${h}px`) track.style.height = `${h}px`;
       trackH = h;
@@ -157,6 +161,10 @@ export function WorkshopGallery() {
         c.centre = c.el.offsetLeft + c.el.offsetWidth / 2;
         c.focus = -1;
       });
+      const firstC = cards[0]?.centre ?? vw / 2;
+      const lastC = cards[cards.length - 1]?.centre ?? vw / 2;
+      f0 = Math.min(1, Math.max(0, firstC / vw));
+      f1 = Math.min(1, Math.max(0, (lastC - travel) / vw));
       track.style.setProperty("--pg-travel", travel.toFixed(1));
       track.style.setProperty("--pg-start", start.toFixed(1));
       lastTx = Number.NaN;
