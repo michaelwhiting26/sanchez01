@@ -82,6 +82,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
       skip = true; // enough hard pushing: let go
       unlock();
       auto = "done";
+      window.dispatchEvent(new CustomEvent("gallery:autoplay-done", { detail: { skipped: true } }));
       return;
     }
     if (now - lastBump > 90) {
@@ -152,6 +153,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
     unlock();
     if (dead || skip) return; // the reader pushed through: they carry on from wherever they are
     auto = "done";
+    window.dispatchEvent(new CustomEvent("gallery:autoplay-done", { detail: { skipped: false } }));
     settling = true;
     const travel = track.offsetHeight - pin.offsetHeight;
     window.scrollTo({ top: docTop - head + REACH * travel, behavior: "smooth" }); // released: carry on down from the last slide

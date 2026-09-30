@@ -1,3 +1,4 @@
+import { AutoTour } from "@/components/home/AutoTour";
 import { BagPunch } from "@/components/home/BagPunch";
 import { CurvedLoop } from "@/components/home/CurvedLoop";
 import { DnaCore } from "@/components/home/DnaCore";
@@ -19,6 +20,7 @@ export default function HomePage() {
       <a className="skip-link" href="#main">
         Skip to content
       </a>
+      <AutoTour />
       <main id="main" tabIndex={-1}>
         <Hero />
         <DnaCore />

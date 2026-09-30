@@ -609,3 +609,7 @@ html.gallery-locked { overscroll-behavior: none; }
   .globe-bag { display: block; block-size: var(--bag-h); inline-size: auto; margin-block-start: calc(var(--bag-h) * -0.173); position: relative; z-index: 1; pointer-events: none; user-select: none; filter: drop-shadow(0 18px 26px rgb(0 0 0 / .5)); }
   .rise__bag { display: none; }
 }
+
+/* the guided tour's hint: small, bottom-centre, only while the site is playing itself */
+.tour-hint { position: fixed; inset-inline: 0; inset-block-end: max(18px, env(safe-area-inset-bottom)); z-index: 40; margin-inline: auto; inline-size: max-content; max-inline-size: 90vw; padding: 9px 16px; border-radius: 999px; border: 1px solid rgb(243 234 220 / .22); background: rgb(9 7 6 / .62); color: rgb(243 234 220 / .82); font: 500 11px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transform: translateY(8px); transition: opacity .6s ease, transform .6s ease; pointer-events: none; }
+.tour-hint.is-on { opacity: 1; transform: none; }
