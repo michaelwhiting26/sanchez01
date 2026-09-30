@@ -600,3 +600,12 @@ html.gallery-locked { overscroll-behavior: none; }
 .wm-hero.is-static .wm-hero__static { display: grid; }
 [data-hero-rings].is-static .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; }
 [data-hero-rings].is-static .sig { clip-path: none; }
+
+/* phones: the globe sits directly under the Submit button with the punch bag hanging from it on a short chain (a third of its full length) */
+.globe-slot { display: none; }
+@media (max-width: 760px) {
+  .globe-slot { display: flex; flex-direction: column; align-items: center; margin-block: 28px 8px; --bag-h: 300px; }
+  .globe-slot .footer-globe { position: relative; z-index: 2; }
+  .globe-bag { display: block; block-size: var(--bag-h); inline-size: auto; margin-block-start: calc(var(--bag-h) * -0.173); position: relative; z-index: 1; pointer-events: none; user-select: none; filter: drop-shadow(0 18px 26px rgb(0 0 0 / .5)); }
+  .rise__bag { display: none; }
+}

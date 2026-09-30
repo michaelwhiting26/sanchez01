@@ -29,6 +29,9 @@ export default function HomePage() {
         <FeatureCards />
         <RisePanel>
           <Waitlist />
+          <div className="globe-slot" data-globe-slot="">
+            <img className="globe-bag" src="/assets/brand/bag-footer.webp" alt="" aria-hidden="true" width="800" height="1200" decoding="async" />
+          </div>
           <FooterMin />
         </RisePanel>
       </main>

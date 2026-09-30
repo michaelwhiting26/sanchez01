@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { CITIES, LEGAL_LINKS, LOGO_SRC, ORIGIN_LINE, SOCIALS } from "@/lib/site";
 import { mountFooterGlobe } from "@/lib/footer-globe";
 
@@ -17,6 +17,25 @@ function InstagramIcon() {
 /** The minimal home-page footer: brand block (logo with the live globe beside it, origin line, cities, Instagram), then the copyright and legal links. */
 export function FooterMin() {
   const globeRef = useRef<HTMLDivElement>(null);
+
+  // On phones the globe (with the bag hanging from it) sits directly under the Submit button: move it into the slot there, and back on wider screens.
+  useLayoutEffect(() => {
+    const host = globeRef.current;
+    const home = host?.parentElement;
+    const slot = document.querySelector<HTMLElement>("[data-globe-slot]");
+    if (!host || !home || !slot) return;
+    const mq = window.matchMedia("(max-width: 760px)");
+    const place = (): void => {
+      if (mq.matches) slot.insertBefore(host, slot.firstChild);
+      else home.appendChild(host);
+    };
+    place();
+    mq.addEventListener("change", place);
+    return () => {
+      mq.removeEventListener("change", place);
+      home.appendChild(host); // hand it back to React's parent before this component unmounts
+    };
+  }, []);
 
   useEffect(() => {
     const host = globeRef.current;
