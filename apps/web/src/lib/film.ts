@@ -185,7 +185,7 @@ export class FilmHelix {
     fctx.clearRect(0, 0, w, h);
     const p = this.o.progress();
     const R = h * 0.47; // the tape passes just inside the top and bottom of the section
-    const bandW = h * 0.135;
+    const bandW = h * 0.085; // a fine ribbon: it defines the space, it does not dominate it
     const f = R * 3.4; // camera distance
     const TURNS = 2.4;
     const N = 220;
