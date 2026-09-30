@@ -905,3 +905,14 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 /* bigger SUBMIT on the bag (owner, 30 Sep) */
 .orbit-submit { font-size: clamp(1.7rem, 7.4vw, 2.3rem); gap: 16px; }
 .orbit-submit svg { inline-size: 26px; block-size: 26px; }
+
+/* Submit bag: the rolling-letter tumble on hover/focus (same as .rollBtn), and a bigger SUBMIT */
+.orbit-submit .enq__text { font-size: inherit; font-family: inherit; font-weight: inherit; font-variation-settings: inherit; letter-spacing: .02em; line-height: 1; }
+.orbit-submit .enq__icon { inline-size: .9em; block-size: .9em; }
+.orbit-submit .enq__icon svg { inline-size: .62em; block-size: .62em; }
+.orbit-submit:hover .enq__char, .orbit-submit:focus-visible .enq__char { transform: translateY(-100%); }
+.orbit-submit:hover .enq__arrowA, .orbit-submit:focus-visible .enq__arrowA { transform: translate(150%, -150%); }
+.orbit-submit:hover .enq__arrowB, .orbit-submit:focus-visible .enq__arrowB { transform: translate(0, 0); }
+.orbit-submit { font-size: clamp(2.1rem, 9.2vw, 2.9rem); gap: .3em; }
+/* no glow inside the rolling-letter window (it clips the blur into a visible box): a tight shadow only */
+.orbit-submit, .orbit-submit .enq__text { text-shadow: 0 2px 3px rgb(60 0 0 / .6); }

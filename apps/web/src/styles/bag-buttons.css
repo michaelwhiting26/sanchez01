@@ -1,0 +1,36 @@
+/* Every labelled call-to-action on the site is the Sanchez punch bag (owner, 30 Sep): the site's red bag render, straps on, no chain, laid on its side
+   (/assets/brand/bag-button.webp, 879x259). It is drawn as a 3-slice border-image so any label length works: the strap end (0-300px of the image) and
+   the far band (the last 84px) keep their shape, only the plain red middle stretches. Pills, arrows and icon toggles are deliberately NOT bags.
+   Loaded last, and !important on the look only, so each button's own hover/ghost rules cannot bring the old rectangle back. */
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay) {
+  --bh: 72px;
+  box-sizing: border-box !important;
+  display: inline-flex !important; align-items: center; justify-content: center;
+  min-block-size: var(--bh) !important; block-size: var(--bh) !important;
+  min-inline-size: calc(var(--bh) * 3.2);
+  padding: 0 calc(var(--bh) * .14) !important;
+  border-style: solid !important; border-color: transparent !important; border-radius: 0 !important;
+  border-width: 0 calc(var(--bh) * 84 / 259) 0 calc(var(--bh) * 300 / 259) !important;
+  border-image: url("/assets/brand/bag-button.webp") 0 84 0 300 fill / 0 calc(var(--bh) * 84 / 259) 0 calc(var(--bh) * 300 / 259) stretch !important;
+  background: none !important; box-shadow: none !important;
+  color: #fff !important; text-shadow: 0 1px 2px rgb(60 0 0 / .6), 0 0 12px rgb(0 0 0 / .3);
+  filter: drop-shadow(0 10px 16px rgb(0 0 0 / .5));
+  transition: filter .3s ease;
+}
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay)::before,
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay)::after { content: none !important; }
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay):is(:hover, :focus-visible):not(:disabled) {
+  background: none !important; color: #fff !important; filter: drop-shadow(0 12px 20px rgb(0 0 0 / .55)) brightness(1.1);
+}
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay):focus-visible { outline: 2px solid #f3eadc !important; outline-offset: 4px; }
+/* secondary buttons are the same bag in black leather */
+html body :is(.bag-punch__btn--ghost, .pg__btn--ghost, .ck__btn--ghost, .shs__more) { filter: drop-shadow(0 10px 16px rgb(0 0 0 / .5)) grayscale(1) brightness(.55) contrast(1.2); }
+html body :is(.bag-punch__btn--ghost, .pg__btn--ghost, .ck__btn--ghost, .shs__more):is(:hover, :focus-visible) { filter: drop-shadow(0 12px 20px rgb(0 0 0 / .55)) grayscale(1) brightness(.7) contrast(1.2); }
+html body :is(.bag-punch__btn, .pg__btn, .ck__btn):disabled { filter: drop-shadow(0 10px 16px rgb(0 0 0 / .5)) saturate(.4) brightness(.7); cursor: default; }
+/* done / copied state */
+html body .shs__copy.is-done { filter: drop-shadow(0 10px 16px rgb(0 0 0 / .5)) hue-rotate(95deg) saturate(.8); }
+/* smaller bags where space is tight */
+html body :is(.shs__copy, .ck__btn) { --bh: 60px; }
+@media (max-width: 600px) { html body :is(.bag-punch__btn, .rollBtn, .pg__btn) { --bh: 64px; } }
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more) .enq__text { text-shadow: 0 2px 3px rgb(60 0 0 / .6); }
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more) { text-shadow: 0 2px 3px rgb(60 0 0 / .6); }

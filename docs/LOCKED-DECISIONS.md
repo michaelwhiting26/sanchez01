@@ -25,3 +25,4 @@ The owner's current word on how each part of the site behaves. Anyone changing t
 - Evidence rule: no invented prices, specs, products, claims; mark PLACEHOLDER.
 - "Designed in Sydney. Handmade in Pattaya."
 - Push to `main`; owner views on the Mac dev server `http://192.168.1.115:3000`.
+- **Buttons are punch bags** (owner, 30 Sep 20:15): every labelled call-to-action (Order / Build yourself / Seriously, order, Build your identity, page buttons, builder buttons, share sheet) is the red bag render on its side, 3-slice so any label fits (`styles/bag-buttons.css`); secondary buttons are the same bag in black. Pills, arrows and icon toggles are not bags. The Submit bag keeps the rolling-letter tumble on hover.

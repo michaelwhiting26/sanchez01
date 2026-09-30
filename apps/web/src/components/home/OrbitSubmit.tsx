@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { RollingContent } from "@/components/ui/RollingButton";
 
 /** The waitlist form's id: the orbiting button lives outside the form (in the globe slot) and submits it through the `form` attribute. */
 export const WAITLIST_FORM_ID = "waitlist-form";
@@ -154,17 +155,16 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
       <svg className="orbit-tether" aria-hidden="true">
         <line ref={tether} x1="0" y1="0" x2="0" y2="0" />
       </svg>
-      <button ref={btn} className={`orbit-submit${done ? " is-done" : ""}`} type="submit" form={WAITLIST_FORM_ID} disabled={busy || done}>
-        <span>{done ? "You're on the list" : label}</span>
+      <button ref={btn} className={`orbit-submit${done ? " is-done" : ""}`} type="submit" form={WAITLIST_FORM_ID} disabled={busy || done} aria-label={done ? "You're on the list" : label}>
         {done ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m5 12.5 4.5 4.5L19 7.5" />
-          </svg>
+          <>
+            <span>You&apos;re on the list</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m5 12.5 4.5 4.5L19 7.5" />
+            </svg>
+          </>
         ) : (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M7 17 17 7" />
-            <path d="M8 7 H17 V16" />
-          </svg>
+          <RollingContent label={label} /> /* hover: each letter rolls up and is replaced from below, the arrow sends (the mr-2 tumble) */
         )}
       </button>
     </div>
