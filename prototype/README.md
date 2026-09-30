@@ -27,6 +27,7 @@ Local storage keys: `sz.config.v1` (design), `sz.cart.v1` (stock cart), `sz.curr
 
 | File | Status | Production route |
 |---|---|---|
+| `flare-carousel.html` | Experiment: dark gallery, flat hero card, neighbours edge-on then flaring into huge curved walls (three.js, text baked into card textures). Needs `http://` (not file://): `python3 -m http.server`. `?debug` shows a readout. | (not a route yet) |
 | `index.html` | Built: hero film, paths, consultation, key features, workshop film, client-logo wall (consent placeholders), fit-out steps, journal (stateful), quote form | `/` |
 | `product.html` | Built: gallery, length, customise CTA, stock bag + Express Checkout (mock), tabs, FAQ, mobile sticky CTA, states | `/shop/bags/custom-heavy-bag` |
 | `configure.html` | Built: Step 0 brand + A1–A9 (spec 01 §2), live 2D preview, sticky price bar, guard rails, autosave, share, states | `/configure/bag` |

@@ -338,3 +338,38 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 .fold-carousel__btn svg { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: square; }
 .fold-carousel__btn:hover, .fold-carousel__btn:focus-visible { color: #f3eadc; border-color: rgb(243 234 220 / .7); outline: none; }
 .fold-carousel__btn:focus-visible { outline: 1px solid #c9a45c; outline-offset: 4px; }
+
+/* Flare carousel, embedded (flare-carousel.js). The stage fills the section; the black void is part of the effect. */
+.flare--embed { position: relative; block-size: clamp(520px, 92vh, 900px); background: transparent; overflow: hidden; margin: 0; padding: 0; }
+.flare--embed .flare__stage { position: absolute; inset: 0; cursor: grab; user-select: none; }
+.flare--embed .flare__stage.is-drag { cursor: grabbing; }
+.flare--embed .flare__stage canvas { display: block; inline-size: 100%; block-size: 100%; }
+.flare--embed .flare__stage:focus, .flare--embed .flare__stage:focus-visible { outline: none; }
+.flare--embed .flare__hint { position: absolute; inset-inline: 0; bottom: 28px; margin: 0; text-align: center; font: 400 12px/1 var(--font-text, Barlow, sans-serif); letter-spacing: .02em; color: rgb(255 255 255 / .72); pointer-events: none; }
+.flare--embed .flare__stage.is-fallback { display: grid; place-items: center; }
+
+/* Rise panel (rise-panel.js). Pinned stage + a card that rises with --rise (0 parked below, 1 covering the stage). */
+.rise { --rise: 1; position: relative; background: var(--color-bg); }
+.rise__stage { position: relative; min-block-size: 720px; }
+.rise__card { position: relative; isolation: isolate; inline-size: 100%; block-size: 100%; min-block-size: 720px; overflow: hidden; }
+.rise__surface { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: fill; pointer-events: none; user-select: none; filter: drop-shadow(0 18px 26px rgb(0 0 0 / .6)); }
+.rise__panel { position: relative; z-index: 2; inline-size: calc(100% - 48px); margin-inline: auto; padding: clamp(92px, 7.5vw, 154px) clamp(24px, 5vw, 80px) 40px; min-block-size: 720px; display: flex; flex-direction: column; align-items: center; }
+.rise__statement { margin: clamp(28px, 3.6vw, 64px) 0 0; text-align: center; font: 700 clamp(48px, 8vw, 128px)/.9 var(--font-display); letter-spacing: .01em; text-transform: uppercase; color: #fff; }
+.rise__statement em { font-style: normal; color: var(--color-accent-text, #c4553a); }
+.rise__cols { inline-size: 100%; margin-block-start: auto; display: flex; justify-content: space-between; gap: 24px; padding-block-start: 56px; }
+.rise__col--r { text-align: right; }
+.rise__label { margin: 0; font: 700 12px/1 var(--font-text); letter-spacing: .25em; text-transform: uppercase; color: #7c7c82; }
+.rise__col ul { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.rise__col a { color: #fff; text-decoration: none; font: 500 clamp(18px, 2vw, 26px)/1.3 var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.rise__col a:hover, .rise__col a:focus-visible { color: var(--color-accent-text, #c4553a); }
+.rise__cta { margin-block-start: 40px; display: inline-flex; padding: 16px 32px; border-radius: 999px; background: var(--color-accent); color: #fff; font: 700 14px/1 var(--font-text); letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
+.rise__cta:hover, .rise__cta:focus-visible { background: var(--color-accent-hover); }
+/* one-shot copy reveal */
+.rise__statement, .rise__cols, .rise__cta { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)), transform .7s var(--ease-primary, cubic-bezier(.22,1,.36,1)); }
+.rise.is-in .rise__statement, .rise.is-in .rise__cols, .rise.is-in .rise__cta { opacity: 1; transform: none; }
+.rise.is-in .rise__cols { transition-delay: .12s; } .rise.is-in .rise__cta { transition-delay: .22s; }
+@media (max-width: 760px) { .rise__cols { flex-direction: column; } .rise__col--r { text-align: left; } .rise__panel { inline-size: 100%; } }
+@media (prefers-reduced-motion: reduce) { .rise__statement, .rise__cols, .rise__cta { opacity: 1; transform: none; transition: none; } }
+/* desktop + motion: the stage pins for the tall section and the card rides --rise */
+.rise.is-pinned .rise__stage { position: sticky; top: 0; block-size: 100vh; overflow: hidden; }
+.rise.is-pinned .rise__card { transform: translate3d(0, calc((1 - var(--rise, 0)) * 100%), 0); will-change: transform; }

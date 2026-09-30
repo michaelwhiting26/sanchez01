@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=1790727047">
+  <link rel="stylesheet" href="globe-hero.css?v=rise1">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
   <script src="app.js?v=1790708958" defer></script>
@@ -161,21 +161,52 @@
       </form>
     </div>
   </section>
-  <!-- FOLD CAROUSEL: our own three.js "folding cards" carousel (fold-carousel.js), built from the effect's public description. Placed at the bottom for now. -->
-  <section class="fold-carousel" data-fold-carousel data-cards='[{"title": "The workshop", "sub": "Pattaya", "src": "assets/carousel/clip1.jpg"}, {"title": "On the machine", "sub": "Cut and sewn by hand", "src": "assets/carousel/clip2.jpg"}, {"title": "The finished bag", "sub": "Designed in Sydney", "src": "assets/carousel/clip3.jpg"}, {"title": "Sanchez Custom", "sub": "Every panel, your colours", "src": "assets/carousel/workshop.jpg"}, {"title": "Out in the world", "sub": "Gyms we build for", "src": "assets/carousel/clip4.jpg"}, {"title": "Tools of the trade", "sub": "The bench", "src": "assets/carousel/clip5.jpg"}]' aria-roledescription="carousel" aria-label="Sanchez in pictures">
-    <div class="fold-carousel__stage" data-fold-stage tabindex="0"></div>
-    <div class="fold-carousel__bar">
-      <button class="fold-carousel__btn" type="button" data-fold-prev aria-label="Previous card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg></button>
-      <div class="fold-carousel__cap"><p class="fold-carousel__title" data-fold-title></p><p class="fold-carousel__sub" data-fold-sub></p></div>
-      <button class="fold-carousel__btn" type="button" data-fold-next aria-label="Next card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5 16 12l-6.5 6.5"/></svg></button>
-    </div>
-    <p class="visually-hidden" data-fold-live aria-live="polite"></p>
+  <!-- FLARE CAROUSEL (flare-carousel.js): one hero card, neighbours flare into huge curved walls. Card copy reuses the grounded wording of the old carousel; "PLACEHOLDER" = client names still need written consent. -->
+  <section id="flare" class="flare flare--embed" data-flare data-embed aria-roledescription="carousel" aria-label="Sanchez in pictures" data-cards='[
+      {"title":"The workshop","sub":"Pattaya","foot":"Handmade in Pattaya","src":"assets/carousel/clip1.jpg","colors":["#1f0a06","#902b1a","#c27446"],"dir":1},
+      {"title":"On the machine","sub":"Cut and sewn by hand","foot":"Handmade in Pattaya","src":"assets/carousel/clip2.jpg","colors":["#1f160f","#5b3a1e","#b98a60"],"dir":-1},
+      {"title":"The finished bag","sub":"Designed in Sydney","foot":"Designed in Sydney · Handmade in Pattaya","src":"assets/carousel/clip3.jpg","colors":["#2a0d08","#af4d25","#d18b63"],"dir":1},
+      {"title":"Sanchez Custom","sub":"Every panel, your colours","foot":"","src":"assets/carousel/workshop.jpg","colors":["#18120d","#92502c","#e4c9ab"],"dir":-1},
+      {"title":"Out in the world","sub":"Gyms we build for","pill":"PLACEHOLDER","foot":"Client names need written consent","src":"assets/carousel/clip4.jpg","colors":["#1b0a08","#5a1a12","#b56e3c"],"dir":1},
+      {"title":"Tools of the trade","sub":"The bench","foot":"","src":"assets/carousel/clip5.jpg","colors":["#1f160f","#372212","#a66d3b"],"dir":-1}
+    ]'>
+    <div class="flare__stage" data-flare-stage tabindex="0"></div>
+    <p class="flare__hint">Drag, scroll or use ← →</p>
+    <p class="visually-hidden" data-flare-live aria-live="polite"></p>
   </section>
-  <script type="module" src="fold-carousel.js?v=1790726992"></script>
+  <script type="module" src="flare-carousel.js?v=8"></script>
 
 </main>
 <script src="dna-core.js?v=1790725297" defer></script>
 
 <footer class="site-footer" data-chrome="footer"></footer>
+<!-- RISE PANEL (rise-panel.js): ported from the mr-2 site's last Figma page. The panel rises over a pinned stage, lingers, then needs more scrolling to finish.
+     Copy is grounded: real pages, the two real Instagram handles, and a link to the contact page. -->
+<section class="rise" data-rise aria-label="Get in touch">
+  <div class="rise__stage">
+    <div class="rise__card">
+      <img class="rise__surface" src="assets/brand/rise-card.svg" alt="" aria-hidden="true">
+      <div class="rise__panel">
+        <h2 class="rise__statement">Sanchez <em>Custom</em></h2>
+        <div class="rise__cols">
+          <nav class="rise__col" aria-label="Pages">
+            <p class="rise__label">Pages</p>
+            <ul><li><a href="index.html">Home</a></li><li><a href="shop.html">Shop</a></li><li><a href="workshop.html">Workshop</a></li><li><a href="about.html">About</a></li></ul>
+          </nav>
+          <nav class="rise__col rise__col--r" aria-label="Follow on">
+            <p class="rise__label">Follow on</p>
+            <ul>
+              <li><a href="https://www.instagram.com/sanchezproducts/" rel="noopener" target="_blank">@sanchezproducts<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>
+              <li><a href="https://www.instagram.com/jessesanchezlgboxing/" rel="noopener" target="_blank">@jessesanchezlgboxing<span class="visually-hidden"> on Instagram (opens in a new tab)</span></a></li>
+            </ul>
+          </nav>
+        </div>
+        <a class="rise__cta" href="contact.html">Contact us</a>
+      </div>
+    </div>
+  </div>
+</section>
+<script src="rise-panel.js?v=1" defer></script>
+
 </body>
 </html>

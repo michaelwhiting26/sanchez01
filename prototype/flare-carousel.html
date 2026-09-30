@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flare carousel — Sanchez prototype</title>
+  <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js"}}</script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #161311; color: #fff; font-family: Inter, -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; overflow: hidden; }
+    .flare { position: fixed; inset: 0; }
+    .flare__stage { position: absolute; inset: 0; cursor: grab; touch-action: none; user-select: none; }
+    .flare__stage.is-drag { cursor: grabbing; }
+    .flare__stage canvas { display: block; inline-size: 100%; block-size: 100%; }
+    .flare__hint { position: absolute; inset-inline: 0; bottom: 28px; text-align: center; font-size: 12px; letter-spacing: .02em; color: rgba(255,255,255,.72); pointer-events: none; }
+    .flare__stage.is-fallback::after { content: "This effect needs WebGL."; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.6); }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  </style>
+</head>
+<body>
+  <!-- PLACEHOLDER copy: card text is neutral brand wording, no claims, prices or specs. Photos are the existing carousel stills. -->
+  <main class="flare" data-flare aria-roledescription="carousel" aria-label="Sanchez in pictures"
+    data-cards='[
+      {"title":"Heavy bag","sub":"Custom build","pill":"Handmade","foot":"Designed in Sydney · Handmade in Pattaya","src":"assets/carousel/clip3.jpg","colors":["#1f0a06","#902b1a","#c27446"],"dir":1},
+      {"title":"The workshop","sub":"Pattaya","pill":"Live","foot":"Cut and sewn by hand","src":"assets/carousel/clip1.jpg","colors":["#1f160f","#5b3a1e","#b98a60"],"dir":-1},
+      {"title":"On the machine","sub":"Every panel","pill":"In progress","foot":"Your colours, stitched","src":"assets/carousel/clip2.jpg","colors":["#2a0d08","#af4d25","#d18b63"],"dir":1},
+      {"title":"Sanchez Custom","sub":"Boxing equipment","pill":"Custom","foot":"Made to order","src":"assets/carousel/workshop.jpg","colors":["#18120d","#92502c","#e4c9ab"],"dir":-1},
+      {"title":"Out in the world","sub":"Gyms we build for","pill":"PLACEHOLDER","foot":"Client names need consent","src":"assets/carousel/clip4.jpg","colors":["#1b0a08","#5a1a12","#b56e3c"],"dir":1},
+      {"title":"Tools of the trade","sub":"The bench","pill":"Detail","foot":"Thread, needle, leather","src":"assets/carousel/clip5.jpg","colors":["#1f160f","#372212","#a66d3b"],"dir":-1}
+    ]'>
+    <div class="flare__stage" data-flare-stage></div>
+    <p class="flare__hint">Drag, scroll or use ← →</p>
+    <p class="sr" data-flare-live aria-live="polite"></p>
+  </main>
+  <script type="module" src="flare-carousel.js"></script>
+</body>
+</html>
