@@ -515,3 +515,16 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .rise .waitlist { background: transparent; padding-block: clamp(36px, 7vh, 72px) clamp(28px, 5vh, 56px); overflow: visible; }
 .rise .waitlist::after { display: none; }
 .rise .waitlist::before { inset-inline: 0; inset-block-start: 0; }
+
+/* Waitlist, slimmed right down: WAITLIST, Bag + two blanks, a way in (Email / Gmail / Other), one field, Submit */
+.waitlist__title { font-size: clamp(2.4rem, 8vw, 4rem); letter-spacing: .12em; }
+.waitlist__reveal { inline-size: min(100%, 320px); margin: 4px 0 8px; gap: 10px; }
+.waitlist__reveal li { padding-block-end: 10px; }
+.waitlist__method { display: inline-flex; gap: 0; border: 1px solid rgb(255 255 255 / .16); border-radius: 999px; padding: 3px; justify-self: center; }
+.waitlist__method label { position: relative; cursor: pointer; }
+.waitlist__method input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.waitlist__method span { display: block; padding: 8px 18px; border-radius: 999px; font: 500 .74rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: #8d8375; transition: background .25s ease, color .25s ease; }
+.waitlist__method input:checked + span { background: #f3eadc; color: #0b0b0b; }
+.waitlist__method input:focus-visible + span { outline: 2px solid #c9a45c; outline-offset: 2px; }
+.waitlist__priv { justify-self: center; font: 400 .7rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: #6f665b; text-decoration: none; }
+.waitlist__priv:hover, .waitlist__priv:focus-visible { color: #a99f92; text-decoration: underline; }
