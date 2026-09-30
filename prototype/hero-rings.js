@@ -18,7 +18,7 @@
   var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 9, FLOOR = 0.26;
   var CREAM = [214, 181, 136], GOLD = [214, 181, 136];   /* Tan #D6B588: the whole pattern, the SANCHEZ outline and the ridges, in one colour (brightness still fades with distance) */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
-  var LEVELS = 20, WARMS = 6, NEON = 30, NB0 = (LEVELS + 1) * WARMS, NB = NB0 + NEON, styles = [];   /* the last NEON shades are the SANCHEZ outline, one per slice of the word, left to right */
+  var LEVELS = 20, WARMS = 6, NEON = 30, NB0 = (LEVELS + 1) * WARMS, NB = NB0 + NEON + 1, styles = [];   /* the last NEON shades are the SANCHEZ outline, one per slice of the word, left to right */
   /* the spectrum, each colour taken to both of its ends (light and deep): pink -> deep red -> orange -> yellow -> blue */
   var SPECTRUM = [[255, 120, 190], [255, 32, 140], [255, 16, 96], [214, 10, 40], [255, 34, 24], [255, 96, 12], [255, 150, 0], [255, 210, 0], [255, 244, 70], [90, 220, 255], [24, 150, 255], [30, 80, 255]];
   function spec(u) { u = Math.min(1, Math.max(0, u)) * (SPECTRUM.length - 1); var i = Math.min(SPECTRUM.length - 2, Math.floor(u)), f = u - i, a = SPECTRUM[i], b = SPECTRUM[i + 1]; return [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f)]; }
@@ -27,6 +27,7 @@
     styles.push("rgb(" + Math.round((CREAM[0] + (GOLD[0] - CREAM[0]) * t) * k) + "," + Math.round((CREAM[1] + (GOLD[1] - CREAM[1]) * t) * k) + "," + Math.round((CREAM[2] + (GOLD[2] - CREAM[2]) * t) * k) + ")");
   }
   for (var nz = 0; nz < NEON; nz++) { var nc = spec(nz / (NEON - 1)); styles.push("rgb(" + nc[0] + "," + nc[1] + "," + nc[2] + ")"); }
+  styles.push("rgb(" + CREAM[0] + "," + CREAM[1] + "," + CREAM[2] + ")");   /* the tan of the outline, kept separate from the paint */
   var cursor = { x: 0, y: 0, active: false }, ripples = [], cell = 1, ox = 0, dpr = 1, moving = false, fieldEnd = 1e9, cw = 0, ch = 0;
 
   function load() {
@@ -130,16 +131,15 @@
   }
 
   /* colour every dot on screen into one of NB shades (brightness x warmth), then draw each shade in one pass */
-  var lgcTrack = null, warpG = null, waveTab = null, sx0 = 0, sx1 = 0, sprayStart = 0, SPRAY_MS = 4600;
+  var lgcTrack = null, warpG = null, waveTab = null, sx0 = 0, sx1 = 0, sprayStart = 0, SPRAY_MS = 5200;
   function draw(t) {
     var sy = (typeof window.__sy === "number" ? window.__sy : scrollY) * dpr, sy0 = sy; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
     var tsec0 = t / 1000; var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 0.9;
     counts.fill(0);
     /* SPRAY PAINT: on load the word is sprayed on left to right. The word's front leads; the ridges paint in behind it. Each dot has its own ragged edge so the front is a spray, not a wipe. */
-    var sp = reduce ? 1 : Math.min(1, (t - (sprayStart || t)) / SPRAY_MS); if (typeof window.__spray === "number") sp = window.__spray;
-    var eOut = function (v) { v = Math.min(1, Math.max(0, v)); return 1 - Math.pow(1 - v, 2.2); };
-    var fw = sx0 - 6 + (sx1 - sx0 + 14) * eOut(sp / 0.72), fr = sx0 - 6 + (MW + 30 - sx0) * eOut((sp - 0.3) / 0.7);
-    if (sp >= 1) { fw = MW + 30; fr = MW + 30; }
+    var sp = reduce ? 1 : Math.min(1, Math.max(0, (t - (sprayStart || t) - 700) / SPRAY_MS)); if (typeof window.__spray === "number") sp = window.__spray;
+    var eOut = function (v) { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v) * 0.35 + v * 0.65; };
+    var SLOPE = 0.35, PSMAX = (sx1 - sx0) + SLOPE * MH, FF = sp >= 1 ? PSMAX + 40 : -8 + (PSMAX + 24) * eOut(sp);   /* the front: a slightly sloping line moving left to right, starting at the top-left of the S and ending at the bottom-right of the Z */
     /* WAVE SETS: every SET_PERIOD seconds a set of seven waves rolls out from the word. Each crest has its own power (the middle ones are strongest, every set differs a little),
        and the lines brighten and swell as a crest passes. Built as a 1-D table over distance, so it costs almost nothing per dot. */
     var WAVES = 7, SET_PERIOD = 16, WSPEED = 20, WSPACING = 17, WWIDTH = 8.5, BINS = 480, tW = (t - (sprayStart || t)) / 1000 - SPRAY_MS / 1000 * 0.7;
@@ -176,7 +176,11 @@
       for (var x = 0; x < MW; x++, i++) {
         var b = -1;
         if (pr < R) {
-          if (inMap && bp[m * MW + x]) { if (pseed[base + x] < 0.9 && x + (pseed[base + x] - 0.5) * 12 < fw) b = NB0 + Math.max(0, Math.min(NEON - 1, Math.floor((x - sx0) / Math.max(1, sx1 - sx0) * NEON))); }   /* outline: neon, by position */            /* the outline: its own bright white-tan shade */
+          if (inMap && bp[m * MW + x]) { if (pseed[base + x] < 0.9) b = NB0 + NEON; }   /* the outline: tan, as before */            /* the outline: its own bright white-tan shade */
+          else if (inMap && bl[m * MW + x]) {                                          /* the black inside the letters: spray paint */
+            var ps = (x - sx0) + SLOPE * m, agep = FF - ps + (pseed[base + x] - 0.5) * 6;
+            if (agep > 0) { var covp = Math.min(1, agep / 18); if (pseed[base + x] * 0.97 < covp) b = NB0 + Math.max(0, Math.min(NEON - 1, Math.floor(ps / PSMAX * NEON))); }   /* speckled just behind the nozzle, solid further back */
+          }
           else if (!(inMap && bl[m * MW + x])) {
             var dw = ddw[base + x], tv = thv[base + x], vf = 0;
             if (env > 0.01) {
@@ -195,7 +199,7 @@
               var xr = Math.round(xf), yr = Math.round(yf), mr = yr - r0;
               if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself */
             }
-            if (dw > 2.2 && x + (pseed[base + x] - 0.5) * 16 < fr) {
+            if (dw > 2.2) {
               var fxg = x / GS, fyg = y / GS, gx0 = Math.floor(fxg), gy0 = Math.floor(fyg), tx = fxg - gx0, ty = fyg - gy0, gi = gy0 * gcols + gx0;
               var wv = (warpG[gi] * (1 - tx) + warpG[gi + 1] * tx) * (1 - ty) + (warpG[gi + gcols] * (1 - tx) + warpG[gi + gcols + 1] * tx) * ty;
               var wt = Math.min(1, Math.max(0, (dw - 6) / (maxD * 0.25)));               /* the defined lines right at the word stay put; further out the thread drifts */
@@ -227,7 +231,7 @@
       var a = counts[bk], z = counts[bk + 1]; if (a === z) continue;
       ctx.fillStyle = styles[bk];
       if (bk >= NB0) {                                                              /* soft glow under each neon dot: a larger, faint copy */
-        ctx.globalAlpha = 0.16; var gs = s * 3.4, gp = (cell - gs) / 2;
+        ctx.globalAlpha = 0.14; var gs = s * 2.6, gp = (cell - gs) / 2;
         for (var jg = a; jg < z; jg++) { var ng = order[jg], xg = ng % MW, yg = (ng - xg) / MW; ctx.fillRect(ox + xg * cell + gp + offX[ng], yg * cell - sub + gp + offY[ng], gs, gs); }
         ctx.globalAlpha = 1;
       }
@@ -236,16 +240,17 @@
         ctx.fillRect(ox + xx * cell + pad + offX[n], yy * cell - sub + pad + offY[n], s, s);
       }
     }
-    /* overspray: a fine mist of specks thrown ahead of and around the spray front while the word is being painted */
+    /* overspray: a fine mist thrown around the nozzle line while the letters are being painted */
     if (sp < 1 && sp > 0.005 && sx1 > sx0) {
-      var mc = spec((fw - sx0) / Math.max(1, sx1 - sx0)), frontPx = ox + (fw + 0.5) * cell, bandTop = r0 * cell - sy0 - cell * 2, bandH = (MH + 4) * cell, k, mx, my, aa;
-      for (k = 0; k < 220; k++) {
-        mx = frontPx + (Math.random() + Math.random() - 1) * cell * 11; my = bandTop + Math.random() * bandH;
-        aa = 0.16 + Math.random() * 0.5; ctx.fillStyle = "rgba(" + mc[0] + "," + mc[1] + "," + mc[2] + "," + aa.toFixed(2) + ")";
-        var ms = (0.8 + Math.random() * 1.6) * dpr; ctx.fillRect(mx, my, ms, ms);
+      var mc = spec(Math.min(1, Math.max(0, FF / PSMAX))), k, mrow, mx, my, aa, ms;
+      for (k = 0; k < 240; k++) {
+        mrow = Math.random() * (MH + 4) - 2;                                                       /* a row of the word */
+        mx = ox + (sx0 + FF - SLOPE * mrow + 0.5 + (Math.random() + Math.random() - 1) * 9) * cell; my = (r0 + mrow) * cell - sy0;
+        aa = 0.16 + Math.random() * 0.5; ctx.fillStyle = "rgba(" + mc[0] + "," + mc[1] + "," + mc[2] + "," + aa.toFixed(2) + ")"; ms = (0.8 + Math.random() * 1.7) * dpr; ctx.fillRect(mx, my, ms, ms);
       }
-      for (k = 0; k < 40; k++) {                                                    /* a few larger, softer flecks right at the nozzle line */
-        mx = frontPx + (Math.random() - 0.5) * cell * 4; my = bandTop + Math.random() * bandH; ctx.fillStyle = "rgba(" + mc[0] + "," + mc[1] + "," + mc[2] + "," + (0.3 + Math.random() * 0.4).toFixed(2) + ")"; ctx.fillRect(mx, my, 2.4 * dpr, 2.4 * dpr);
+      for (k = 0; k < 50; k++) {
+        mrow = Math.random() * (MH + 4) - 2; mx = ox + (sx0 + FF - SLOPE * mrow + 0.5 + (Math.random() - 0.5) * 4) * cell; my = (r0 + mrow) * cell - sy0;
+        ctx.fillStyle = "rgba(" + mc[0] + "," + mc[1] + "," + mc[2] + "," + (0.35 + Math.random() * 0.4).toFixed(2) + ")"; ctx.fillRect(mx, my, 2.4 * dpr, 2.4 * dpr);
       }
     }
   }
