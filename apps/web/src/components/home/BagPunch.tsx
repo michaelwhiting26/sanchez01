@@ -48,7 +48,7 @@ export function BagPunch() {
   const optionsRef = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(0);
   const [fallback, setFallback] = useState(false);
-  const [category, setCategory] = useState<CategoryId | null>(null); // nothing chosen until the visitor picks: "Choose a product" leads
+  const [category, setCategory] = useState<CategoryId | null>("bags"); // the bag shows first; "Choose a product" sits below it (owner, 30 Sep 20:15)
 
   useEffect(() => {
     const root = rootRef.current;
@@ -187,12 +187,7 @@ export function BagPunch() {
   const still = category && category !== "bags" ? STILLS[category] : null;
   // picking a product reveals it and carries the visitor down to it (the spiral runs on into the bag)
   const choose = (id: CategoryId): void => {
-    const first = category === null;
     setCategory(id);
-    if (first && rootRef.current) {
-      const top = rootRef.current.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    }
   };
   const name = still ? still.name : product.name;
   const sub = still ? still.sub : product.sub;
@@ -202,18 +197,6 @@ export function BagPunch() {
 
   return (
     <>
-      <section className="sz-options" aria-label="Choose a product" ref={optionsRef}>
-        <p className="sz-options__label">Choose a product</p>
-        <div className="sz-options__rail">
-          <div className="bag-punch__cats" role="tablist" aria-label="Product type" data-empty={chosen ? undefined : ""} style={{ "--i": catIndex, "--n": CATEGORIES.length } as CSSProperties}>
-            {CATEGORIES.map((c) => (
-              <button key={c.id} type="button" role="tab" aria-selected={c.id === category} onClick={() => choose(c.id)}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
       <div className="sz-handoff" aria-hidden="true" data-handoff="" />
     <section
       className="bag-punch" /* constant: the engine and the reveal observer add their own classes (is-ready, is-revealed, was-hit), which a changing className would wipe */
@@ -237,7 +220,7 @@ export function BagPunch() {
       <div className="bag-punch__view" data-bag-view="" ref={hostRef} />
       {!chosen && (
         <button type="button" className="bag-punch__pick" onClick={() => document.querySelector(".sz-options")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
-          Choose a product above
+          Choose a product below
         </button>
       )}
       {still && (
@@ -290,6 +273,18 @@ export function BagPunch() {
         </p>
       )}
     </section>
+      <section className="sz-options" aria-label="Choose a product" ref={optionsRef}>
+        <p className="sz-options__label">Choose a product</p>
+        <div className="sz-options__rail">
+          <div className="bag-punch__cats" role="tablist" aria-label="Product type" data-empty={chosen ? undefined : ""} style={{ "--i": catIndex, "--n": CATEGORIES.length } as CSSProperties}>
+            {CATEGORIES.map((c) => (
+              <button key={c.id} type="button" role="tab" aria-selected={c.id === category} onClick={() => choose(c.id)}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
     </>
   );
 }

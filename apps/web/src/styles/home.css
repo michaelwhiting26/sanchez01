@@ -892,7 +892,7 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .bag-punch[data-unchosen] .bag-punch__view, .bag-punch[data-unchosen] .bag-punch__label, .bag-punch[data-unchosen] .bag-punch__switch, .bag-punch[data-unchosen] .bag-punch__hint { visibility: hidden; opacity: 0; pointer-events: none; }
 .bag-punch__view, .bag-punch__label { transition: opacity .9s ease, visibility 0s; }
 .bag-punch__pick { position: absolute; inset-inline-start: 50%; inset-block-start: 38%; transform: translateX(-50%); z-index: 4; padding: 14px 26px; border: 1px dashed rgb(201 164 92 / .55); border-radius: 999px; background: transparent; color: #c9a45c; cursor: pointer; font: 500 .78rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; text-indent: .3em; text-transform: uppercase; }
-.bag-punch__pick::before { content: "↑ "; }
+.bag-punch__pick::before { content: "↓ "; }
 .bag-punch__pick:hover, .bag-punch__pick:focus-visible { border-style: solid; color: #f3eadc; outline: none; }
 
 /* Submit is the Sanchez punch bag (the site's red bag render, straps on, no chain) laid on its side; same tether, bob, lean and pull (OrbitSubmit.tsx) */
