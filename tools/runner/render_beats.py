@@ -12,6 +12,10 @@ size and ground baseline (footY = 293.4 px at size 320) as the live run sheet. T
   $B -b -P $R/render_runner.py -- --model soldier --size 320 --frames 24 --arm 83,29.1,-27.4 --fore -23.9,-44.1,-16.9 [--look shaded] --out $S/sh/run
   python3 $R/assemble_beats.py --frames $S/sh  --out apps/web/public/assets/runner --sheets <scratch>/sheets --suffix _shaded --beats run,walk,look,sneak,reach,crouch,crouchlook,crouchpeek
   python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --beats crouch,crouchlook,crouchpeek   # NEW silhouettes only; never re-run for walk/look/sneak/reach (live files)
+  # NEW: Muay Thai teep + backward roll (Mixamo-bone driven; pass --model <glb> to re-render from any rig with the mixamorig:* skeleton, e.g. Jesse.glb, then --suffix _jesse):
+  for b in teep roll; do $B -b -P $R/render_beats.py -- --beat $b --out $S/sil/$b --size 320 [--model $R/Jesse.glb --slim 0]; done
+  python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --beats teep,roll [--suffix _jesse]
+  python3 $R/contact.py $S/sil/teep <scratch>/teep_zoom 6 40,60,260,200   # 2x zoom crop of every frame (use with frames 8-13 dir)
   python3 $R/contact.py <frames_dir> <out_prefix> <cols> [x,y,w,h]   # labelled 2-background contact sheets / 2x zoom crops
 
 Flags: --beat walk|look|sneak|reach|crouch|crouchlook|crouchpeek  --look silhouette|shaded  --size 320  --slim 0.16 (slims the waist/belt/torso depth via skin weights, 0 = off)  --test (1 frame)
@@ -23,21 +27,22 @@ from bpy_extras.object_utils import world_to_camera_view
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 def opt(n, d): return argv[argv.index(n) + 1] if n in argv else d
+MODEL = opt("--model", os.path.join(os.path.dirname(os.path.abspath(__file__)), "Soldier.glb"));
 BEAT = opt("--beat", "walk"); OUT = opt("--out", "/tmp/beat"); SIZE = int(opt("--size", "320")); SLIM = float(opt("--slim", "0.22")); LOOK = opt("--look", "silhouette"); TEST = "--test" in argv
 os.makedirs(OUT, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "Soldier.glb"))
+bpy.ops.import_scene.gltf(filepath=MODEL)
 scene = bpy.context.scene
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 for o in list(bpy.data.objects):
     if o.name.startswith("Icosphere") or o.name == "vanguard_visor": bpy.data.objects.remove(o, do_unlink=True)
 arm.matrix_world = Matrix.Rotation(math.pi, 4, "Z") @ arm.matrix_world   # face +Y = screen-right
 MW = arm.matrix_world.copy()
-mesh_obj = next(o for o in bpy.data.objects if o.type == "MESH")
+MESHES = [o for o in bpy.data.objects if o.type == "MESH"]; mesh_obj = MESHES[0]
 
 # ---- slim the belt / pouches / waist: pull hip+spine-weighted vertices toward the body centre along the depth axis (world X), rest pose, skin-weight blended
-if SLIM > 0:
+if SLIM > 0 and any(g.name == 'mixamorig:Hips' for g in mesh_obj.vertex_groups):
     vgi = {g.name: g.index for g in mesh_obj.vertex_groups}
     mw3 = mesh_obj.matrix_world.to_3x3()
     axis = max(range(3), key=lambda i: abs((mw3 @ Vector([1 if k == i else 0 for k in range(3)])).y))   # local axis most aligned with world Y (front-back depth seen by the side camera)
@@ -119,10 +124,12 @@ def set_can(d):
     return hand + d * 0.18
 
 def mesh_minz():
-    dg = bpy.context.evaluated_depsgraph_get(); m = mesh_obj.evaluated_get(dg); me = m.to_mesh()
-    a = np.empty(len(me.vertices) * 3, dtype=np.float32); me.vertices.foreach_get("co", a); a = a.reshape(-1, 3)
-    w = np.array(m.matrix_world); z = a @ w[2, :3] + w[2, 3]
-    m.to_mesh_clear(); return float(z.min())
+    dg = bpy.context.evaluated_depsgraph_get(); zs = []
+    for mo in MESHES:
+        m = mo.evaluated_get(dg); me = m.to_mesh()
+        a = np.empty(len(me.vertices) * 3, dtype=np.float32); me.vertices.foreach_get("co", a); a = a.reshape(-1, 3)
+        w = np.array(m.matrix_world); zs.append(float((a @ w[2, :3] + w[2, 3]).min())); m.to_mesh_clear()
+    return min(zs)
 def ground(): arm.location.z = 0; upd(); arm.location.z = -mesh_minz(); upd()
 
 def render(i):
@@ -336,6 +343,149 @@ def run_crouchpeek():
     meta.update({"frames": N, "cols": 4, "hips": hips, "head": head, "minz": mz})
 
 
+# ---------------------------------------------------------------- teep + roll: pure sagittal-plane bone aiming, Mixamo bone names only (no action, no model-specific names)
+# Angle convention everywhere below: degrees from world UP toward the facing direction (screen-right = -Y). 0 up, 90 forward, 180 down, negative = leaning/rolling BACK.
+# Forward coordinate f = -y (metres). Bones are aimed by direction (aim2), so the pose is independent of the rig's rest-pose quirks; only the bone NAMES must match.
+def mreset():
+    if arm.animation_data: arm.animation_data.action = None
+    for pb in arm.pose.bones: pb.matrix_basis = Matrix()
+    arm.location = (0, 0, 0); upd()
+def aim2(name, d):
+    b = PB(name); d = Vector(d).normalized(); cur = (R3 @ (b.tail - b.head)).normalized()
+    if cur.dot(d) < -0.98: rot_world(name, Quaternion(Vector((1, 0, 0)), math.pi)); cur = (R3 @ (b.tail - b.head)).normalized()   # antiparallel: flip about the lateral axis, stays in the sagittal plane
+    rot_world(name, cur.rotation_difference(d))
+def aa(name, deg): aim2(name, unit_yz(deg))
+def bang(name):
+    b = PB(name); v = R3 @ (b.tail - b.head); return math.degrees(math.atan2(-v.y, v.z))
+TORSO = ("Hips", "Spine", "Spine1", "Spine2", "Neck", "Head")
+LIMB = ("UpLeg", "Leg", "Foot", "ToeBase")
+ARMB = ("Arm", "ForeArm", "Hand")
+def render_still(i):
+    p = os.path.join(OUT, f"frame_{i:02d}.png"); scene.render.filepath = p; bpy.ops.render.render(write_still=True)
+def hide_can(): can.hide_render = True; can.hide_viewport = True
+def sole_snap(): upd(); arm.location.z -= mesh_minz(); upd()
+def read_angles(): return {n: bang(n) for n in TORSO + tuple(s + l for s in ("Left", "Right") for l in LIMB + ARMB)}
+def apply_angles(A):
+    for n in TORSO: aa(n, A[n])
+    for s in ("Left", "Right"):
+        for l in LIMB + ARMB: aa(s + l, A[s + l])
+def pchip(xs, ys, x):
+    n = len(xs); h = [xs[i + 1] - xs[i] for i in range(n - 1)]; d = [(ys[i + 1] - ys[i]) / h[i] for i in range(n - 1)]
+    m = [0.0] * n; m[0] = d[0]; m[-1] = d[-1]
+    for i in range(1, n - 1):
+        if d[i - 1] * d[i] > 0:
+            w1 = 2 * h[i] + h[i - 1]; w2 = h[i] + 2 * h[i - 1]; m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i])
+    k = max(0, min(n - 2, next((j for j in range(n - 1) if xs[j] <= x < xs[j + 1]), n - 2))); t = (x - xs[k]) / h[k]
+    h00 = 2 * t**3 - 3 * t**2 + 1; h10 = t**3 - 2 * t**2 + t; h01 = -2 * t**3 + 3 * t**2; h11 = t**3 - t**2
+    return h00 * ys[k] + h10 * h[k] * m[k] + h01 * ys[k + 1] + h11 * h[k] * m[k + 1]
+def cyc(anch, x, N=24, adv=0.0):
+    """periodic PCHIP through {frame: value}; adv = value gained per cycle (forward travel)"""
+    xs = []; ys = []
+    for k in (-1, 0, 1):
+        for fr in sorted(anch): xs.append(fr + N * k); ys.append(anch[fr] + adv * k)
+    return pchip(xs, ys, x)
+
+STEP = 0.27          # forward travel per teep cycle, metres (left foot lands one step ahead, rear foot follows)
+F0 = -0.141          # hips are pinned at this forward coordinate in the sprite (x = 160 + F0*136 = 140.8 px, the crouch beat's hips x)
+TP = {   # per-frame keys, frame: value.  H = hips forward (world, travelling), LF/RF = ankle forward, LZ/RZ = ankle lift above the planted height, L = torso lean back (deg)
+ "H":  {0: .21, 2: .21, 3: .19, 4: .15, 5: .10, 6: .07, 7: .05, 8: .05, 9: .06, 10: .08, 11: .10, 12: .11, 13: .11, 14: .09, 15: .07, 16: .06, 17: .07, 18: .13, 19: .26, 20: .38, 21: .45, 22: .47, 23: .48},
+ "LF": {0: .42, 2: .42, 3: .40, 4: .34, 5: .27, 6: .22, 7: .20, 8: .30, 9: .56, 10: .86, 11: 1.06, 12: 1.12, 13: 1.12, 14: .96, 15: .60, 16: .30, 17: .22, 18: .50, 19: .69, 23: .69},
+ "LZ": {0: 0, 2: 0, 3: .12, 4: .30, 5: .48, 6: .58, 7: .62, 8: .68, 9: .80, 10: .93, 11: .99, 12: 1.0, 13: 1.0, 14: .95, 15: .80, 16: .66, 17: .62, 18: .30, 19: 0, 23: 0},
+ "RF": {0: 0, 19: 0, 20: .06, 21: .16, 22: .25, 23: .27},
+ "RZ": {0: 0, 19: 0, 20: .06, 21: .16, 22: .10, 23: .02},
+ "LN": {0: -3, 2: -3, 3: -2, 4: -1, 5: 0, 6: 2, 7: 3, 8: 4, 9: 7, 10: 10, 11: 12, 12: 12, 13: 12, 14: 9, 15: 6, 16: 3, 17: 1, 18: -2, 19: -3, 23: -3},
+ "BND": {0: .95, 3: .96, 5: .97, 8: .97, 13: .97, 17: .97, 18: .96, 19: .94, 21: .94, 23: .95},   # support-leg reach as a fraction of full leg length (0.955 = slight bend)
+ "LA": {0: 0, 2: 0, 3: .4, 4: 1, 18: 1, 19: 0, 23: 0},                                                 # left foot "in the air" weight
+ "RA": {0: 0, 19: 0, 20: .5, 21: 1, 22: .6, 23: 0},
+}
+GUARD = {"LeftArm": 146, "LeftForeArm": 40, "LeftHand": 30, "RightArm": 152, "RightForeArm": 34, "RightHand": 24}   # relative to the torso: elbows tucked at the ribs, gloves at the cheekbones
+FLAT_FOOT, FLAT_TOE = 122, 95
+CAL = {}
+def calibrate():
+    mreset(); h = wpos("Hips"); 
+    CAL["L1"] = (wpos("LeftLeg") - wpos("LeftUpLeg")).length; CAL["L2"] = (wpos("LeftFoot") - wpos("LeftLeg")).length
+    for s in ("Left", "Right"): aa(s + "Foot", FLAT_FOOT); aa(s + "ToeBase", FLAT_TOE)
+    upd(); arm.location.z = -mesh_minz(); upd(); CAL["AZ"] = wpos("LeftFoot").z
+    CAL["hipZ"] = wpos("Hips").z
+    print("CAL", {k: round(v, 3) for k, v in CAL.items()}, "hipJointDz", round(wpos("LeftUpLeg").z - wpos("Hips").z, 3))
+
+def teep_pose(i, ret=None):
+    t = float(i); G = lambda k, adv=0.0: cyc(TP[k], t, 24, adv)
+    Hf = G("H", STEP); Lf = G("LF", STEP); Rf = G("RF", STEP); Lz = G("LZ"); Rz = G("RZ"); L = G("LN"); B = G("BND"); LA = max(0, min(1, G("LA"))); RA = max(0, min(1, G("RA")))
+    mreset()
+    tor = -L                                                              # torso angle from up (negative = leaning back)
+    A = {"Hips": tor * .3, "Spine": tor * .55, "Spine1": tor * .8, "Spine2": tor, "Neck": tor * .5 + 4, "Head": 4 + tor * .1}
+    for n in TORSO: aa(n, A[n])
+    shift = F0 - Hf                                                       # world -> sprite forward shift (hips pinned)
+    p = wpos("Hips"); arm.location = (0, -F0 - p.y, 0); upd()
+    # hips height: deepest bend that keeps every grounded ankle reachable (slight bend on the support leg)
+    Lt = CAL["L1"] + CAL["L2"]; az = CAL["AZ"]; hz_need = []
+    tgt = {"Left": (Lf + shift, az + Lz), "Right": (Rf + shift, az + Rz)}
+    for s, lift in (("Left", Lz), ("Right", Rz)):
+        if lift < 0.02:
+            hj = wpos(s + "UpLeg"); df = -hj.y - tgt[s][0]; r = B * Lt
+            hz_need.append(tgt[s][1] + math.sqrt(max(r * r - df * df, 0.01)) - (hj.z - wpos("Hips").z))
+    hz = min(hz_need) if hz_need else CAL["hipZ"] - 0.08
+    arm.location.z += hz - wpos("Hips").z; upd()
+    shin = {}
+    for s, air, lift in (("Left", LA, Lz), ("Right", RA, Rz)):
+        p0 = wpos(s + "UpLeg"); T = Vector((0, -tgt[s][0], tgt[s][1]))
+        knee, ank = ik2(p0, T, CAL["L1"], CAL["L2"], -1)
+        aim2(s + "UpLeg", knee - Vector((0, p0.y, p0.z))); aim2(s + "Leg", ank - knee)
+        sh = math.degrees(math.atan2(-(ank - knee).y, (ank - knee).z))
+        pf = 12 if s == "Left" else 20
+        fa = (1 - air) * FLAT_FOOT + air * (sh - pf if abs(sh) < 400 else FLAT_FOOT)
+        ta = (1 - air) * FLAT_TOE + air * (fa + 4)
+        aa(s + "Foot", fa); aa(s + "ToeBase", ta); shin[s] = sh
+    for k, v in GUARD.items(): aa(k, v + tor)
+    sole_snap()
+    if ret is not None:
+        sup = "Right" if i < 20 else "Left"
+        ret.update({"hips": px(wpos("Hips")), "sup": px(wpos(sup + "ToeBase")), "supAnkle": px(wpos(sup + "Foot")), "kick": px(wpos("LeftToeBase")), "shin": round(shin["Left"], 1), "hz": round(hz, 3), "world_H": Hf, "world_supf": (Rf if i < 20 else Lf)})
+    return A
+
+def run_teep():
+    calibrate(); N = 24; hips = []; sup = []; trav = []; diag = []
+    for i in range(1 if TEST else N):
+        r = {}; teep_pose(i, r); render_still(i); hips.append(r["hips"]); sup.append(r["sup"]); trav.append(round((r["world_H"] - cyc(TP["H"], 0, 24, STEP)) * PXM, 1))
+        diag.append({k: r[k] for k in ("shin", "hz", "kick")})
+    meta.update({"frames": N, "cols": 6, "stepPx": round(STEP * PXM, 1), "support": sup, "hips": hips, "travelAt": trav,
+                 "note": "rendered in place, hips pinned at hips[0].x; travelAt[i] = px the sprite must advance (screen-right) so the planted foot stays put; support = planted foot ball (right foot f0-19, left foot f20-23); kicking bone = mixamorig:LeftUpLeg/LeftLeg/LeftFoot/LeftToeBase (near-camera-far leg, the figure's anatomical left)", "diag": diag})
+
+# ---- backward roll
+CROUCH = {"Hips": 22, "Spine": 32, "Spine1": 40, "Spine2": 46, "Neck": 58, "Head": 44,
+          "LeftUpLeg": 96, "LeftLeg": 234, "LeftFoot": 165, "LeftToeBase": 100, "RightUpLeg": 92, "RightLeg": 231, "RightFoot": 165, "RightToeBase": 100,
+          "LeftArm": 140, "LeftForeArm": 168, "LeftHand": 175, "RightArm": 165, "RightForeArm": 140, "RightHand": 130}
+TUCK = {"Hips": 12, "Spine": 34, "Spine1": 55, "Spine2": 68, "Neck": 82, "Head": 112,
+        "LeftUpLeg": 50, "LeftLeg": 222, "LeftFoot": 205, "LeftToeBase": 205, "RightUpLeg": 46, "RightLeg": 218, "RightFoot": 205, "RightToeBase": 205,
+        "LeftArm": 96, "LeftForeArm": 330, "LeftHand": 322, "RightArm": 92, "RightForeArm": 328, "RightHand": 320}
+# frame: (blend towards TUCK from CROUCH, roll psi in degrees, blend towards STAND, hips travel fraction)
+RL = {0: (0, 0, 0, 0), 1: (.35, -12, 0, .04), 2: (.8, -45, 0, .12), 3: (1, -100, 0, .24), 4: (1, -158, 0, .38), 5: (1, -212, 0, .52), 6: (1, -262, 0, .64), 7: (1, -308, 0, .74),
+      8: (.7, -340, 0, .84), 9: (.25, -358, 0, .92), 10: (0, -360, 0, .96), 11: (0, -360, 0, 1), 12: (0, -360, .12, 1), 13: (0, -360, .3, 1), 14: (0, -360, .5, 1), 15: (0, -360, .68, 1), 16: (0, -360, .82, 1), 17: (0, -360, .92, 1), 18: (0, -360, .98, 1), 19: (0, -360, 1, 1)}
+ROLL_TRAVEL = 1.05   # metres backward (screen-left)
+def sm(t): t = max(0., min(1., t)); return t * t * (3 - 2 * t)
+def run_roll():
+    calibrate(); teep_pose(0); STAND = read_angles()
+    for k in STAND:
+        while STAND[k] - CROUCH[k] > 180: STAND[k] -= 360
+        while STAND[k] - CROUCH[k] < -180: STAND[k] += 360
+    N = 20; hips = []; contact = []; trav = []; head = []
+    for i in range(1 if TEST else N):
+        tk, psi, st, tr = RL[i]; mreset()
+        A = {}
+        for k in CROUCH:
+            base = CROUCH[k] * (1 - tk) + TUCK[k] * tk
+            A[k] = (base + psi) * (1 - st) + STAND[k] * st if st > 0 else base + psi
+        # crouch->stand and tuck->crouch never overlap; psi is -360 by the time the stand blend starts, so it is folded into CROUCH (same pose)
+        if st > 0: A = {k: (CROUCH[k]) * (1 - sm(st)) + STAND[k] * sm(st) for k in CROUCH}
+        apply_angles(A)
+        p = wpos("Hips"); arm.location = (0, -F0 - p.y, 0); upd(); sole_snap()
+        render_still(i); hips.append(px(wpos("Hips"))); head.append(head_px()); mz = mesh_minz()
+        contact.append(px((0, 0, mz))["y"]); trav.append(round(ROLL_TRAVEL * tr * PXM, 1))
+    meta.update({"frames": N, "cols": 5, "travelPx": round(ROLL_TRAVEL * PXM, 1), "hips": hips, "head": head, "contact": contact, "travelAt": trav,
+                 "note": "rendered in place, hips pinned at x=hips.x; travelAt[i] = cumulative px the sprite advances BACKWARD (screen-left); frame 0 = crouch pose, frame 19 = teep frame 0"})
+
+
 if BEAT == "walk": run_cycle(16, "Walk", False)
 elif BEAT == "sneak": run_cycle(12, "Walk", True)
 elif BEAT == "look": run_look()
@@ -343,5 +493,7 @@ elif BEAT == "reach": run_reach()
 elif BEAT == "crouch": run_crouch()
 elif BEAT == "crouchlook": run_crouchlook()
 elif BEAT == "crouchpeek": run_crouchpeek()
+elif BEAT == "teep": hide_can(); run_teep()
+elif BEAT == "roll": hide_can(); run_roll()
 json.dump(meta, open(os.path.join(OUT, "raw.json"), "w"), indent=1)
 print("DONE", BEAT, {k: v for k, v in meta.items() if k not in ("poses",)})

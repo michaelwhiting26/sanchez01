@@ -22,6 +22,7 @@ for b in BEATS:
         if os.path.getsize(f"{OUT}/{name}.webp") < LIMIT or q < 50: break
         q -= 4
     if isrun: meta = {"frames": n, "size": S, "nozzle": raw["nozzle"], "cols": cols}
+    elif b in ("teep", "roll"): meta = {k: v for k, v in raw.items() if k not in ("beat", "diag", "head", "note")}
     elif b in ("crouch", "crouchpeek"): meta = {"frames": n, "cols": cols, "size": S, "hips": raw["hips"], "head": raw["head"], "footY": raw["footY"]}
     elif b == "crouchlook": meta = {"frames": n, "cols": cols, "size": S, "yawDeg": raw["yawDeg"], "pitchDeg": raw["pitchDeg"], "head": raw["head"], "footY": raw["footY"]}
     else:
