@@ -9,7 +9,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { BAG_ART } from "./art";
-import { BAG_PRODUCTS, type BagProduct } from "./products";
+import { BAG_PRODUCTS, type BagArtKey, type BagProduct } from "./products";
 
 const HOOK = 1.824;
 const DNA_RATE = (2 * Math.PI * 0.55) / 210; // radians per pixel of scroll: exactly how fast the DNA helix turns
@@ -237,12 +237,12 @@ export class BagEngine {
     return size.y / circ;
   }
 
-  private artTexture(product: BagProduct): THREE.Texture {
-    const key = `art:${product.art}`;
+  private artTexture(artKey: BagArtKey): THREE.Texture {
+    const key = `art:${artKey}`;
     const hit = this.textures.get(key);
     if (hit) return hit;
     const cw = Math.min(2560, Math.floor(6144 / this.aspect));
-    const t = new THREE.CanvasTexture(BAG_ART[product.art].draw(cw, Math.round(cw * this.aspect), () => (t.needsUpdate = true)));
+    const t = new THREE.CanvasTexture(BAG_ART[artKey].draw(cw, Math.round(cw * this.aspect), () => (t.needsUpdate = true)));
     t.colorSpace = THREE.SRGBColorSpace;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.anisotropy = this.anisotropy;
@@ -255,9 +255,31 @@ export class BagEngine {
     const p = BAG_PRODUCTS[index];
     if (!p) return;
     this.current = index;
-    const art = BAG_ART[p.art];
-    const t = this.artTexture(p);
     const m = this.bodyMaterial;
+    if (p.art === null) {
+      // plain colour: no texture, just a tinted satin-vinyl body. Every map is cleared so nothing from the previous artwork shows through.
+      m.map = null;
+      m.bumpMap = null;
+      m.roughnessMap = null;
+      m.metalnessMap = null;
+      m.bumpScale = 0;
+      m.color.setHex(p.color ?? 0xffffff);
+      m.roughness = 0.5;
+      m.metalness = 0;
+      m.clearcoat = 0.18;
+      m.clearcoatRoughness = 0.3;
+      m.envMapIntensity = 0.45; // less studio reflection, so the colour stays true instead of washing out
+      m.needsUpdate = true;
+      this.bandTop.color.setHex(p.trim);
+      this.bandBottom.color.setHex(p.trim);
+      this.renderer.domElement.setAttribute("aria-label", `Interactive ${p.name.toLowerCase()}. Drag to spin, click or tap to hit it.`);
+      this.onProduct(index);
+      return;
+    }
+    m.color.setHex(0xffffff); // artwork textures carry their own colour; undo any plain-colour tint
+    m.envMapIntensity = 1;
+    const art = BAG_ART[p.art];
+    const t = this.artTexture(p.art);
     m.map = t;
     m.bumpScale = p.bump;
     if (art.rm) {

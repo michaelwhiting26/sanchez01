@@ -19,7 +19,6 @@ export const TOUR_STOPS: readonly TourStop[] = [
   { selector: ".lgc-track", at: -1, dwellMs: 1500, waitFor: "gallery:autoplay-done" },
   { selector: ".sz-marquee", at: 0.3, dwellMs: 1400 },
   { selector: "[data-bag-punch]", at: 0, dwellMs: 4200 },
-  { selector: ".depth-cards", at: 0.08, dwellMs: 2200 },
   { selector: "#waitlist", at: -2, dwellMs: 0 }, // the end: the rise panel with the waitlist, the globe and the bag
 ];
 

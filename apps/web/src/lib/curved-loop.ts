@@ -10,6 +10,8 @@ const NS = "http://www.w3.org/2000/svg";
 const FONT_SIZE = 64;
 const STAR_SIZE = 60;
 const SLOT = STAR_SIZE + 2 * 0.55 * FONT_SIZE;
+const DOT_R = 7; // the small white dot that joins two words
+const DOT_SLOT = 2 * DOT_R + 2 * 0.42 * FONT_SIZE;
 
 interface WordItem {
   kind: "word";
@@ -21,7 +23,11 @@ interface StarItem {
   kind: "star";
   centre: number;
 }
-type LayoutItem = WordItem | StarItem;
+interface DotItem {
+  kind: "dot";
+  centre: number;
+}
+type LayoutItem = WordItem | StarItem | DotItem;
 
 interface PlacedWord {
   el: SVGTextElement;
@@ -32,12 +38,14 @@ interface PlacedWord {
 interface PlacedStar {
   d0: number;
   group: SVGGElement;
-  glint: SVGRectElement;
+  /** Only stars have a glint; dots are plain. */
+  glint?: SVGRectElement;
+  dot?: boolean;
 }
 
 export interface CurvedLoopOptions {
   root: HTMLElement;
-  /** Words separated by ✦ (the star). */
+  /** Words separated by ✦ (the red star, breaks the phrase up) or • (a small white dot, joins two words). */
   text: string;
   curve: number;
   speed: number;
@@ -83,7 +91,7 @@ export class CurvedLoop {
     this.root = o.root;
     this.reduce = o.reducedMotion;
     this.sprite = o.starSrc;
-    this.pieces = o.text.split("✦").map((p) => p.trim());
+    this.pieces = o.text.split(/(✦|•)/); // words and separators, in order
     this.vw = (o.root.clientWidth || window.innerWidth) < 700 ? 640 : 1440; // a narrower drawing on phones keeps the letters large
     const curve = o.curve * (this.vw < 1440 ? 0.6 : 1);
     this.speed = o.speed;
@@ -174,18 +182,22 @@ export class CurvedLoop {
   private layout(): number {
     this.items = [];
     let pos = 0;
-    this.pieces.forEach((piece, i) => {
-      if (piece) {
+    for (const token of this.pieces) {
+      if (token === "✦") {
+        this.items.push({ kind: "star", centre: pos + SLOT / 2 });
+        pos += SLOT;
+      } else if (token === "•") {
+        this.items.push({ kind: "dot", centre: pos + DOT_SLOT / 2 });
+        pos += DOT_SLOT;
+      } else {
+        const piece = token.trim();
+        if (!piece) continue;
         this.measure.textContent = piece;
         const width = this.measure.getComputedTextLength();
         this.items.push({ kind: "word", text: piece, x: pos, width });
         pos += width;
       }
-      if (i < this.pieces.length - 1) {
-        this.items.push({ kind: "star", centre: pos + SLOT / 2 });
-        pos += SLOT;
-      }
-    });
+    }
     return pos;
   }
 
@@ -202,6 +214,13 @@ export class CurvedLoop {
           tp.textContent = it.text;
           this.svg.appendChild(t);
           this.words.push({ el: t, path: tp, x: k * this.spacing + it.x, width: it.width });
+        } else if (it.kind === "dot") {
+          const g = el("g", {});
+          g.style.pointerEvents = "none";
+          g.style.display = "none";
+          el("circle", { r: DOT_R, fill: "#ffffff" }, g); // drawn at mid letter height, riding the curve with the words
+          this.svg.appendChild(g);
+          this.stars.push({ d0: k * this.spacing + it.centre, group: g, dot: true });
         } else {
           const g = el("g", {});
           g.style.pointerEvents = "none";
@@ -244,6 +263,11 @@ export class CurvedLoop {
         st.group.style.display = "none";
         return;
       }
+      if (st.dot) {
+        st.group.setAttribute("transform", `translate(${cx.toFixed(1)} ${cy.toFixed(1)})`);
+        st.group.style.display = "";
+        return;
+      }
       const sx = 1 - 0.1 * Math.abs(Math.sin(rot * 1.6)); // turns a little like a metal object as it rides the curve
       const wob = 3 * Math.sin(cx / 150 + i);
       st.group.setAttribute(
@@ -252,7 +276,7 @@ export class CurvedLoop {
       );
       st.group.style.display = "";
       const gp = (cx / 520 + i * 0.37) % 1; // the glint sweeps across once every ~520px of travel
-      st.glint.setAttribute("x", (-30 + 96 * (gp < 0 ? gp + 1 : gp)).toFixed(1));
+      st.glint?.setAttribute("x", (-30 + 96 * (gp < 0 ? gp + 1 : gp)).toFixed(1));
     });
   }
 
