@@ -24,7 +24,7 @@ export function FooterMin() {
     const home = host?.parentElement;
     const slot = document.querySelector<HTMLElement>("[data-globe-slot]");
     if (!host || !home || !slot) return;
-    const mq = window.matchMedia("(max-width: 760px)");
+    const mq = window.matchMedia("(min-width: 0px)");
     const place = (): void => {
       if (mq.matches) slot.insertBefore(host, slot.firstChild);
       else home.appendChild(host);
