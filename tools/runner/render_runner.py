@@ -2,6 +2,10 @@
 Render a black-silhouette running character as a transparent sprite sheet, with a spray can in the raised arm and the can nozzle's position per frame.
 
   Blender -b -P render_runner.py -- --out <dir> [--frames 24] [--size 512] [--arm x,y,z] [--fore x,y,z] [--test] [--look silhouette|shaded]
+  JESSE (Xbot-structured; silhouette = live look, --look shaded = his own clothes):
+    B=/Applications/Blender.app/Contents/MacOS/Blender; R=tools/runner; S=<scratch>/frames
+    $B -b -P $R/render_runner.py -- --model jesse --size 320 --frames 24 --scale <s> [--flip] --arm <x,y,z> --fore <x,y,z> [--look shaded] --out $S/{sil|sh}/run
+    python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --suffix _jesse --beats run   (shaded: $S/sh, --suffix _jesse_shaded)
   live sheet args: --model soldier --size 320 --frames 24 --arm 83,29.1,-27.4 --fore -23.9,-44.1,-16.9   (reverse-fitted; nozzle track within 3.8 px of the live meta.json)
 
 Source: Xbot.glb (three.js examples, Mixamo "X Bot" mannequin with the stock run cycle). Output is only a rendered silhouette, no rig or mesh is shipped.
@@ -26,9 +30,16 @@ MODEL = opt("--model", "xbot")   # xbot: the Mixamo mannequin; soldier: the Mixa
 os.makedirs(OUT, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "Soldier.glb" if MODEL == "soldier" else "Xbot.glb"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+GLB = {"soldier": "Soldier.glb", "jesse": "Jesse.glb"}.get(MODEL, "Xbot.glb")   # jesse = Xbot-structured (Jesse_Body skin, same mixamorig skeleton): Xbot code paths
+bpy.ops.import_scene.gltf(filepath=os.path.join(HERE, GLB))
 scene = bpy.context.scene
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
+SCALE = float(opt("--scale", "1.0"))   # uniform armature scale factor (match the live sheets' head height)
+arm.scale = tuple(s * SCALE for s in arm.scale)
+if "--flip" in argv:                   # turn 180 deg about Z if the model faces screen-left
+    from mathutils import Matrix as _M
+    arm.matrix_world = _M.Rotation(math.pi, 4, "Z") @ arm.matrix_world
 for o in list(bpy.data.objects):
     if o.name.startswith("Icosphere") or o.name == "vanguard_visor":   # the helper sphere, and the soldier's goggles
         bpy.data.objects.remove(o, do_unlink=True)

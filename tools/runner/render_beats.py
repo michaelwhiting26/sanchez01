@@ -12,13 +12,17 @@ size and ground baseline (footY = 293.4 px at size 320) as the live run sheet. T
   $B -b -P $R/render_runner.py -- --model soldier --size 320 --frames 24 --arm 83,29.1,-27.4 --fore -23.9,-44.1,-16.9 [--look shaded] --out $S/sh/run
   python3 $R/assemble_beats.py --frames $S/sh  --out apps/web/public/assets/runner --sheets <scratch>/sheets --suffix _shaded --beats run,walk,look,sneak,reach,crouch,crouchlook,crouchpeek
   python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --beats crouch,crouchlook,crouchpeek   # NEW silhouettes only; never re-run for walk/look/sneak/reach (live files)
+  # JESSE (Xbot-structured, named alias): add  --model jesse --slim 0 [--scale <s>] [--turn 0|1]  to any beat command above (+ --look shaded for the shaded set), then assemble with --suffix _jesse / _jesse_shaded
+  #   for b in walk look sneak reach crouch crouchlook crouchpeek teep roll; do $B -b -P $R/render_beats.py -- --beat $b --model jesse --slim 0 --scale <s> --out $S/sil/$b --size 320; done
+  #   python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --suffix _jesse --beats run,walk,look,sneak,reach,crouch,crouchlook,crouchpeek,teep,roll
+  # boxing + abseil beats (Jesse, orthodox, LEFT jab): for b in jab stepin guard abseil: same command with --beat $b, then assemble --beats jab,stepin,guard,abseil --suffix _jesse
   # NEW: Muay Thai teep + backward roll (Mixamo-bone driven; pass --model <glb> to re-render from any rig with the mixamorig:* skeleton, e.g. Jesse.glb, then --suffix _jesse):
   for b in teep roll; do $B -b -P $R/render_beats.py -- --beat $b --out $S/sil/$b --size 320 [--model $R/Jesse.glb --slim 0]; done
   python3 $R/assemble_beats.py --frames $S/sil --out apps/web/public/assets/runner --sheets <scratch>/sheets --beats teep,roll [--suffix _jesse]
   python3 $R/contact.py $S/sil/teep <scratch>/teep_zoom 6 40,60,260,200   # 2x zoom crop of every frame (use with frames 8-13 dir)
   python3 $R/contact.py <frames_dir> <out_prefix> <cols> [x,y,w,h]   # labelled 2-background contact sheets / 2x zoom crops
 
-Flags: --beat walk|look|sneak|reach|crouch|crouchlook|crouchpeek  --look silhouette|shaded  --size 320  --slim 0.16 (slims the waist/belt/torso depth via skin weights, 0 = off)  --test (1 frame)
+Flags: --beat walk|look|sneak|reach|crouch|crouchlook|crouchpeek|teep|roll|jab|stepin|guard|abseil  --look silhouette|shaded  --size 320  --slim 0.16 (slims the waist/belt/torso depth via skin weights, 0 = off)  --test (1 frame)
 """
 import bpy, sys, os, json, math
 import numpy as np
@@ -27,7 +31,10 @@ from bpy_extras.object_utils import world_to_camera_view
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 def opt(n, d): return argv[argv.index(n) + 1] if n in argv else d
-MODEL = opt("--model", os.path.join(os.path.dirname(os.path.abspath(__file__)), "Soldier.glb"));
+HERE = os.path.dirname(os.path.abspath(__file__))
+MODEL = opt("--model", "soldier"); JESSE = MODEL == "jesse"
+MODEL = {"soldier": os.path.join(HERE, "Soldier.glb"), "jesse": os.path.join(HERE, "Jesse.glb")}.get(MODEL, MODEL)   # "jesse" = alias for tools/runner/Jesse.glb (Xbot-structured)
+SCALE = float(opt("--scale", "1.0")); USE_CHILD = MODEL.split("/")[-1] != "Soldier.glb"; TURN = int(opt("--turn", "0" if JESSE else "1"))   # TURN: rotate 180 deg about Z (soldier faces -Y natively); Jesse/Xbot: no turn unless --turn 1
 BEAT = opt("--beat", "walk"); OUT = opt("--out", "/tmp/beat"); SIZE = int(opt("--size", "320")); SLIM = float(opt("--slim", "0.22")); LOOK = opt("--look", "silhouette"); TEST = "--test" in argv
 os.makedirs(OUT, exist_ok=True)
 
@@ -37,7 +44,8 @@ scene = bpy.context.scene
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 for o in list(bpy.data.objects):
     if o.name.startswith("Icosphere") or o.name == "vanguard_visor": bpy.data.objects.remove(o, do_unlink=True)
-arm.matrix_world = Matrix.Rotation(math.pi, 4, "Z") @ arm.matrix_world   # face +Y = screen-right
+arm.scale = tuple(v * SCALE for v in arm.scale)
+if TURN: arm.matrix_world = Matrix.Rotation(math.pi, 4, "Z") @ arm.matrix_world   # soldier: turn to face screen-right
 MW = arm.matrix_world.copy()
 MESHES = [o for o in bpy.data.objects if o.type == "MESH"]; mesh_obj = MESHES[0]
 
@@ -86,6 +94,14 @@ if LOOK == "shaded":
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import shaded_look; shaded_look.setup(scene, can)
 
 PB = lambda n: arm.pose.bones["mixamorig:" + n]
+CHILD = {"Hips": "Spine", "Spine": "Spine1", "Spine1": "Spine2", "Spine2": "Neck", "Neck": "Head", "Head": "HeadTop_End"}
+def bvec(b):
+    """bone direction (armature space). Soldier: head->tail. Xbot-structured rigs (Xbot, Jesse) have meaningless roll-length tails, so use the head of the chain child instead."""
+    if not USE_CHILD: return b.tail - b.head
+    n = b.name.split(":")[1]; side = "Left" if n.startswith("Left") else "Right" if n.startswith("Right") else ""; base = n[len(side):]
+    want = CHILD.get(n) or side + {"Hand": "HandMiddle1", "Foot": "ToeBase", "ToeBase": "ToeBase_End"}.get(base, "")
+    ch = [c for c in b.children if c.name == "mixamorig:" + want] or list(b.children)
+    return (ch[0].head - b.head) if ch else b.tail - b.head
 def upd(): bpy.context.view_layer.update()
 def wpos(n): return arm.matrix_world @ PB(n).head
 def px(p):
@@ -103,7 +119,7 @@ def rot_world(name, q):
     upd()
 def rot_axis(name, axis, deg): rot_world(name, Quaternion(Vector(axis), math.radians(deg)))
 def aim(name, d):
-    b = PB(name); cur = (R3 @ (b.tail - b.head)).normalized()
+    b = PB(name); cur = (R3 @ bvec(b)).normalized()
     rot_world(name, cur.rotation_difference(Vector(d).normalized()))
 def unit_yz(deg_from_up):  # direction in the sagittal plane: 0 = up, 90 = forward(+Y), 180 = down
     a = math.radians(deg_from_up); return Vector((0, -math.sin(a), math.cos(a)))
@@ -145,7 +161,7 @@ def hang_arm(swing=0.0):
 
 meta = {"beat": BEAT, "size": SIZE, "footY": FOOTY}
 def cyc_action(name):
-    a = bpy.data.actions[name]; arm.animation_data.action = a; return a
+    a = next(x for x in bpy.data.actions if x.name.lower() == name.lower()); arm.animation_data.action = a; return a   # Xbot/Jesse actions are lower-case (walk/idle/run)
 def at(a, f):
     arm.animation_data.action = a
     scene.frame_set(int(f), subframe=f - int(f)); upd()
@@ -293,7 +309,7 @@ def crouch_pose(c, yaw=0.0, pitch=0.0, peek_pitch=0.0):
     # torso twist about each spine bone's own axis (shoulders rotate), then neck + head yaw about vertical
     e = yaw / 152.0
     for n, d in (("Spine", 18), ("Spine1", 18), ("Spine2", 20)):
-        b = PB(n); ax = R3 @ (b.tail - b.head)
+        b = PB(n); ax = R3 @ bvec(b)
         rot_world(n, Quaternion(-ax.normalized(), math.radians(d * e)))     # sign chosen so it matches the world-Z (0,0,-1) look sheet (turns back toward screen-left)
     rot_axis("Neck", Z, 46 * e); rot_axis("Head", Z, 76 * e)
     pit = pitch + peek_pitch
@@ -351,12 +367,12 @@ def mreset():
     for pb in arm.pose.bones: pb.matrix_basis = Matrix()
     arm.location = (0, 0, 0); upd()
 def aim2(name, d):
-    b = PB(name); d = Vector(d).normalized(); cur = (R3 @ (b.tail - b.head)).normalized()
-    if cur.dot(d) < -0.98: rot_world(name, Quaternion(Vector((1, 0, 0)), math.pi)); cur = (R3 @ (b.tail - b.head)).normalized()   # antiparallel: flip about the lateral axis, stays in the sagittal plane
+    b = PB(name); d = Vector(d).normalized(); cur = (R3 @ bvec(b)).normalized()
+    if cur.dot(d) < -0.98: rot_world(name, Quaternion(Vector((1, 0, 0)), math.pi)); cur = (R3 @ bvec(b)).normalized()   # antiparallel: flip about the lateral axis, stays in the sagittal plane
     rot_world(name, cur.rotation_difference(d))
 def aa(name, deg): aim2(name, unit_yz(deg))
 def bang(name):
-    b = PB(name); v = R3 @ (b.tail - b.head); return math.degrees(math.atan2(-v.y, v.z))
+    b = PB(name); v = R3 @ bvec(b); return math.degrees(math.atan2(-v.y, v.z))
 TORSO = ("Hips", "Spine", "Spine1", "Spine2", "Neck", "Head")
 LIMB = ("UpLeg", "Leg", "Foot", "ToeBase")
 ARMB = ("Arm", "ForeArm", "Hand")
@@ -411,7 +427,11 @@ def calibrate():
 
 def teep_pose(i, ret=None):
     t = float(i); G = lambda k, adv=0.0: cyc(TP[k], t, 24, adv)
-    Hf = G("H", STEP); Lf = G("LF", STEP); Rf = G("RF", STEP); Lz = G("LZ"); Rz = G("RZ"); L = G("LN"); B = G("BND"); LA = max(0, min(1, G("LA"))); RA = max(0, min(1, G("RA")))
+    return stance_pose(i, G("H", STEP), G("LF", STEP), G("RF", STEP), G("LZ"), G("RZ"), G("LN"), G("BND"), max(0, min(1, G("LA"))), max(0, min(1, G("RA"))), ret)
+
+def stance_pose(i, Hf, Lf, Rf, Lz, Rz, L, B, LA, RA, ret=None, gabs=None, head_tuck=0.0):
+    """shared standing-pose solver (teep + boxing beats): hips forward Hf, ankles forward Lf/Rf, ankle lift Lz/Rz, torso lean-back L (deg), support-leg reach fraction B, in-air weights LA/RA.
+    gabs = absolute sagittal angles (deg from up) overriding arm bones after the guard is applied."""
     mreset()
     tor = -L                                                              # torso angle from up (negative = leaning back)
     A = {"Hips": tor * .3, "Spine": tor * .55, "Spine1": tor * .8, "Spine2": tor, "Neck": tor * .5 + 4, "Head": 4 + tor * .1}
@@ -438,6 +458,8 @@ def teep_pose(i, ret=None):
         ta = (1 - air) * FLAT_TOE + air * (fa + 4)
         aa(s + "Foot", fa); aa(s + "ToeBase", ta); shin[s] = sh
     for k, v in GUARD.items(): aa(k, v + tor)
+    for k, v in (gabs or {}).items(): aa(k, v)
+    if head_tuck: aa('Head', A['Head'] + head_tuck)
     sole_snap()
     if ret is not None:
         sup = "Right" if i < 20 else "Left"
@@ -486,6 +508,76 @@ def run_roll():
                  "note": "rendered in place, hips pinned at x=hips.x; travelAt[i] = cumulative px the sprite advances BACKWARD (screen-left); frame 0 = crouch pose, frame 19 = teep frame 0"})
 
 
+# ---------------------------------------------------------------- boxing beats: jab / stepin / guard (orthodox stance, LEFT foot forward, lead = LEFT arm: mixamorig:LeftArm/LeftForeArm/LeftHand, fist = LeftHandMiddle1)
+# all three reuse stance_pose (same solver as the teep); frame 0 of jab == guard frame 0 == stepin frames 0 and 9 (the guard pose), so they chain with no pop.
+BX = dict(Hf=.21, Lf=.42, Rf=0.0, L=-5.0, B=.94)   # guard: hips mid-stance, lead foot 0.42 m ahead of the rear foot, lean forward 5 deg, knees soft
+JAB_EXT = {"LeftArm": 88, "LeftForeArm": 90, "LeftHand": 90}   # lead arm dead straight out at shoulder height (absolute angles from up)
+def box_pose(i, Hf=None, Lf=None, Rf=None, Lz=0.0, Rz=0.0, e=0.0, dB=0.0, dL=0.0, ret=None):
+    Hf = BX["Hf"] if Hf is None else Hf; Lf = BX["Lf"] if Lf is None else Lf; Rf = BX["Rf"] if Rf is None else Rf
+    L = BX["L"] + dL - 3.0 * e; tor = -L
+    gabs = {k: (1 - e) * (GUARD[k] + tor) + e * v for k, v in JAB_EXT.items()} if e > 0 else None
+    return stance_pose(i, Hf + 0.04 * e, Lf, Rf, Lz, Rz, L, BX["B"] + dB, 0.0, 0.0, ret, gabs, head_tuck=10)
+def fist_px(): return px(wpos("LeftHandMiddle1"))
+def run_jab():
+    calibrate(); N = 10; E = [0, 0, .35, .7, .92, 1, .7, .4, .12, 0]; hips = []; fist = []
+    for i in range(1 if TEST else N):
+        box_pose(i, e=E[i]); render_still(i); hips.append(px(wpos("Hips"))); fist.append(fist_px())
+    meta.update({"frames": N, "cols": 5, "hips": hips, "fist": fist, "leadArmBones": ["mixamorig:LeftArm", "mixamorig:LeftForeArm", "mixamorig:LeftHand"], "note": "orthodox stance, left foot forward; frame 0-1 guard, 2-4 extend, 5 full extension, 6-8 retract, 9 guard; the jab is the LEFT arm (near-camera-far arm, the figure's anatomical left)"})
+def run_stepin():
+    calibrate(); N = 10; S_ = 0.30; hips = []; trav = []; H0 = BX["Hf"]
+    for i in range(1 if TEST else N):
+        ul = sm(min(i, 4) / 4.0); ur = sm(max(i - 4, 0) / 5.0)                       # lead foot slides frames 0-4, rear foot follows frames 4-9
+        Lz = 0.025 * math.sin(math.pi * min(i, 4) / 4.0) if i < 4 else 0.0
+        Rz = 0.025 * math.sin(math.pi * (i - 4) / 5.0) if i >= 4 else 0.0
+        Hf = H0 + S_ * (0.4 * ul + 0.6 * ur)
+        box_pose(i, Hf=Hf, Lf=BX["Lf"] + S_ * ul, Rf=BX["Rf"] + S_ * ur, Lz=Lz, Rz=Rz)
+        render_still(i); hips.append(px(wpos("Hips"))); trav.append(round((Hf - H0) * PXM, 1))
+    meta.update({"frames": N, "cols": 5, "stepPx": round(S_ * PXM, 1), "travelAt": trav, "hips": hips, "note": "rendered in place (hips pinned); travelAt[i] = px the sprite advances screen-right so the planted foot stays put; frame 0 and 9 = the guard pose"})
+def run_guard():
+    calibrate(); N = 8; hips = []
+    for i in range(1 if TEST else N):
+        w = math.sin(2 * math.pi * i / N)
+        box_pose(i, dB=0.012 * w, dL=1.2 * w, Hf=BX["Hf"] + 0.008 * w); render_still(i); hips.append(px(wpos("Hips")))
+    meta.update({"frames": N, "cols": 4, "hips": hips})
+
+# ---------------------------------------------------------------- abseil: side view, wall on the screen-RIGHT (the side he faces), feet flat on the wall, leaning back on a straight rope; rendered in place (hips pinned)
+WALL = 0.62; ANKW = 0.085; HIPZ = 1.0; DROP = 0.70
+#     i: (hips dist from wall d, foot z rel hips, wall contact c, foot off wall fo, lean back deg, cumulative drop m)
+AB = {0: (.80, -.14, 1, 0, 52, 0), 1: (.80, -.14, 1, 0, 52, 0), 2: (.68, -.10, 1, 0, 46, 0), 3: (.58, -.07, 1, 0, 40, 0), 4: (.56, -.06, 1, 0, 38, 0),
+      5: (.78, -.10, .4, .10, 44, .06), 6: (.95, -.17, 0, .18, 54, .20), 7: (.90, -.22, 0, .28, 54, .38), 8: (.82, -.20, 0, .20, 50, .55), 9: (.72, -.16, .3, .08, 46, .66),
+      10: (.62, -.12, 1, 0, 42, .70), 11: (.58, -.08, 1, 0, 40, .70), 12: (.60, -.08, 1, 0, 42, .70), 13: (.68, -.10, 1, 0, 46, .70), 14: (.76, -.13, 1, 0, 50, .70), 15: (.79, -.14, 1, 0, 52, .70)}
+def abseil_pose(i, ret=None):
+    d, rz, c, fo, lean, drop = AB[i]; d += 0.12; rz += 0.11; mreset(); tor = -lean
+    A = {"Hips": tor * .3, "Spine": tor * .55, "Spine1": tor * .8, "Spine2": tor, "Neck": tor * .45, "Head": tor * .1 - 8}
+    for n in TORSO: aa(n, A[n])
+    p = wpos("Hips"); arm.location = (0, -(WALL - d) - p.y, HIPZ - p.z); upd()
+    hz = wpos("Hips").z
+    for s, dz, df in (("Right", 0.0, 0.0), ("Left", 0.035, 0.02)):
+        p0 = wpos(s + "UpLeg"); T = Vector((0, -(WALL - ANKW - fo - df), hz + rz + dz))
+        knee, ank = ik2(p0, T, CAL["L1"], CAL["L2"], -1)
+        aim2(s + "UpLeg", knee - Vector((0, p0.y, p0.z))); aim2(s + "Leg", ank - knee)
+        sh = math.degrees(math.atan2(-(ank - knee).y, (ank - knee).z))
+        fa = c * 32 + (1 - c) * (sh - 58); aa(s + "Foot", fa); aa(s + "ToeBase", fa - 27)     # flat on the wall: shin ~horizontal, sole facing the wall, toes up
+    # rope: descender at the harness in front of the hips, rope runs up to the anchor above; top (guide) hand = near arm on the rope at chest height, brake hand = far arm at the hip
+    hp = wpos("Hips"); dev = Vector((0, hp.y - 0.17, hp.z + 0.05)); anchor = Vector((0, -(WALL + 0.05), hz + 3.0)); rd = (anchor - dev).normalized()
+    top = dev + rd * 0.42; brake = Vector((0, hp.y - 0.10, hp.z - 0.10))
+    for s, tgt, bend in (("Right", top, 1), ("Left", brake, 1)):
+        sh_ = wpos(s + "Arm"); a1 = bone_len(s + "Arm", s + "ForeArm"); a2 = bone_len(s + "ForeArm", s + "Hand")
+        el, hd = ik2(sh_, tgt, a1, a2, bend)
+        aim2(s + "Arm", el - Vector((0, sh_.y, sh_.z))); aim2(s + "ForeArm", hd - el); aim2(s + "Hand", rd if s == "Right" else Vector((0, -0.3, -1)))
+    upd()
+    if ret is not None:
+        ank = wpos("RightFoot")
+        ret.update({"hips": px(wpos("Hips")), "hand": px(wpos("RightHand")), "foot": px((0, -WALL, ank.z)), "drop": drop})
+def run_abseil():
+    calibrate(); N = 16; hips = []; hands = []; feet = []; dd = []
+    for i in range(1 if TEST else N):
+        r = {}; abseil_pose(i, r); render_still(i); hips.append(r["hips"]); hands.append(r["hand"]); feet.append(r["foot"]); dd.append(round(r["drop"] * PXM, 1))
+    meta.pop("footY", None)
+    meta.update({"frames": N, "cols": 4, "dropPx": round(DROP * PXM, 1), "dropAt": dd, "hands": hands, "feet": feet, "hips": hips, "wallX": px((0, -WALL, 0))["x"],
+                 "note": "in place, hips pinned; wall = vertical line at wallX on the screen-right; dropAt = cumulative descent px within the cycle (0 at frame 0, dropPx by frame 10, held to 15; the next cycle restarts at 0 with the wall scrolled up by dropPx); hands = the rope passes through the near (right) hand; feet = wall contact point of the right foot (sprite px, at wallX)"})
+
+
 if BEAT == "walk": run_cycle(16, "Walk", False)
 elif BEAT == "sneak": run_cycle(12, "Walk", True)
 elif BEAT == "look": run_look()
@@ -495,5 +587,9 @@ elif BEAT == "crouchlook": run_crouchlook()
 elif BEAT == "crouchpeek": run_crouchpeek()
 elif BEAT == "teep": hide_can(); run_teep()
 elif BEAT == "roll": hide_can(); run_roll()
+elif BEAT == "jab": hide_can(); run_jab()
+elif BEAT == "stepin": hide_can(); run_stepin()
+elif BEAT == "guard": hide_can(); run_guard()
+elif BEAT == "abseil": hide_can(); run_abseil()
 json.dump(meta, open(os.path.join(OUT, "raw.json"), "w"), indent=1)
 print("DONE", BEAT, {k: v for k, v in meta.items() if k not in ("poses",)})

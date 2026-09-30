@@ -22,7 +22,7 @@ for b in BEATS:
         if os.path.getsize(f"{OUT}/{name}.webp") < LIMIT or q < 50: break
         q -= 4
     if isrun: meta = {"frames": n, "size": S, "nozzle": raw["nozzle"], "cols": cols}
-    elif b in ("teep", "roll"): meta = {k: v for k, v in raw.items() if k not in ("beat", "diag", "head", "note")}
+    elif b in ("teep", "roll", "jab", "stepin", "guard", "abseil"): meta = {k: v for k, v in raw.items() if k not in ("beat", "diag", "head", "note")}
     elif b in ("crouch", "crouchpeek"): meta = {"frames": n, "cols": cols, "size": S, "hips": raw["hips"], "head": raw["head"], "footY": raw["footY"]}
     elif b == "crouchlook": meta = {"frames": n, "cols": cols, "size": S, "yawDeg": raw["yawDeg"], "pitchDeg": raw["pitchDeg"], "head": raw["head"], "footY": raw["footY"]}
     else:
@@ -35,6 +35,6 @@ for b in BEATS:
         for i in range(n):
             x, y = (i % cols) * S, (i // cols) * S
             d.rectangle([x, y, x + S - 1, y + S - 1], outline=(90, 90, 90)); d.text((x + 6, y + 4), str(i), fill=(255, 70, 70))
-            d.line([x, y + raw["footY"], x + S, y + raw["footY"]], fill=(0, 140, 200))
+            if "footY" in raw: d.line([x, y + raw["footY"], x + S, y + raw["footY"]], fill=(0, 140, 200))
         bg.convert("RGB").save(f"{SH}/{name}_{tag}.png")
     print(name, n, "frames", os.path.getsize(f"{OUT}/{name}.webp") // 1024, "KB", "q", q)
