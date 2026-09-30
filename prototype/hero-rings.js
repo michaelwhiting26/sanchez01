@@ -18,7 +18,7 @@
   var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 9, FLOOR = 0.26;
   var CREAM = [214, 181, 136], GOLD = [214, 181, 136];   /* Tan #D6B588: the whole pattern, the SANCHEZ outline and the ridges, in one colour (brightness still fades with distance) */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
-  var LEVELS = 20, WARMS = 6, NEON = 30, NB0 = (LEVELS + 1) * WARMS, NB = NB0 + NEON + 1, styles = [];   /* the last NEON shades are the SANCHEZ outline, one per slice of the word, left to right */
+  var LEVELS = 20, WARMS = 6, NEON = 30, NB0 = (LEVELS + 1) * WARMS, NB = NB0 + 2 * NEON + 1, styles = [];   /* the last NEON shades are the SANCHEZ outline, one per slice of the word, left to right */
   /* the spectrum, each colour taken to both of its ends (light and deep): pink -> deep red -> orange -> yellow -> blue */
   var SPECTRUM = [[255, 120, 190], [255, 32, 140], [255, 16, 96], [214, 10, 40], [255, 34, 24], [255, 96, 12], [255, 150, 0], [255, 210, 0], [255, 244, 70], [90, 220, 255], [24, 150, 255], [30, 80, 255]];
   function spec(u) { u = Math.min(1, Math.max(0, u)) * (SPECTRUM.length - 1); var i = Math.min(SPECTRUM.length - 2, Math.floor(u)), f = u - i, a = SPECTRUM[i], b = SPECTRUM[i + 1]; return [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f)]; }
@@ -28,6 +28,7 @@
   }
   for (var nz = 0; nz < NEON; nz++) { var nc = spec(nz / (NEON - 1)); styles.push("rgb(" + nc[0] + "," + nc[1] + "," + nc[2] + ")"); }
   styles.push("rgb(" + CREAM[0] + "," + CREAM[1] + "," + CREAM[2] + ")");   /* the tan of the outline, kept separate from the paint */
+  for (var nd = 0; nd < NEON; nd++) { var dc = spec(nd / (NEON - 1)); styles.push("rgb(" + Math.round(dc[0] * 0.5) + "," + Math.round(dc[1] * 0.5) + "," + Math.round(dc[2] * 0.5) + ")"); }   /* the thinner, dimmer coat */
   var cursor = { x: 0, y: 0, active: false }, ripples = [], cell = 1, ox = 0, dpr = 1, moving = false, fieldEnd = 1e9, cw = 0, ch = 0;
 
   function load() {
@@ -137,12 +138,15 @@
     var tsec0 = t / 1000; var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 0.9;
     counts.fill(0);
     /* SPRAY PAINT: on load the word is sprayed on left to right. The word's front leads; the ridges paint in behind it. Each dot has its own ragged edge so the front is a spray, not a wipe. */
-    var PASS_MS = 11000, SWEEP_MS = 5200, tp = t - (sprayStart || t) - 700, passK = 0, sp;
-    if (reduce) sp = 1; else if (tp < SPRAY_MS) sp = Math.max(0, tp / SPRAY_MS); else { var rt = tp - SPRAY_MS; passK = Math.floor(rt / PASS_MS) + 1; sp = (rt % PASS_MS) / SWEEP_MS; }   /* pass 0 paints the letters in; then a new pass every 11s at random */
-    if (typeof window.__spray === "number") { sp = window.__spray; passK = 0; }
-    var sweeping = !reduce && sp > 0.005 && sp < 1, later = passK > 0;
+    var tp = t - (sprayStart || t) - 700, sp = reduce ? 1 : Math.min(1, Math.max(0, tp / SPRAY_MS)), passK = 0;
+    if (typeof window.__spray === "number") sp = window.__spray;
+    var sweeping = !reduce && sp > 0.005 && sp < 1, later = false, tn = Math.max(0, tp) / 1000;
+    /* THE HAND: after the first pass the paint keeps being worked by a hand that drifts over the word and moves closer and further away: near = tight and dense, far = wide and soft. */
+    var hc = 0.5 + 0.5 * Math.sin(tn * 0.55 + 1.3) * Math.cos(tn * 0.21), hR = 4 + 20 * (1 - hc), hI = 0.45 + 0.55 * hc;
+    var hx = sx0 + (sx1 - sx0) * (0.5 + 0.46 * Math.sin(tn * 0.31 - 0.9) + 0.06 * Math.sin(tn * 1.7)), hy = MH * (0.5 + 0.42 * Math.sin(tn * 0.83 + 2.0) * Math.cos(tn * 0.29));
+    var hx2 = sx0 + (sx1 - sx0) * (0.5 + 0.46 * Math.sin(tn * 0.23 + 2.4)), hy2 = MH * (0.5 + 0.4 * Math.sin(tn * 0.61 - 0.5)), hR2 = 5 + 16 * (0.5 + 0.5 * Math.sin(tn * 0.4 + 0.7));
     var eOut = function (v) { v = Math.min(1, Math.max(0, v)); return v * v * (3 - 2 * v) * 0.35 + v * 0.65; };
-    var hK = Math.abs(Math.sin(passK * 91.7 + 3.1) * 43758.5453 % 1), SLOPE = later ? -0.2 + 0.95 * hK : 0.35, PSMAX = (sx1 - sx0) + Math.abs(SLOPE) * MH, FF = sp >= 1 ? PSMAX + 40 : -8 + (PSMAX + 24) * eOut(sp);
+    var SLOPE = 0.35, PSMAX = (sx1 - sx0) + Math.abs(SLOPE) * MH, FF = sp >= 1 ? PSMAX + 40 : -8 + (PSMAX + 24) * eOut(sp);
     /* WAVE SETS, one per quarter: every quarter of the field rolls out its own sets of seven waves (own timing, speed, spacing and power), so the four sides move independently.
        Each crest has its own strength (middle ones strongest, every set differs). A 1-D table per quarter over distance keeps it cheap; the quarters blend smoothly across the axes. */
     var WAVES = 7, BINS = 480, WWIDTH = 8.5, tW0 = (t - (sprayStart || t)) / 1000 - SPRAY_MS / 1000 * 0.7 - 0.7;
@@ -185,9 +189,17 @@
         if (pr < R) {
           if (inMap && bp[m * MW + x]) { b = NB0 + NEON; }   /* the outline: pure tan, every dot */            /* the outline: its own bright white-tan shade */
           else if (inMap && bl[m * MW + x]) {                                          /* the black inside the letters: spray paint */
-            var ps = (x - sx0) + SLOPE * (SLOPE < 0 ? m - MH : m), agep = FF - ps + (pseed[base + x] - 0.5) * 6;
-            if (later && agep <= 0 && sweeping) { if (pseed[base + x] < 0.28) b = NB0 + Math.max(0, Math.min(NEON - 1, Math.floor((x - sx0) / Math.max(1, sx1 - sx0) * NEON))); }
-            else if (agep > 0 || (later && !sweeping)) { if (later && !sweeping) agep = 99; var covp = Math.min(1, agep / 18); if (pseed[base + x] * 0.97 < covp) b = NB0 + Math.max(0, Math.min(NEON - 1, Math.floor((x - sx0) / Math.max(1, sx1 - sx0) * NEON))); }   /* speckled just behind the nozzle, solid further back */
+            var ps = (x - sx0) + SLOPE * m, agep = FF - ps + (pseed[base + x] - 0.5) * 6;
+            if (agep > 0 || sp >= 1) {
+              var h2 = (pseed[base + x] * 7919.13) % 1, dxh = x - hx, dyh = (m - hy) * 1.5, dxh2 = x - hx2, dyh2 = (m - hy2) * 1.5;
+              var dens = Math.min(1, hI * Math.exp(-(dxh * dxh + dyh * dyh) / (hR * hR)) + 0.7 * Math.exp(-(dxh2 * dxh2 + dyh2 * dyh2) / (hR2 * hR2)) + 0.18 + 0.16 * Math.sin(x * 0.11 + m * 0.07 + tn * 0.4));
+              var covp = sp >= 1 ? 1 : Math.min(1, agep / 18);
+              if (pseed[base + x] < (0.84 + 0.16 * dens) * covp) {                     /* at least 84% of the letters are always sprayed; the hand only changes how dense and bright */
+                var hue = (x - sx0) / Math.max(1, sx1 - sx0) + 0.2 * Math.sin(m * 0.09 + tn * 0.2) + 0.14 * Math.sin(x * 0.05 - m * 0.045 + 1.1) + (h2 - 0.5) * 0.16;   /* colour in soft clouds, not vertical stripes */
+                var sl = Math.max(0, Math.min(NEON - 1, Math.floor(hue * NEON)));
+                b = (h2 < 0.22 + 0.78 * dens) ? NB0 + sl : NB0 + NEON + 1 + sl;
+              }
+            }
           }
           else if (!(inMap && bl[m * MW + x])) {
             var dw = ddw[base + x], tv = thv[base + x], vf = 0;
@@ -248,13 +260,20 @@
         for (var jg = a; jg < z; jg++) { var ng = order[jg], xg = ng % MW, yg = (ng - xg) / MW; ctx.fillRect(ox + xg * cell + gp + offX[ng], yg * cell - sub + gp + offY[ng], gs, gs); }
         ctx.globalAlpha = 1;
       }
-      ctx.globalAlpha = (bk >= NB0 && bk < NB0 + NEON) ? 0.7 : 1;                    /* the paint sits a little softer */
+      ctx.globalAlpha = (bk >= NB0 && bk !== NB0 + NEON) ? 0.72 : 1;                    /* the paint sits a little softer */
       for (var j = a; j < z; j++) {
         var n = order[j], xx = n % MW, yy = (n - xx) / MW;
         ctx.fillRect(ox + xx * cell + pad + offX[n], yy * cell - sub + pad + offY[n], s, s);
       }
     }
     /* overspray: a fine mist thrown around the nozzle line while the letters are being painted */
+    if (sp >= 1 && !reduce && sx1 > sx0) {                                          /* fine overspray round the hand, thicker when it is close */
+      var mcH = spec(Math.min(1, Math.max(0, (hx - sx0) / Math.max(1, sx1 - sx0)))), kh, nH = Math.round(70 * hI);
+      for (kh = 0; kh < nH; kh++) {
+        var ah = Math.random() * 6.2832, rh = (Math.random() + Math.random() - 1) * hR * cell * 0.9, aH = 0.1 + Math.random() * 0.3, szh = (0.8 + Math.random() * 1.5) * dpr;
+        ctx.fillStyle = "rgba(" + mcH[0] + "," + mcH[1] + "," + mcH[2] + "," + aH.toFixed(2) + ")"; ctx.fillRect(ox + (hx + 0.5) * cell + Math.cos(ah) * rh, (r0 + hy) * cell - sy0 + Math.sin(ah) * rh * 0.7, szh, szh);
+      }
+    }
     if (sweeping && sx1 > sx0) {
       var mc = spec(Math.min(1, Math.max(0, FF / PSMAX))), k, mrow, mx, my, aa, ms;
       for (k = 0; k < 240; k++) {
