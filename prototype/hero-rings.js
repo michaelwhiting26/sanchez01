@@ -125,13 +125,14 @@
     /* EGG SPIN: while the workshop carousel is scrolled through, the lines are painted on an egg at the centre of the screen and the egg spins: the lines travel across it left to right
        and top to bottom (its axis is tilted), foreshortening round the curve like a globe, then unwind after the section. It is the same field the hero fingerprint sends down the
        page, so the lines flow out of the hero, wrap round the egg and carry on. The page scrolls the lines through it and the spin advances with the scroll. Lines on the egg are full gold. */
-    var orb = { cx: 0, cy: 0, rx: 0, ry: 0, env: env };
     var env = 0, trk = reduce ? null : (lgcTrack || (lgcTrack = document.querySelector(".lgc-track")));
     if (trk) { var tr = trk.getBoundingClientRect(), pp = Math.min(1, Math.max(0, (innerHeight - tr.top) / (tr.height + innerHeight))); env = Math.pow(Math.sin(Math.PI * pp), 1.1); }
     if (typeof window.__tornado === "number") env = window.__tornado;                 /* dev: force the effect on for screenshots */
     var ecx = MW / 2, ecy = topRow + (ch / 2 + sub) / cell, erx = MW * 0.47, ery = (ch / cell) * 0.47, tsec = tsec0;
-    var spin = env * (2.4 + scrollY * 0.0018 + tsec * 0.35) + (typeof window.__spin === "number" ? window.__spin : 0);   /* the orb turns with the scroll and slowly on its own */
-    var TILT = 0.12, cbt = Math.cos(TILT), sbt = Math.sin(TILT);
+    var FLOW_V = 2.6, FLOW_S = 0.022;                                             /* cells per second, and cells per pixel of scroll */
+    var P = env * (tsec * FLOW_V + scrollY * FLOW_S) + (typeof window.__spin === "number" ? window.__spin * 12 : 0);   /* ONE flow for the whole section: every dot moves along the long axis by P, inside the shape and out */
+    var AX = 0.62, cax = Math.cos(AX), sax = Math.sin(AX), diag = Math.hypot(MW, ch / cell), ea = diag * 0.56, eb = ea * 0.48;   /* long axis top-left to bottom-right */
+    var spin = P / ea;                                                          /* the shape's spin is the same flow: at its centre the pattern moves exactly as fast as it does outside */
     for (var y = 0, i = 0; y < nRows; y++) {
       var pr = topRow + y, m = pr - r0, inMap = m >= 0 && m < MH, base = pr * MW;
       for (var x = 0; x < MW; x++, i++) {
@@ -141,28 +142,31 @@
           else if (!(inMap && bl[m * MW + x])) {
             var dw = ddw[base + x], tv = thv[base + x], vf = 0;
             if (env > 0.01) {
-              var u0 = (x - ecx) / erx, v0 = (pr - ecy) / ery;
-              var u1 = cbt * u0 + sbt * v0, v1 = -sbt * u0 + cbt * v0;                 /* tilt the spin axis: lines travel left to right AND top to bottom */
-              var ue = u1 / (1 + 0.14 * v1), r2 = ue * ue + v1 * v1;                    /* an egg: a little fuller toward the bottom */
+              var sxp = x - P * cax, syp = pr - P * sax;                                 /* the flow: everything is read from a point P cells back along the long axis, so it all moves forward together */
+              var dxc = x - ecx, dyc = pr - ecy, along = dxc * cax + dyc * sax, across = -dxc * sax + dyc * cax;   /* the shape's own axes: long axis runs top-left to bottom-right */
+              var u1 = along / ea, v1 = across / eb;
+              var ue = u1 / (1 + 0.14 * v1), r2 = ue * ue + v1 * v1;                    /* a slightly fuller-bottomed oval: only ever suggested by the flow, never drawn */
+              var xf = sxp, yf = syp;
               if (r2 < 1) {
                 var z = Math.sqrt(1 - r2), lat = Math.asin(v1), lon = Math.atan2(ue, z) - spin, cl = Math.cos(lat);
                 var un = cl * Math.sin(lon) * (1 + 0.14 * v1), rim = Math.min(1, Math.max(0, (Math.sqrt(r2) - 0.8) / 0.2)), keepW = 1 - rim * rim * (3 - 2 * rim);
-                var u0n = cbt * un - sbt * v1, v0n = sbt * un + cbt * v1;
-                var xr = Math.round(x + (ecx + u0n * erx - x) * keepW), yr = Math.round(pr + (ecy + v0n * ery - pr) * keepW), mr = yr - r0;
-                if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself */
-                vf = env * keepW * (0.4 + 0.6 * z);                                     /* brighter and more gold on the front of the egg */
+                var al2 = un * ea, ac2 = v1 * eb, dxn = al2 * cax - ac2 * sax, dyn = al2 * sax + ac2 * cax;
+                xf = sxp + (ecx + dxn - sxp) * keepW; yf = syp + (ecy + dyn - syp) * keepW;   /* inside, the flow wraps round the shape (squeezed toward its edge like a globe); at its edge it hands over to the outside flow with no seam */
+                vf = env * keepW * (0.4 + 0.6 * z);
               }
+              var xr = Math.round(xf), yr = Math.round(yf), mr = yr - r0;
+              if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself */
             }
             if (dw > 2.2) {
               var flow = reduce ? 0 : Math.min(1, Math.max(0, (dw - maxD * 0.45) / (maxD * 0.4))) * (1.5 * Math.sin(x * 0.041 + pr * 0.029 + tsec * 0.7) + 1.0 * Math.sin(x * 0.019 - pr * 0.046 + tsec * 0.45));   /* below the hero the lines undulate slowly like water */
-              var rel = dw - drift + flow, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
+              var rel = dw - drift * (1 - env) + flow, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
               /* stitch: dashes of STITCH cells with a small gap, measured along the ridge (angle x radius), each ridge starting a little apart */
               var run = (tv * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
               var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;      /* the odd stitch missing: the flaw that makes it a print */
               if (ph < WIDTH && inD && !gone) {
                 var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
                 var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 7, 2)) * 0.55;
-                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 3.0 * vf)), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
+                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 1.3 * vf)), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
                 var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
               }
             }
@@ -184,27 +188,6 @@
         var n = order[j], xx = n % MW, yy = (n - xx) / MW;
         ctx.fillRect(ox + xx * cell + pad + offX[n], yy * cell - sub + pad + offY[n], s, s);
       }
-    }
-    /* THE ORB: a glass sphere around the gallery. The front is left almost completely clear (the dots and the gallery show straight through); only the rim is drawn: a fine gold
-       edge that is brightest on the upper left where the light hits, a faint gold fresnel glow just inside it, and a soft bloom outside. */
-    if (env > 0.02) {
-      var ocx = cw / 2, ocy = ch / 2, orx = erx * cell, ory = ery * cell, pts = [], TH = 96;
-      for (var q = 0; q < TH; q++) {                                             /* the outline of the same egg the dots wrap round: solve where it meets each direction */
-        var th = q / TH * 6.2831853, cu = Math.cos(th), sv = Math.sin(th), ub = cbt * cu + sbt * sv, vb = -sbt * cu + cbt * sv, lo = 0.6, hi = 1.5;
-        for (var it = 0; it < 14; it++) { var mid = (lo + hi) / 2, ue2 = mid * ub / (1 + 0.14 * mid * vb), rr = ue2 * ue2 + mid * vb * mid * vb; if (rr < 1) lo = mid; else hi = mid; }
-        pts.push([ocx + cu * lo * orx, ocy + sv * lo * ory]);
-      }
-      var path = function () { ctx.beginPath(); for (var q2 = 0; q2 < TH; q2++) { if (q2) ctx.lineTo(pts[q2][0], pts[q2][1]); else ctx.moveTo(pts[q2][0], pts[q2][1]); } ctx.closePath(); };
-      ctx.save();
-      var fg = ctx.createRadialGradient(ocx, ocy, Math.min(orx, ory) * 0.72, ocx, ocy, Math.max(orx, ory) * 1.02);
-      fg.addColorStop(0, "rgba(201,164,92,0)"); fg.addColorStop(0.82, "rgba(201,164,92," + (0.14 * env).toFixed(3) + ")"); fg.addColorStop(1, "rgba(228,201,171," + (0.34 * env).toFixed(3) + ")");
-      path(); ctx.fillStyle = fg; ctx.fill();                                      /* fresnel: only the edge of the glass holds any colour */
-      var lg = ctx.createLinearGradient(ocx - orx, ocy - ory, ocx + orx, ocy + ory);
-      lg.addColorStop(0, "rgba(255,236,196," + (0.95 * env).toFixed(3) + ")"); lg.addColorStop(0.45, "rgba(201,164,92," + (0.55 * env).toFixed(3) + ")"); lg.addColorStop(1, "rgba(150,110,52," + (0.28 * env).toFixed(3) + ")");
-      ctx.shadowColor = "rgba(228,180,90," + (0.8 * env).toFixed(3) + ")"; ctx.shadowBlur = 30 * dpr; ctx.lineWidth = 3.0 * dpr; ctx.strokeStyle = lg; path(); ctx.stroke();   /* the gold rim and its bloom */
-      ctx.shadowBlur = 0; ctx.lineWidth = 1.4 * dpr; ctx.strokeStyle = "rgba(255,244,222," + (0.7 * env).toFixed(3) + ")";
-      ctx.beginPath(); for (var q3 = Math.round(TH * 0.55); q3 <= Math.round(TH * 0.72); q3++) { var pp3 = pts[q3 % TH]; if (q3 === Math.round(TH * 0.55)) ctx.moveTo(pp3[0], pp3[1]); else ctx.lineTo(pp3[0], pp3[1]); } ctx.stroke();   /* the specular glint on the upper left */
-      ctx.restore();
     }
   }
 
