@@ -902,3 +902,6 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .orbit-submit:focus-visible { outline: 2px solid #f3eadc; outline-offset: 4px; border-radius: 40px; box-shadow: none; }
 .orbit-submit.is-done { background: url("/assets/brand/bag-button.webp") center / 100% 100% no-repeat; color: #fff; filter: drop-shadow(0 14px 22px rgb(0 0 0 / .55)) hue-rotate(95deg) saturate(.8); }
 .orbit-submit:disabled:not(.is-done) { filter: drop-shadow(0 14px 22px rgb(0 0 0 / .55)) saturate(.6) brightness(.85); }
+/* bigger SUBMIT on the bag (owner, 30 Sep) */
+.orbit-submit { font-size: clamp(1.7rem, 7.4vw, 2.3rem); gap: 16px; }
+.orbit-submit svg { inline-size: 26px; block-size: 26px; }
