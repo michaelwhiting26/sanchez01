@@ -99,7 +99,7 @@
 @keyframes sig-draw { to { stroke-dashoffset: 0; } }
 @keyframes sig-fill { to { fill-opacity: 1; stroke-opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; } }
-@media (max-width: 767px) { .wm-hero__sig { inline-size: 56vw; transform: translate(-34%, 10%) rotate(-7deg); } }
+@media (max-width: 767px) { .wm-hero__sig { inline-size: 56vw; transform: translate(-24%, 32%) rotate(-7deg); } }   /* phones: Custom nudged down and right */
 
 /* ---- Glow cards (Uiverse.io by alexruix, MIT) ---- */
 .glow-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(20px, 3vw, 40px); padding: clamp(48px, 9vh, 110px) var(--gutter, 1rem); background: #000; }
