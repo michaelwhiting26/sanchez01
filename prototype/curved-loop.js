@@ -2,7 +2,7 @@
 (function () {
   document.querySelectorAll("[data-curved-loop]").forEach(function (root) {
     var NS = "http://www.w3.org/2000/svg", text = (root.getAttribute("data-text") || "SANCHEZ ✦ ").replace(/ /g, " ");
-    var STAR = "\u2726", pieces = text.split(STAR).map(function (p) { return p.trim(); });   /* the words alone: the star is a sprite in its own slot, so nothing depends on how a browser measures runs of spaces */
+    var STAR = "\u2726", DOT = "\u2022", pieces = text.split(/(\u2726|\u2022)/);   /* the words, plus two kinds of separator: a red star sprite (breaks the phrase up) and a small white dot (joins SANCHEZ to CUSTOM) */   /* the words alone: the star is a sprite in its own slot, so nothing depends on how a browser measures runs of spaces */
     var VW = (root.clientWidth || window.innerWidth) < 700 ? 640 : 1440;   /* the drawing is VW units wide and scaled to the screen: on a phone a narrower drawing keeps the letters big */
     var curve = Number(root.getAttribute("data-curve") || 400) * (VW < 1440 ? 0.6 : 1), speed = Number(root.getAttribute("data-speed") || 1.6);
     var id = "cl-" + Math.random().toString(36).slice(2, 8);
@@ -42,12 +42,13 @@
     })();
     /* Layout by arithmetic on the words alone: each word is its own text on the path (its own startOffset), each star sits in a fixed-width slot between words.
        Word widths are measured one word at a time, which every browser does the same way; a star's distance along the curve = scroll offset + repeat x pattern length + slot centre. */
-    var SLOT = SIZE + 2 * 0.55 * FS, items = [], words = [];
+    var SLOT = SIZE + 2 * 0.55 * FS, DOTR = 7, DSLOT = 2 * DOTR + 2 * 0.42 * FS, items = [], words = [];
     function layout() {
       items = []; var pos = 0;
-      pieces.forEach(function (piece, i) {
-        if (piece) { measure.textContent = piece; var w = measure.getComputedTextLength(); items.push({ w: piece, x: pos, wd: w }); pos += w; }
-        if (i < pieces.length - 1) { items.push({ s: true, c: pos + SLOT / 2 }); pos += SLOT; }
+      pieces.forEach(function (tk) {
+        if (tk === STAR) { items.push({ s: true, c: pos + SLOT / 2 }); pos += SLOT; }
+        else if (tk === DOT) { items.push({ d: true, c: pos + DSLOT / 2 }); pos += DSLOT; }
+        else { var piece = tk.trim(); if (piece) { measure.textContent = piece; var w = measure.getComputedTextLength(); items.push({ w: piece, x: pos, wd: w }); pos += w; } }
       });
       return pos;
     }
@@ -59,6 +60,10 @@
           if (it.w) {
             var el = svgEl("text", { "class": "curved-loop__text" }), tp = svgEl("textPath", { href: "#" + id }, el); tp.textContent = it.w; svg.appendChild(el);
             words.push({ el: el, tp: tp, x: k * spacing + it.x, wd: it.wd });
+          } else if (it.d) {
+            var dot = svgEl("g", {}); dot.style.pointerEvents = "none"; dot.style.display = "none";
+            svgEl("circle", { r: DOTR, fill: "#ffffff" }, dot);                                   /* the white dot: drawn at mid letter height, riding the curve with the words */
+            svg.appendChild(dot); stars.push({ d0: k * spacing + it.c, img: dot, dot: true });
           } else {
             var img = svgEl("g", {}); img.style.pointerEvents = "none"; img.style.display = "none";
             svgEl("image", { href: SPRITE, width: SIZE, height: SIZE, filter: "url(#" + FX + ")" }, img);
@@ -81,6 +86,7 @@
         var c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
         var cx = p0.x + up * sn, cy = p0.y - up * c;
         if (cx < -80 || cx > VW + 80) { st.img.style.display = "none"; continue; }
+        if (st.dot) { st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ")"); st.img.style.display = ""; continue; }
         var sx = 1 - 0.10 * Math.abs(Math.sin(rot * 1.6)), wob = 3 * Math.sin(cx / 150 + i);           /* turns a little like a metal object as it rides the curve */
         st.img.setAttribute("transform", "translate(" + cx.toFixed(1) + " " + cy.toFixed(1) + ") rotate(" + (rot * 180 / Math.PI + wob).toFixed(2) + ") scale(" + sx.toFixed(3) + " 1) translate(" + (-SIZE / 2) + " " + (-SIZE / 2) + ")"); st.img.style.display = "";
         var gp = (cx / 520 + i * 0.37) % 1; st.glint.setAttribute("x", (-30 + 96 * (gp < 0 ? gp + 1 : gp)).toFixed(1));            /* the glint sweeps across the star once every ~520px of travel */
