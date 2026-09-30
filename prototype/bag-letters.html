@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sanchez bags spell the word (test)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Barlow:wght@500&display=swap">
+  <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; block-size: 100%; background: #0d0a08; color: #f3eadc; font-family: Barlow, system-ui, sans-serif; }
+    main { position: relative; block-size: 100svh; min-block-size: 420px; }
+    [data-stage] { position: absolute; inset: 0; }
+    .hud { position: absolute; inset-inline: 0; inset-block-end: 28px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; pointer-events: none; }
+    .hud p { margin: 0; font-size: 12px; letter-spacing: .28em; text-transform: uppercase; opacity: .6; }
+    button { pointer-events: auto; font: inherit; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: #f3eadc; background: transparent; border: 1px solid rgba(243,234,220,.45); padding: 12px 22px; cursor: pointer; }
+    button:hover, button:focus-visible { background: #f3eadc; color: #0d0a08; outline: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <div data-stage role="img" aria-label="Boxing bags fly in, spin, and line up to spell SANCHEZ"></div>
+    <div class="hud"><p>Designed in Sydney. Handmade in Pattaya.</p><button type="button" data-replay>Replay</button></div>
+  </main>
+  <script type="module" src="bag-letters.js"></script>
+</body>
+</html>

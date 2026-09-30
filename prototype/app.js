@@ -1164,6 +1164,8 @@
     var PRESETS = [
       { id: "royal-blue", name: "Royal Blue", layout: "single", a: "#0b6fe8", caps: "#f7f7f2" },
       { id: "fight-red", name: "Fight Red", layout: "single", a: "#ef2a12", caps: "#f7f7f2" },
+      { id: "forest-green", name: "Forest Green", layout: "single", a: "#1f5c3a", caps: "#f7f7f2" },
+      { id: "gold", name: "Gold", layout: "single", a: "#e2b10a", caps: "#f7f7f2" },
       { id: "gold-black", name: "Gold & Black", layout: "2tone-vertical", a: "#e2b10a", b: "#0d0f12", caps: "#f7f7f2" },
       { id: "green-red", name: "Green & Red", layout: "2tone-vertical", a: "#1f5c3a", b: "#dc3a22", caps: "#f7f7f2" },
       { id: "tigerfull", name: "Tiger Full", layout: "single", a: "#f7f7f2", b: "#b4402e", caps: "#7a1f16", art: "tigerfull" },

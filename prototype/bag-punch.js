@@ -54,6 +54,11 @@ function start(root) {
   /* Only Tiger and Monogram are live for now; Dragon, Koi and Gold Vein are kept below as comments so they can be switched back on. */
   const PRODUCTS = [
     { id: "tiger", name: "Tiger", sub: "Heavy bag", kind: "bag", art: "tigerfull", trim: 0xffffff, bump: 1.4, order: ["Order this bag", "product.html"], build: "configure.html?preset=tigerfull" },
+    /* Plain colourways: the same bag as Tiger (white SANCHEZ bands, straps, patch), no artwork, one unique colour each. Colours are the configurator presets (sampled from Jesse's own bags). */
+    { id: "royal-blue", name: "Royal Blue", sub: "Heavy bag · plain colourway", kind: "bag", color: 0x0b6fe8, trim: 0xffffff, order: ["Order this bag", "product.html"], build: "configure.html?preset=royal-blue" },
+    { id: "fight-red", name: "Fight Red", sub: "Heavy bag · plain colourway", kind: "bag", color: 0xef2a12, trim: 0xffffff, order: ["Order this bag", "product.html"], build: "configure.html?preset=fight-red" },
+    { id: "forest-green", name: "Forest Green", sub: "Heavy bag · plain colourway", kind: "bag", color: 0x1f5c3a, trim: 0xffffff, order: ["Order this bag", "product.html"], build: "configure.html?preset=forest-green" },
+    { id: "gold", name: "Gold", sub: "Heavy bag · plain colourway", kind: "bag", color: 0xe2b10a, trim: 0xffffff, order: ["Order this bag", "product.html"], build: "configure.html?preset=gold" },
     // PAUSED for now (Tiger and Monogram only): { id: "dragon", name: "Dragon", sub: "After Hokusai · gold on oxblood", kind: "bag", art: "dragonfull", trim: 0xc9a45c, bump: 1.3, order: ["Order this bag", "product.html"], build: "configure.html?preset=dragon" },
     // PAUSED for now (Tiger and Monogram only): { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", kind: "bag", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: ["Order this bag", "product.html"], build: "configure.html?preset=koi" },
     { id: "monogram", name: "Monogram", sub: "Tone on tone · black on black", kind: "bag", art: "monogram", trim: 0x1c1c1e, bump: 1.6, order: ["Order this bag", "product.html"], build: "configure.html?preset=monogram" },
@@ -146,8 +151,15 @@ function start(root) {
     const P = PRODUCTS[i]; cur = i;
     const isBag = P.kind === "bag", ok = isBag && window.SZ_ART && window.SZ_ART.kinds && window.SZ_ART.kinds[P.art];
     if (bagModel) bagModel.visible = isBag; gloveRoot.visible = !isBag;
-    if (isBag && ok) {
+    if (isBag && P.color !== undefined) {
+      /* plain colour: no texture, just a tinted satin-vinyl body. Every map is cleared so nothing from the previous artwork shows through. */
+      M.body.map = null; M.body.bumpMap = null; M.body.roughnessMap = null; M.body.metalnessMap = null; M.body.bumpScale = 0;
+      M.body.color.setHex(P.color); M.body.roughness = 0.5; M.body.metalness = 0; M.body.clearcoat = 0.18; M.body.clearcoatRoughness = 0.3; M.body.envMapIntensity = 0.45;   /* less studio reflection, so the colour stays true instead of washing out */
+      M.body.needsUpdate = true;
+      [M.bandTop, M.bandBottom].forEach((m) => m && m.color.setHex(P.trim));
+    } else if (isBag && ok) {
       const t = bagTexture(P.art), kind = window.SZ_ART.kinds[P.art];
+      M.body.color.setHex(0xffffff); M.body.envMapIntensity = 1;   /* artwork textures carry their own colour; undo any plain-colour tint */
       M.body.map = t; M.body.bumpScale = P.bump;
       if (kind.rm) { const rm = rmTexture(kind.rm); M.body.bumpMap = rm; M.body.roughnessMap = rm; M.body.metalnessMap = rm; M.body.roughness = 1; M.body.metalness = 1; M.body.clearcoat = 0.12; }
       else { M.body.bumpMap = t; M.body.roughnessMap = null; M.body.metalnessMap = null; M.body.roughness = 0.5; M.body.metalness = 0; M.body.clearcoat = 0.08; }
