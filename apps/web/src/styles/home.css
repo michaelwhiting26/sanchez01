@@ -742,12 +742,12 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
    1) the gallery's film, counter and bar fade out completely (film.ts, WorkshopGallery.tsx) before anything else arrives;
    2) .sz-transit is empty dark field: the fixed gold spiral (lib/dna.ts) keeps turning down it with the scroll, so the visitor feels the change of place;
    3) the SANCHEZ rows rise (the spiral steps behind them), then it narrows slowly into the bag's chain, with clear air around the pill and the bag. */
-.sz-transit { block-size: 130svh; pointer-events: none; }
-@media (min-width: 768px) { .sz-transit { block-size: 120svh; } }
+.sz-transit { block-size: 160svh; pointer-events: none; }
+@media (min-width: 768px) { .sz-transit { block-size: 140svh; } }
 
 /* wordmark rows: twice the former size, allowed to bleed off both edges (the section clips), with real air above and below */
-.sz-marquee { overflow: hidden; gap: clamp(10px, 2.4svh, 28px); padding-block: clamp(3rem, 9svh, 8rem) clamp(7rem, 20svh, 15rem) !important; }
-.sz-marquee__track span { font-size: clamp(5rem, 2rem + 16vw, 16rem); margin-inline-end: clamp(2.5rem, 6vw, 6rem); }
+.sz-marquee { overflow-x: clip; overflow-y: visible; gap: clamp(28px, 7svh, 90px); min-block-size: 100svh; align-content: center; padding-block: clamp(3rem, 9svh, 8rem) !important; }
+.sz-marquee__track span { line-height: .84; font-size: clamp(10rem, 4rem + 32vw, 32rem); margin-inline-end: clamp(2.5rem, 6vw, 6rem); }
 
 /* the pill gets its own band between the wordmark and the bag; the bag (and its chain) starts below it */
 .bag-punch { --pill-zone: clamp(96px, 15svh, 150px); }
@@ -805,3 +805,35 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 }
 @media (prefers-reduced-motion: no-preference) { .pgl[open] { animation: pgl-in .22s ease-out; } }
 @keyframes pgl-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Sequenced scroll: spiral -> SANCHEZ rows -> options -> spiral flicks into the bag -> bag (BagPunch.tsx, lib/dna.ts) ----
+   Nothing overlaps: each beat has its own band. The bag is hidden entirely until its section is ~40% in view (.is-revealed set by BagPunch.tsx). */
+.sz-options { position: relative; min-block-size: 80svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 8svh 16px; }
+.sz-options__label { margin: 0; font: 500 .78rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .42em; text-indent: .42em; text-transform: uppercase; color: #c9a45c; }
+.sz-options__rail { position: relative; display: grid; justify-items: center; inline-size: 100%; padding-block-end: 22px; }
+.sz-options__rail::after { content: ""; position: absolute; inset-block-end: 0; inset-inline: 12%; block-size: 1px; background: linear-gradient(90deg, transparent, #c9a45c, transparent); transform: scaleX(0); opacity: 0; transform-origin: left; }
+.sz-options .bag-punch__cats { position: relative; inset: auto; transform: none; inline-size: min(100%, 460px); }
+.sz-options .bag-punch__cats button { min-block-size: 52px; min-inline-size: 0; padding-block: 0; font-size: clamp(.8rem, .7rem + .4vw, .92rem); }
+.sz-handoff { block-size: 110svh; pointer-events: none; }
+@media (min-width: 768px) { .sz-handoff { block-size: 100svh; } }
+.bag-punch { --pill-zone: 0px; }
+
+/* the bag and everything on its stage stay invisible (not just transparent) until revealed */
+.bag-punch:not(.is-revealed) > * { opacity: 0; visibility: hidden; pointer-events: none; }
+.bag-punch > * { transition: opacity 1s ease .1s, visibility 0s linear 0s; }
+.bag-punch__view { transform: translate3d(0, 28px, 0); transition: opacity 1.8s cubic-bezier(.2, .6, .2, 1), transform 1.4s cubic-bezier(.2, .8, .2, 1); }
+.bag-punch.is-revealed .bag-punch__view { transform: none; }
+.bag-punch:not(.is-revealed) .bag-punch__view { transition: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sz-options__label, .sz-options__rail { opacity: 0; transform: translate3d(0, 26px, 0); transition: opacity .9s ease, transform .9s cubic-bezier(.2, .8, .2, 1); }
+  .sz-options__rail { transition-delay: .12s; }
+  .sz-options.is-in .sz-options__label, .sz-options.is-in .sz-options__rail { opacity: 1; transform: none; }
+  /* one attention cue, once: a gold line sweeps under the pill and the tabs not chosen glow and lift a little in turn */
+  .sz-options.is-in .sz-options__rail::after { animation: sz-opt-sweep 1.8s cubic-bezier(.4, 0, .2, 1) .9s both; }
+  .sz-options.is-in .bag-punch__cats button[aria-selected="false"] { animation: sz-opt-nudge 1.1s ease-in-out both; }
+  .sz-options.is-in .bag-punch__cats button[aria-selected="false"]:nth-child(3) { animation-delay: .25s; }
+}
+@keyframes sz-opt-sweep { 0% { transform: scaleX(0); opacity: 0; } 15% { opacity: 1; } 60% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes sz-opt-nudge { 0%, 100% { color: rgb(243 234 220 / .7); transform: none; } 45% { color: #e8b866; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .bag-punch > *, .bag-punch__view { transition: none; } .bag-punch__view { transform: none; } }

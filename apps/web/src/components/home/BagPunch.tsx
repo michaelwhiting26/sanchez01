@@ -45,6 +45,7 @@ export function BagPunch() {
   const hostRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BagEngine | null>(null);
   const buildRef = useRef<HTMLAnchorElement>(null);
+  const optionsRef = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(0);
   const [fallback, setFallback] = useState(false);
   const [category, setCategory] = useState<CategoryId>("bags");
@@ -66,6 +67,45 @@ export function BagPunch() {
       engine.destroy();
       engineRef.current = null;
     };
+  }, []);
+
+  // The sequence: the options band gets its own beat (it fades and rises in once, with a single attention cue on the toggles), and the bag stays completely
+  // hidden until ~40% of its view is on screen. Only then is it revealed; the entry spin itself is driven by the bag section's scroll position (engine.ts) and
+  // lands the Tiger face-front as before. Scrolling back above the bag hides it again.
+  useEffect(() => {
+    const root = rootRef.current;
+    const host = hostRef.current;
+    const opts = optionsRef.current;
+    if (!root || !host || !opts) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const ios: IntersectionObserver[] = [];
+    if (reduce) {
+      opts.classList.add("is-in");
+    } else {
+      const oi = new IntersectionObserver(
+        (en) => {
+          if (en.some((e) => e.isIntersecting)) {
+            opts.classList.add("is-in"); // once: the cue does not loop
+            oi.disconnect();
+          }
+        },
+        { threshold: 0.45 },
+      );
+      oi.observe(opts);
+      ios.push(oi);
+    }
+    const bi = new IntersectionObserver(
+      (en) => {
+        const e = en[en.length - 1];
+        if (!e) return;
+        if (e.intersectionRatio >= 0.4) root.classList.add("is-revealed");
+        else if (!e.isIntersecting) root.classList.remove("is-revealed");
+      },
+      { threshold: [0, 0.4] },
+    );
+    bi.observe(host);
+    ios.push(bi);
+    return () => ios.forEach((i) => i.disconnect());
   }, []);
 
   // "Build yourself" runs away from the cursor (a magnet in reverse) and drifts about on its own. It is meant to be playful, not hostile: the push is gentle
@@ -151,6 +191,20 @@ export function BagPunch() {
   const catIndex = CATEGORIES.findIndex((c) => c.id === category);
 
   return (
+    <>
+      <section className="sz-options" aria-label="Choose a product" ref={optionsRef}>
+        <p className="sz-options__label">Choose a product</p>
+        <div className="sz-options__rail">
+          <div className="bag-punch__cats" role="tablist" aria-label="Product type" style={{ "--i": catIndex, "--n": CATEGORIES.length } as CSSProperties}>
+            {CATEGORIES.map((c) => (
+              <button key={c.id} type="button" role="tab" aria-selected={c.id === category} onClick={() => setCategory(c.id)}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+      <div className="sz-handoff" aria-hidden="true" data-handoff="" />
     <section
       className={`bag-punch${fallback ? " is-fallback" : ""}${isBags ? "" : " is-still"}`}
       data-bag-punch=""
@@ -167,13 +221,6 @@ export function BagPunch() {
         }
       }}
     >
-      <div className="bag-punch__cats" role="tablist" aria-label="Product type" style={{ "--i": catIndex, "--n": CATEGORIES.length } as CSSProperties}>
-        {CATEGORIES.map((c) => (
-          <button key={c.id} type="button" role="tab" aria-selected={c.id === category} onClick={() => setCategory(c.id)}>
-            {c.label}
-          </button>
-        ))}
-      </div>
       <div className="bag-punch__view" data-bag-view="" ref={hostRef} />
       {still && (
         <div className="bag-punch__still" key={category}>
@@ -225,5 +272,6 @@ export function BagPunch() {
         </p>
       )}
     </section>
+    </>
   );
 }

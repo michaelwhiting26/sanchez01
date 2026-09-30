@@ -85,7 +85,7 @@ export class DnaCore {
     this.canvas.style.height = `${this.h}px`;
     this.dirty = true;
     let end = 0;
-    document.querySelectorAll(".bag-punch, .lgc-track, .sz-marquee, .curved-loop, [data-hero-rings]").forEach((e) => {
+    document.querySelectorAll(".bag-punch, .lgc-track, .sz-marquee, .sz-options, .curved-loop, [data-hero-rings]").forEach((e) => {
       end = Math.max(end, e.getBoundingClientRect().bottom + window.scrollY);
     });
     this.fieldEnd = end || 3000;
@@ -121,7 +121,7 @@ export class DnaCore {
       const r = view.getBoundingClientRect();
       ringY = r.top + r.height * 0.118;
     }
-    let holdTop = 1e9; // where the wordmark rows end: the thread stays full width above, and only starts to narrow once it has cleared them
+    let holdTop = 1e9; // where the wordmark rows AND the options band end: the thread stays full width above, and only starts to narrow (the hand-off) once it has cleared them
     let wmTop = 1e9;
     let wmBot = -1e9;
     const wm = document.querySelector(".sz-marquee");
@@ -130,6 +130,13 @@ export class DnaCore {
       wmTop = wr.top;
       wmBot = wr.bottom;
       holdTop = wr.bottom;
+    }
+    const opt = document.querySelector(".sz-options"); // the tab-pill band sits between the wordmark and the bag: the spiral stays quiet behind it too
+    if (opt) {
+      const or = opt.getBoundingClientRect();
+      wmTop = Math.min(wmTop, or.top);
+      wmBot = Math.max(wmBot, or.bottom);
+      holdTop = or.bottom;
     }
     let lgcK = 1; // gone while the workshop gallery is being scrolled through
     const lgc = document.querySelector(".lgc-track");
@@ -157,6 +164,12 @@ export class DnaCore {
     // the thread steps back behind the big SANCHEZ rows so the wordmark reads on its own, and comes back below them
     const wmFade = 0.14;
     const seeAt = (yv: number): number => (yv > wmTop - 40 && yv < wmBot + 40 ? wmFade + (1 - wmFade) * (1 - Math.min(1, Math.min(yv - (wmTop - 40), wmBot + 40 - yv) / 60)) : 1);
+    // the flick: through the hand-off the narrowing thread swings from side to side, the swing dying away exactly at the ring so the thread lands dead centre on the chain
+    const sw = Math.min(w * 0.2, 96) * grow;
+    const whipAt = (yv: number): number => {
+      const u = Math.max(0, Math.min(1, (ringY - yv) / taperLen));
+      return sw * Math.sin(u * 9) * Math.pow(u, 0.6) * (1 - u) * 2;
+    };
     const A: Pt[] = [];
     const B: Pt[] = [];
     for (let i = 0; i < n; i++) {
@@ -166,8 +179,9 @@ export class DnaCore {
       const s = Math.sin(a);
       const c = Math.cos(a);
       const am = ampAt(yy);
-      A.push({ x: cx + am * s, y: yy, depth: c });
-      B.push({ x: cx - am * s, y: yy, depth: -c });
+      const wp = whipAt(yy);
+      A.push({ x: cx + wp + am * s, y: yy, depth: c });
+      B.push({ x: cx + wp - am * s, y: yy, depth: -c });
     }
     // rungs, back to front by depth so the helix reads as 3D
     ctx.setLineDash([]);
@@ -176,8 +190,9 @@ export class DnaCore {
       const ra = (ry / pitch) * 2 * Math.PI + turn;
       const dep = Math.cos(ra);
       const am2 = ampAt(ry);
-      const x1 = cx + am2 * Math.sin(ra);
-      const x2 = cx - am2 * Math.sin(ra);
+      const wp2 = whipAt(ry);
+      const x1 = cx + wp2 + am2 * Math.sin(ra);
+      const x2 = cx + wp2 - am2 * Math.sin(ra);
       if (am2 < 3) continue;
       ctx.lineWidth = 1;
       ctx.strokeStyle = rgba(CREAM, alpha * seeAt(ry) * (0.06 + 0.22 * Math.abs(dep)));
