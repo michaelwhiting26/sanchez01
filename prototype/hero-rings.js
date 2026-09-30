@@ -7,13 +7,15 @@
    SZ_FINGERPRINT.setSeed("name") reshapes the ridges for a name. Reduced motion: a still frame. */
 (function () {
   var root = document.querySelector("[data-hero-rings]"); if (!root) return;
+  var sn = null;                                                                        /* simplex noise (vendored, MIT): the smooth, slowly evolving flow */
+  try { import("./assets/vendor/simplex-noise/simplex-noise.js").then(function (m) { sn = new m.SimplexNoise("sanchez"); }).catch(function () {}); } catch (e) {}
   var cv = root.querySelector("canvas"), ctx = cv.getContext("2d");
   document.body.insertBefore(cv, document.body.firstChild); cv.className = "wm-field";      /* out of the hero, behind everything */
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches, coarse = matchMedia("(pointer: coarse)").matches;
   var MW = 0, MH = 0, bd, bp, bl;                                 /* the map */
   var R = 0, r0 = 0, ddw, thv, pseed;                              /* the page-long grid: rows, map's first row, ridge distance, angle, per-dot random */
   var nRows = 0, topRow = 0, sub = 0, bucketOf, order, counts, offX, offY;   /* what is on screen right now */
-  var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 5.25, FLOOR = 0.26;
+  var fpA = 1.7, fpB = 4.1, fpC = 0.6, STITCH = 8, GAP = 3, PERIOD = 6.5, WIDTH = 1.9, PULSE_EVERY = 9, FLOOR = 0.26;
   var CREAM = [214, 181, 136], GOLD = [214, 181, 136];   /* Tan #D6B588: the whole pattern, the SANCHEZ outline and the ridges, in one colour (brightness still fades with distance) */
   var CURSOR_RADIUS = 100, CURSOR_FORCE = 40, RIPPLE_SPEED = 225, RIPPLE_WIDTH = 37, RIPPLE_FORCE = 20, RIPPLE_DURATION = 675, LERP = 0.12;
   var LEVELS = 20, WARMS = 6, NB = (LEVELS + 1) * WARMS + 1, styles = [];   /* the last shade is reserved for the SANCHEZ outline */
@@ -71,6 +73,11 @@
       var m = y - r0;
       for (var x = 0; x < MW; x++, i++) {
         var d = m < 0 ? bd[x] + (-m) : m >= MH ? bd[(MH - 1) * MW + x] + (m - MH + 1) : bd[m * MW + x];
+        if (m < 0 || m >= MH) {                                                  /* beyond the word: the ridges fan out as arches, as if the space were limitless */
+          var dyo = m < 0 ? -m : m - MH + 1, wA = Math.min(1, dyo / (MH * 1.2)); wA = wA * wA * (3 - 2 * wA);
+          var dfar = Math.hypot((x - cx) * 0.82, dyo + MH * 0.5);
+          d = d * (1 - wA) + dfar * wA;
+        }
         var th = Math.atan2(y - cy, x - cx);
         ddw[i] = d + 1.15 * Math.sin(th * 3 + fpA) + 0.75 * Math.sin(th * 5 + d * 0.045 + fpB) + 0.55 * Math.sin(d * 0.09 + th * 2 + fpC); thv[i] = th;
       }
@@ -118,11 +125,17 @@
   }
 
   /* colour every dot on screen into one of NB shades (brightness x warmth), then draw each shade in one pass */
-  var lgcTrack = null;
+  var lgcTrack = null, warpG = null;
   function draw(t) {
     var sy = (typeof window.__sy === "number" ? window.__sy : scrollY) * dpr; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
-    var tsec0 = t / 1000; var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 1.1;
+    var tsec0 = t / 1000; var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 0.9;
     counts.fill(0);
+    var GS = 8, gcols = Math.ceil(MW / GS) + 2, grows = Math.ceil(nRows / GS) + 2, tsn = t / 1000;
+    if (!warpG || warpG.length !== gcols * grows) warpG = new Float32Array(gcols * grows);
+    for (var gy = 0; gy < grows; gy++) for (var gx = 0; gx < gcols; gx++) {           /* smooth flow, sampled coarsely and interpolated: cheap, and never steps */
+      var prg = topRow + gy * GS;
+      warpG[gy * gcols + gx] = (sn && !reduce) ? sn.noise3D(gx * GS * 0.011, prg * 0.011, tsn * 0.045) + 0.5 * sn.noise3D(gx * GS * 0.026 + 7, prg * 0.026, tsn * 0.08) : 0;
+    }
     /* EGG SPIN: while the workshop carousel is scrolled through, the lines are painted on an egg at the centre of the screen and the egg spins: the lines travel across it left to right
        and top to bottom (its axis is tilted), foreshortening round the curve like a globe, then unwind after the section. It is the same field the hero fingerprint sends down the
        page, so the lines flow out of the hero, wrap round the egg and carry on. The page scrolls the lines through it and the spin advances with the scroll. Lines on the egg are full gold. */
@@ -159,15 +172,19 @@
               if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself */
             }
             if (dw > 2.2) {
-              var flow = reduce ? 0 : Math.min(1, Math.max(0, (dw - maxD * 0.45) / (maxD * 0.4))) * (1.5 * Math.sin(x * 0.041 + pr * 0.029 + tsec * 0.7) + 1.0 * Math.sin(x * 0.019 - pr * 0.046 + tsec * 0.45));   /* below the hero the lines undulate slowly like water */
+              var fxg = x / GS, fyg = y / GS, gx0 = Math.floor(fxg), gy0 = Math.floor(fyg), tx = fxg - gx0, ty = fyg - gy0, gi = gy0 * gcols + gx0;
+              var wv = (warpG[gi] * (1 - tx) + warpG[gi + 1] * tx) * (1 - ty) + (warpG[gi + gcols] * (1 - tx) + warpG[gi + gcols + 1] * tx) * ty;
+              var wt = Math.min(1, Math.max(0, (dw - 6) / (maxD * 0.25)));               /* the defined lines right at the word stay put; further out the thread drifts */
+              var flow = wv * 1.7 * wt;
               var rel = dw - drift * (1 - env) + flow, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
               /* stitch: dashes of STITCH cells with a small gap, measured along the ridge (angle x radius), each ridge starting a little apart */
               var run = (tv * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
               var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;      /* the odd stitch missing: the flaw that makes it a print */
-              if (ph < WIDTH && inD && !gone) {
+              var ph2 = ph > PERIOD - 0.9 ? ph - PERIOD : ph, cov = 1 - Math.abs(ph2 - WIDTH * 0.5) / (WIDTH * 0.5 + 0.7), dpos = (run - seg) * (STITCH + GAP), dcv = Math.min(1, Math.min(dpos + 0.6, STITCH - dpos + 0.6));
+              if (cov > 0.02 && dcv > 0.02 && !gone) {                                    /* soft edges: a ridge or a stitch fades in and out over a cell instead of switching on and off */
                 var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
-                var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 7, 2)) * 0.55;
-                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 1.3 * vf)), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
+                var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 9, 2)) * 0.12;
+                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 1.3 * vf) * Math.pow(cov * dcv, 0.7) * 1.25), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
                 var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
               }
             }
