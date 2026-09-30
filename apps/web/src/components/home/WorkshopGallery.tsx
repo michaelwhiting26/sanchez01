@@ -145,7 +145,10 @@ export function WorkshopGallery() {
       vw = window.innerWidth || 1;
       vh = window.innerHeight || 1;
       const stage = pin.offsetHeight;
-      travel = Math.max(0, strip.scrollWidth - vp.clientWidth);
+      // stop with the last card (slide 6) centred. Not strip.scrollWidth: the sprocket rails (::before/::after) reach 100vw past the strip's ends and
+      // would add a whole screen of empty travel after the last slide
+      const lastCard = cards[cards.length - 1]?.el;
+      travel = lastCard ? Math.max(0, lastCard.offsetLeft + lastCard.offsetWidth / 2 - vp.clientWidth / 2) : Math.max(0, strip.scrollWidth - vp.clientWidth);
       const h = stage + travel + Math.round(vh * 0.2); // the pinned stage + one pixel of scroll per pixel of sideways travel + a short tail
       if (track.style.height !== `${h}px`) track.style.height = `${h}px`;
       trackH = h;
