@@ -229,8 +229,17 @@ export class HeroEngine {
         else this.hero.classList.remove("is-intro"); // assets missing: show the plain hero
       });
     }
-    if (this.reduce) this.draw(0);
-    else this.raf = requestAnimationFrame(this.loop);
+    if (this.reduce) {
+      // reduced motion: no animation, but the end state is the same (crouched at the bottom right of "Custom"): load the sprites and paint that pose once they are in
+      this.sigEl = this.hero.querySelector<HTMLElement>(".sig");
+      const sprites = new IntroSprites();
+      void sprites.load(segmentLetters(this.mapLetters, this.mw, this.mh)).then((ok) => {
+        if (this.abort.signal.aborted || !ok) return;
+        this.intro = sprites;
+        for (const ms of [200, 800, 2000]) window.setTimeout(() => !this.abort.signal.aborted && this.draw(0), ms); // the return sheets load in the background
+      });
+      this.draw(0);
+    } else this.raf = requestAnimationFrame(this.loop);
     if (process.env.NODE_ENV !== "production" && !this.reduce) this.exposeDevSeek();
   }
 
@@ -238,6 +247,17 @@ export class HeroEngine {
   renderAt(ms: number): void {
     this.overrides.introMs = ms;
     this.draw(this.sprayStart + ms);
+  }
+
+  /**
+   * Where the runner ends up hiding (crouched at the bottom right of "Custom"), in CSS px relative to the viewport, or null until the layout and the sprites are ready:
+   * `x`, `y` the middle of his feet, `size` the sprite frame's height (CSS px; the figure is about 0.55 of it), `scale` CSS px per sprite px, `facing` the way he looks.
+   * Read-only; call it once the hero has settled, and again after a resize.
+   */
+  hideSpot(): { x: number; y: number; size: number; scale: number; facing: "left" | "right" } | null {
+    const s = this.introGeom && this.intro ? this.intro.hideSpot(this.introGeom) : null;
+    if (!s) return null;
+    return { x: s.x / this.dpr, y: s.y / this.dpr, size: s.size / this.dpr, scale: s.size / this.dpr / 320, facing: s.facingLeft ? "left" : "right" };
   }
 
   /** DEV ONLY: `window.__hero.seek(ms)` renders an exact frame (the loop is stopped so it stays put); `duration` is the intro's end, `timeline()` its phases. */
@@ -250,7 +270,7 @@ export class HeroEngine {
       },
       timeline: (): unknown => {
         const p = plan();
-        return p ? { start: p.p.startMs, walkEnd: p.tWalkEnd, lookEnd: p.tLookEnd, sneakEnd: p.tSneakEnd, write0: p.tWrite0, write1: p.tWrite1, holdEnd: p.tHoldEnd, end: p.tEnd, strokes: Array.from(p.write.t0, (t0, i) => [t0 + p.tWrite0, t0 + p.tWrite0 + (p.write.td[i] ?? 0)]), steps: p.steps.length } : null;
+        return p ? { start: p.p.startMs, walkEnd: p.tWalkEnd, lookEnd: p.tLookEnd, crouchDownEnd: p.tDownEnd, scanEnd: p.tScanEnd, peekEnd: p.tPeekEnd, glanceEnd: p.tGlanceEnd, sneak0: p.tSneak0, listen: [p.tListen0, p.tListen1], duckEnd: p.tDuck1, sneakEnd: p.tSneakEnd, plantGlanceEnd: p.tPlantGlanceEnd, turnEnd: p.tTurnEnd, stands: p.stands.length, allow: p.allow, cuts: Array.from(p.cuts), write0: p.tWrite0, write1: p.tWrite1, holdEnd: p.tHoldEnd, hideMoveEnd: p.tHideMove1, end: p.tEnd, strokes: Array.from(p.write.t0, (t0, i) => [t0 + p.tWrite0, t0 + p.tWrite0 + (p.write.td[i] ?? 0)]), steps: p.steps.length } : null;
       },
       play: (): void => {
         this.overrides.introMs = undefined;
@@ -1065,7 +1085,7 @@ export class HeroEngine {
   /** The bags and runners on top of the field, and the reveal of "Custom" that follows the returning runner. */
   private drawIntro(ti: number, sy0: number, psmax: number, slope: number): void {
     const intro = this.intro;
-    if (!intro || this.reduce) return;
+    if (!intro) return;
     let sig: IntroGeom["sig"] = null;
     const el = this.sigEl;
     if (el) {
@@ -1080,6 +1100,10 @@ export class HeroEngine {
     const flagRef = this.flag;
     const g: IntroGeom = { colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
     this.introGeom = g;
+    if (this.reduce) {
+      intro.drawHidden(this.ctx, g);
+      return;
+    }
     // each bag landing sends a ripple through the dots: the field reacts to the impact
     for (const l of intro.landings()) {
       if (this.lastIntroTi < l.at && ti >= l.at) this.ripples.push({ x: this.ox + (l.cx + 0.5) * this.cell, y: (this.r0 + l.cy) * this.cell - sy0, start: performance.now() });

@@ -1,6 +1,6 @@
 import { INTRO, SPRAY, type Rgb } from "./config";
 import type { SigPen } from "./sigpen";
-import { MODE, penAt, planReturn, revealedLength, sampleReturn, type BodyState, type PenState, type ReturnPlan, type Vec } from "./writer";
+import { CROUCH, MODE, penAt, planReturn, revealedLength, sampleReturn, type BodyState, type CrouchParams, type PenState, type ReturnPlan, type Vec } from "./writer";
 
 export interface LetterBox {
   /** Grid units: centre column and the top and bottom rows of the letter. */
@@ -76,6 +76,14 @@ interface Sheet {
   hipsY: number;
   footY: number;
   pxPerCycle: number;
+  /** A lit colour render (draw as-is: no glow pass). */
+  shaded: boolean;
+  /** Per-frame hips x (crouch sheets), head yaw / pitch in degrees (crouchlook), and their largest magnitudes; null when the sheet has none. */
+  hipsList: Float32Array | null;
+  yaw: Float32Array | null;
+  pitch: Float32Array | null;
+  maxYaw: number;
+  maxPitch: number;
 }
 /** The standing spray poses: per pose its frame, nozzle and hips (sprite px). */
 interface ReachSheet {
@@ -89,6 +97,7 @@ interface ReachSheet {
   ny: Float32Array;
   hx: Float32Array;
   hy: Float32Array;
+  shaded: boolean;
 }
 interface RunnerMeta {
   frames: number;
@@ -129,26 +138,55 @@ async function loadPair(base: string): Promise<{ img: HTMLImageElement; meta: Re
   }
 }
 
-async function loadSheet(base: string): Promise<Sheet | null> {
+const numArr = (v: unknown, key: "x" | "y" | null): Float32Array | null => {
+  if (!Array.isArray(v) || !v.length) return null;
+  const out = new Float32Array(v.length);
+  for (let i = 0; i < v.length; i++) {
+    const e: unknown = v[i];
+    const n = key === null ? e : isObj(e) ? e[key] : undefined;
+    if (typeof n !== "number" || !Number.isFinite(n)) return null;
+    out[i] = n;
+  }
+  return out;
+};
+const maxAbs = (a: Float32Array | null): number => {
+  let m = 0;
+  if (a) for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] ?? 0));
+  return m;
+};
+
+async function loadSheet(base: string, shaded = false): Promise<Sheet | null> {
   const p = await loadPair(base);
   if (!p) return null;
   const { img, meta } = p;
   const size = finite(meta["size"], 320);
   const frames = Math.max(1, Math.floor(finite(meta["frames"], 0)));
   const cols = Math.max(1, Math.floor(finite(meta["cols"], 4)));
+  const hipsList = numArr(meta["hips"], "x");
   const hips = pt(meta["hips"]);
   if (frames < 1 || size <= 0 || img.naturalWidth < size) return null;
-  return { img, frames, cols, size, hipsX: hips?.x ?? size / 2, hipsY: hips?.y ?? RUN_HIPS.y, footY: finite(meta["footY"], RUN_FOOT), pxPerCycle: finite(meta["pxPerCycle"], 0.95 * size) };
+  const yaw = numArr(meta["yawDeg"], null);
+  const pitch = numArr(meta["pitchDeg"], null);
+  return { img, frames, cols, size, hipsX: hips?.x ?? hipsList?.[0] ?? size / 2, hipsY: hips?.y ?? RUN_HIPS.y, footY: finite(meta["footY"], RUN_FOOT), pxPerCycle: finite(meta["pxPerCycle"], 0.95 * size), shaded, hipsList, yaw, pitch, maxYaw: maxAbs(yaw), maxPitch: maxAbs(pitch) };
 }
 
-async function loadReach(base: string): Promise<ReachSheet | null> {
+/** The shaded sheet (`<base>_shaded`) when INTRO.look asks for it and it exists, else the silhouette sheet. */
+async function loadPref<T>(base: string, load: (b: string, shaded: boolean) => Promise<T | null>): Promise<T | null> {
+  if (INTRO.look === "shaded") {
+    const s = await load(`${base}_shaded`, true);
+    if (s) return s;
+  }
+  return load(base, false);
+}
+
+async function loadReach(base: string, shaded = false): Promise<ReachSheet | null> {
   const p = await loadPair(base);
   if (!p) return null;
   const { img, meta } = p;
   const poses = meta["poses"];
   if (!Array.isArray(poses) || !poses.length) return null;
   const n = poses.length;
-  const r: ReachSheet = { img, cols: Math.max(1, Math.floor(finite(meta["cols"], 5))), size: finite(meta["size"], 320), footY: finite(meta["footY"], RUN_FOOT), n, frame: new Int32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), hx: new Float32Array(n), hy: new Float32Array(n) };
+  const r: ReachSheet = { img, cols: Math.max(1, Math.floor(finite(meta["cols"], 5))), size: finite(meta["size"], 320), footY: finite(meta["footY"], RUN_FOOT), n, frame: new Int32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), hx: new Float32Array(n), hy: new Float32Array(n), shaded };
   for (let i = 0; i < n; i++) {
     const q: unknown = poses[i];
     if (!isObj(q)) return null;
@@ -174,6 +212,10 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
   });
 }
 
+function newBody(): BodyState {
+  return { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0, turn: 1, stepping: false, travelled: 0, cphase: 0, depth: 0, pitch: 0, breath: 0, shake: 0, glance: false, duck: false };
+}
+
 /** The bag silhouettes and the two runners, drawn on top of the field. All motion is a pure function of time, so a frozen time gives a frozen frame. */
 export class IntroSprites {
   private runner: (Atlas & { nozzleX: number; nozzleY: number; nozzles: Array<{ x: number; y: number }> }) | null = null;
@@ -184,24 +226,41 @@ export class IntroSprites {
   private look: Sheet | null = null;
   private sneak: Sheet | null = null;
   private reach: ReachSheet | null = null;
+  private crouch: Sheet | null = null;
+  private crouchLook: Sheet | null = null;
+  private crouchPeek: Sheet | null = null;
+  private runnerShaded = false;
   private plan: ReturnPlan | null = null;
   private planKey = "";
   private planCw = 0;
   private planSize = 0;
   private planFlags = -1;
-  private readonly body: BodyState = { mode: 0, x: 0, mirrored: false, dist: 0, yaw: 0, wt: 0, turn: 1, stepping: false, travelled: 0 };
+  private readonly body: BodyState = newBody();
+  private readonly bodyOld: BodyState = newBody();
+  /** Alpha factor for the pose being drawn (the sheet crossfade). */
+  private ga = 1;
   private readonly penNow: PenState = { x: 0, y: 0, down: false, stroke: 0 };
   private readonly penOld: PenState = { x: 0, y: 0, down: false, stroke: 0 };
   private readonly tmpV: Vec = { x: 0, y: 0 };
 
   async load(letters: LetterBox[]): Promise<boolean> {
     this.letters = letters;
-    const [rImg, bImg, rMeta, bMeta] = await Promise.all([
-      loadImage(INTRO.assets.runner),
+    // the run sheet: the shaded render (run_shaded) when asked for and present, else the silhouette
+    let runnerShaded: { img: HTMLImageElement; meta: RunnerMeta } | null = null;
+    if (INTRO.look === "shaded") {
+      const p = await loadPair(INTRO.assets.runnerShaded);
+      const m = p?.meta;
+      if (p && m && Array.isArray(m["nozzle"]) && typeof m["frames"] === "number" && typeof m["cols"] === "number" && typeof m["size"] === "number") runnerShaded = { img: p.img, meta: m as unknown as RunnerMeta };
+    }
+    this.runnerShaded = runnerShaded !== null;
+    const [rImg0, bImg, rMeta0, bMeta] = await Promise.all([
+      runnerShaded ? Promise.resolve(runnerShaded.img) : loadImage(INTRO.assets.runner),
       loadImage(INTRO.assets.bag),
-      fetch(INTRO.assets.runnerMeta).then((r) => r.json() as Promise<RunnerMeta>).catch(() => null),
+      runnerShaded ? Promise.resolve(runnerShaded.meta) : fetch(INTRO.assets.runnerMeta).then((r) => r.json() as Promise<RunnerMeta>).catch(() => null),
       fetch(INTRO.assets.bagMeta).then((r) => r.json() as Promise<{ frames: number; w: number; h: number; cols: number }>).catch(() => null),
     ]);
+    const rImg = rImg0;
+    const rMeta = rMeta0;
     if (!rImg || !bImg || !rMeta || !bMeta) return false;
     const n = rMeta.nozzle.length || 1;
     // the can bobs with the arm; the body should not, so the sprite is anchored on the mean nozzle position
@@ -210,10 +269,13 @@ export class IntroSprites {
     this.runner = { img: rImg, frames: rMeta.frames, cols: rMeta.cols, w: rMeta.size, h: rMeta.size, nozzleX, nozzleY, nozzles: rMeta.nozzle };
     this.bag = { img: bImg, frames: bMeta.frames, cols: bMeta.cols, w: bMeta.w, h: bMeta.h };
     // the return pass's sheets load in the background during the first pass; each is optional
-    void loadSheet(INTRO.assets.walk).then((s) => (this.walk = s));
-    void loadSheet(INTRO.assets.look).then((s) => (this.look = s));
-    void loadSheet(INTRO.assets.sneak).then((s) => (this.sneak = s));
-    void loadReach(INTRO.assets.reach).then((s) => (this.reach = s));
+    void loadPref(INTRO.assets.walk, loadSheet).then((s) => (this.walk = s));
+    void loadPref(INTRO.assets.look, loadSheet).then((s) => (this.look = s));
+    void loadPref(INTRO.assets.sneak, loadSheet).then((s) => (this.sneak = s));
+    void loadPref(INTRO.assets.reach, loadReach).then((s) => (this.reach = s));
+    void loadPref(INTRO.assets.crouch, loadSheet).then((s) => (this.crouch = s));
+    void loadPref(INTRO.assets.crouchLook, loadSheet).then((s) => (this.crouchLook = s));
+    void loadPref(INTRO.assets.crouchPeek, loadSheet).then((s) => (this.crouchPeek = s));
     return true;
   }
 
@@ -329,8 +391,10 @@ export class IntroSprites {
       ctx.rotate(-0.07 * squash); // the crouch and lean as he sets himself to spray
       ctx.scale(1 + 0.03 * squash, 1 - 0.08 * squash);
     }
-    ctx.shadowColor = "rgba(232,168,90,0.55)"; // a soft amber edge light so the black body separates from the dark ground
-    ctx.shadowBlur = spriteS * 0.05;
+    if (!this.runnerShaded) {
+      ctx.shadowColor = "rgba(232,168,90,0.55)"; // a soft amber edge light so the black body separates from the dark ground
+      ctx.shadowBlur = spriteS * 0.05;
+    }
     ctx.drawImage(r.img, (frame % r.cols) * r.w, Math.floor(frame / r.cols) * r.h, r.w, r.h, -r.nozzleX * k, -r.nozzleY * k, spriteS, spriteS);
     ctx.restore();
   }
@@ -362,7 +426,7 @@ export class IntroSprites {
   private fallbackSheet(): Sheet | null {
     const r = this.runner;
     if (!r) return null;
-    this.runSheet ??= { img: r.img, frames: r.frames, cols: r.cols, size: r.w, hipsX: RUN_HIPS.x, hipsY: RUN_HIPS.y, footY: RUN_FOOT, pxPerCycle: 0.95 * r.w };
+    this.runSheet ??= { img: r.img, frames: r.frames, cols: r.cols, size: r.w, hipsX: RUN_HIPS.x, hipsY: RUN_HIPS.y, footY: RUN_FOOT, pxPerCycle: 0.95 * r.w, shaded: this.runnerShaded, hipsList: null, yaw: null, pitch: null, maxYaw: 0, maxPitch: 0 };
     return this.runSheet;
   }
 
@@ -372,7 +436,7 @@ export class IntroSprites {
     const r = this.runner;
     const nz = r?.nozzles[0];
     if (!r || !nz) return null;
-    this.runReach ??= { img: r.img, cols: r.cols, size: r.w, footY: RUN_FOOT, n: 1, frame: Int32Array.of(0), nx: Float32Array.of(nz.x), ny: Float32Array.of(nz.y), hx: Float32Array.of(RUN_HIPS.x), hy: Float32Array.of(RUN_HIPS.y) };
+    this.runReach ??= { img: r.img, cols: r.cols, size: r.w, footY: RUN_FOOT, n: 1, frame: Int32Array.of(0), nx: Float32Array.of(nz.x), ny: Float32Array.of(nz.y), hx: Float32Array.of(RUN_HIPS.x), hy: Float32Array.of(RUN_HIPS.y), shaded: this.runnerShaded };
     return this.runReach;
   }
 
@@ -385,7 +449,8 @@ export class IntroSprites {
     const reach = this.reachSheet();
     if (!sig || !r || !walk || !sneak || !reach) return null;
     const spriteS = this.spriteSize(g);
-    const flags = (this.walk ? 1 : 0) + (this.sneak ? 2 : 0) + (this.reach ? 4 : 0);
+    const crouchOn = !!(this.crouch && this.crouchLook && this.crouchPeek);
+    const flags = (this.walk ? 1 : 0) + (this.sneak ? 2 : 0) + (this.reach ? 4 : 0) + (crouchOn ? 8 : 0);
     const size = Math.round(spriteS);
     if (this.plan && sig.key === this.planKey && g.cw === this.planCw && size === this.planSize && flags === this.planFlags) return this.plan;
     const k = spriteS / r.w;
@@ -398,38 +463,86 @@ export class IntroSprites {
       lo = Math.min(lo, d);
       hi = Math.max(hi, d);
     }
-    const half = (hi - lo) / 2;
-    sig.pen.sample(0, 0, this.tmpV);
-    const xStart = this.tmpV.x - mid;
+    const cr: CrouchParams | null = crouchOn ? INTRO.crouch : null;
     this.plan = planReturn(
       {
         startMs: INTRO.returnStartMs,
         walkInMs: INTRO.walkInMs,
+        walkAccelMs: INTRO.walkAccelMs,
+        walkDecelMs: INTRO.walkDecelMs,
         lookLeadMs: INTRO.lookLeadMs,
         lookTurnMs: INTRO.lookTurnMs,
         lookHoldMs: INTRO.lookHoldMs,
         sneakCycleMs: INTRO.sneakCycleMs,
+        sneakMinMs: INTRO.sneakMinMs,
+        sneakPauseAt: INTRO.sneakPauseAt,
+        listenMs: INTRO.listenMs,
+        duck: crouchOn ? INTRO.duck : null,
+        plantGlanceMs: INTRO.plantGlanceMs,
+        plantGlanceKeys: INTRO.plantGlanceKeys,
         plantMs: INTRO.plantMs,
+        shakeMs: INTRO.shakeMs,
+        shakeHz: INTRO.shakeHz,
+        commitMs: INTRO.commitMs,
         writeMs: INTRO.customWriteMs,
         liftMs: INTRO.liftMs,
         holdMs: INTRO.finishHoldMs,
-        walkOutMs: INTRO.walkOutMs,
+        hideCrouchMs: INTRO.hideCrouchMs,
         stepMs: INTRO.stepMs,
-        walkEaseExp: INTRO.walkEaseExp,
+        seed: INTRO.writeSeed,
+        midGlanceMs: INTRO.midGlanceMs,
+        midGlanceKeys: INTRO.midGlanceKeys,
         xEnter: g.cw + spriteS * 0.7,
-        xLook: Math.min(xStart + INTRO.lookAheadShare * spriteS, g.cw - spriteS * 0.5),
-        xExit: g.cw + spriteS * 0.7,
+        xLook: 0, // set below, once the first standing place is known
+        xHide: 0,
         sneakCyclePx: sneak.pxPerCycle * k,
+        reachLo: lo,
         reachMid: mid,
-        reachTol: Math.min(INTRO.reachTolShare * spriteS, Math.max(0.05 * spriteS, half * 0.8)),
+        reachHi: hi,
+        reachAllow: INTRO.reachAllowShare * spriteS,
+        reachAllowMax: INTRO.reachAllowMaxShare * spriteS,
+        maxStands: INTRO.maxStands,
+        crouch: cr,
       },
       sig.pen,
     );
+    // where he stands to look depends on where the first standing place is: re-plan with it (cheap, once per layout)
+    const xLook = Math.min(this.plan.xStart + INTRO.lookAheadShare * spriteS, g.cw - spriteS * 0.5);
+    const xHide = Math.min(sig.right - INTRO.hideInsetShare * spriteS, g.cw - spriteS * 0.3);
+    this.plan = planReturn({ ...this.plan.p, xLook, xHide }, sig.pen);
     this.planKey = sig.key;
     this.planCw = g.cw;
     this.planSize = size;
     this.planFlags = flags;
     return this.plan;
+  }
+
+  /** Where he ends up hiding, in canvas px: feet position, sprite height, and whether he faces left. Null until the plan exists. */
+  hideSpot(g: IntroGeom): { x: number; y: number; size: number; facingLeft: boolean } | null {
+    const plan = this.returnPlan(g);
+    const r = this.runner;
+    const sig = g.sig;
+    if (!plan || !r || !sig) return null;
+    const k = this.spriteSize(g) / r.w;
+    return { x: plan.p.xHide, y: sig.y + (RUN_FOOT - r.nozzleY) * k, size: this.spriteS, facingLeft: true };
+  }
+
+  /** Reduced motion: only the final pose, hiding at the bottom right of the calligraphy. */
+  drawHidden(ctx: CanvasRenderingContext2D, g: IntroGeom): void {
+    const plan = this.returnPlan(g);
+    const r = this.runner;
+    const sig = g.sig;
+    if (!plan || !r || !sig) return;
+    const spriteS = this.spriteSize(g);
+    const k = spriteS / r.w;
+    const b = this.body;
+    sampleReturn(plan, plan.tEnd + 1, b);
+    ctx.save();
+    ctx.shadowColor = "rgba(232,168,90,0.55)";
+    ctx.shadowBlur = spriteS * 0.05;
+    this.ga = 1;
+    this.drawBody(ctx, plan, b, plan.tEnd + 1, sig, k, sig.y + (RUN_FOOT - r.nozzleY) * k);
+    ctx.restore();
   }
 
   /** Length of each signature stroke laid down at `ti` (svg units, into `len`), and how filled-in it is 0..1 (into `fill`: it fills only once its stroke is finished, so no ink shows ahead of the nozzle). False until the plan exists. */
@@ -445,67 +558,158 @@ export class IntroSprites {
     return true;
   }
 
+  private spriteS = 0;
   private spriteSize(g: IntroGeom): number {
-    return Math.max(this.letterHeightPx(g) * INTRO.runnerScale, g.ch * INTRO.runnerMinShare);
+    this.spriteS = Math.max(this.letterHeightPx(g) * INTRO.runnerScale, g.ch * INTRO.runnerMinShare);
+    return this.spriteS;
   }
 
-  private blitSheet(ctx: CanvasRenderingContext2D, s: Sheet, frame: number, x: number, gy: number, k: number, mirrored: boolean, sx = 1): void {
-    const f = ((frame % s.frames) + s.frames) % s.frames;
+  private blitSheet(ctx: CanvasRenderingContext2D, s: Sheet, frame: number, x: number, gy: number, k: number, mirrored: boolean, sx = 1, dy = 0, hipsX = s.hipsX): void {
+    const f = ((Math.round(frame) % s.frames) + s.frames) % s.frames;
     ctx.save();
-    ctx.translate(x, gy);
+    if (s.shaded) ctx.shadowColor = "rgba(0,0,0,0)"; // lit renders are drawn as they are
+    ctx.globalAlpha = this.ga;
+    ctx.translate(x, gy + dy);
     ctx.scale(mirrored ? -sx : sx, 1);
-    ctx.drawImage(s.img, (f % s.cols) * s.size, Math.floor(f / s.cols) * s.size, s.size, s.size, -s.hipsX * k, -s.footY * k, s.size * k, s.size * k);
+    ctx.drawImage(s.img, (f % s.cols) * s.size, Math.floor(f / s.cols) * s.size, s.size, s.size, -hipsX * k, -s.footY * k, s.size * k, s.size * k);
     ctx.restore();
   }
 
-  /** The runner walks in, looks about, tiptoes, writes "Custom" with the nozzle exactly on the pen, and walks off. */
+  /** The crouchlook frame whose head yaw (0..1 of its range) and pitch (-1..1 of its range) are nearest the target. */
+  private headFrame(s: Sheet, yaw: number, pitch: number): number {
+    if (!s.yaw) return Math.round(yaw * (s.frames - 1));
+    const ty = yaw * s.maxYaw;
+    const tp = pitch * s.maxPitch;
+    const wy = 1 / Math.max(1, s.maxYaw);
+    const wp = s.pitch && s.maxPitch > 0 ? 1 / s.maxPitch : 0;
+    let best = 0;
+    let bd = 1e18;
+    for (let i = 0; i < s.frames; i++) {
+      const dy = ((s.yaw[i] ?? 0) - ty) * wy;
+      const dp = s.pitch ? ((s.pitch[i] ?? 0) - tp) * wp : 0;
+      const d = dy * dy + dp * dp;
+      if (d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  /** One body state, drawn with feet on `ground`. Used twice while a sheet crossfades (outgoing at its last frame, incoming fading in). */
+  private drawBody(ctx: CanvasRenderingContext2D, plan: ReturnPlan, b: BodyState, ti: number, sig: NonNullable<IntroGeom["sig"]>, k: number, ground: number): void {
+    if (b.mode === MODE.off) return;
+    const walk = this.walk ?? this.fallbackSheet();
+    const sneak = this.sneak ?? this.fallbackSheet();
+    const bob = b.breath > 0 ? Math.sin((ti / 1000) * INTRO.crouch.breathHz * 6.2832) * INTRO.crouch.breathPx * b.breath : 0;
+    if (b.mode === MODE.walk) {
+      if (walk) this.blitSheet(ctx, walk, Math.floor((b.dist / (walk.pxPerCycle * k)) * walk.frames), b.x, ground, k, b.mirrored);
+    } else if (b.mode === MODE.sneak) {
+      if (sneak) this.blitSheet(ctx, sneak, Math.floor((b.dist / (sneak.pxPerCycle * k)) * sneak.frames), b.x, ground, k, b.mirrored, 1, bob);
+    } else if (b.mode === MODE.look) {
+      const look = this.look;
+      const still = this.fallbackSheet();
+      if (look) this.blitSheet(ctx, look, b.yaw * (look.frames - 1), b.x, ground, k, b.mirrored, 1, bob);
+      else if (still) this.blitSheet(ctx, still, 0, b.x, ground, k, b.mirrored, 1, bob);
+    } else if (b.mode === MODE.crouch) {
+      const cd = this.crouch;
+      const cl = this.crouchLook;
+      const cp = this.crouchPeek;
+      if (!cd || !cl || !cp) return;
+      // all sheets share one camera, so the feet stay planted when every crouch sheet is anchored on the standing hips x (the hips themselves sway back as he crouches)
+      const hx = cd.hipsList?.[0] ?? cd.hipsX;
+      if (b.cphase === CROUCH.down || b.cphase === CROUCH.rise) this.blitSheet(ctx, cd, b.depth * (cd.frames - 1), b.x, ground, k, b.mirrored, 1, 0, hx);
+      else if (b.cphase === CROUCH.peek) this.blitSheet(ctx, cp, b.depth * (cp.frames - 1), b.x, ground, k, b.mirrored, 1, 0, hx);
+      else this.blitSheet(ctx, cl, this.headFrame(cl, b.yaw, b.pitch), b.x, ground, k, b.mirrored, 1, bob, hx);
+    } else if (b.glance) {
+      const look = this.look;
+      if (look) this.blitSheet(ctx, look, b.yaw * (look.frames - 1), b.x, ground, k, true);
+    } else if (b.turn < 0.5) {
+      // planting: he is still facing left, and turns on the spot (narrowing) towards the wall
+      const still = this.look ?? this.sneak ?? this.fallbackSheet();
+      if (still) this.blitSheet(ctx, still, 0, b.x, ground, k, true, 1 - 1.6 * b.turn, bob);
+    } else this.drawReach(ctx, plan, sig.pen, b, ti, k, ground, walk);
+  }
+
+  /** The runner walks in, looks about, crouches and scans, tiptoes, sets himself, writes "Custom" with the nozzle exactly on the pen, and walks off. */
   private drawReturn(ctx: CanvasRenderingContext2D, ti: number, g: IntroGeom, spriteS: number): void {
     const sig = g.sig;
     const r = this.runner;
     if (!sig || !r) return;
-    if (this.plan && ti > this.plan.tEnd + 1000) return; // the pass is over: nothing to draw or plan
     const plan = this.returnPlan(g);
-    if (!plan || ti < INTRO.returnStartMs || ti > plan.tEnd + 1000) return;
+    if (!plan || ti < INTRO.returnStartMs) return;
     const b = this.body;
     sampleReturn(plan, ti, b);
     const k = spriteS / r.w;
     const ground = sig.y + (RUN_FOOT - r.nozzleY) * k; // his feet: where the first pass's runner stood on this row
     if (ti >= plan.tSneakEnd) this.drawPenMist(ctx, plan, sig.pen, ti, spriteS);
     if (b.mode === MODE.off) return;
+    // a change of pose set fades over sheetFadeMs: the outgoing pose is held at its last frame underneath, the incoming one fades in over it
+    let cut = -1;
+    for (let i = 0; i < plan.cuts.length; i++) {
+      const c = plan.cuts[i] ?? 0;
+      if (ti >= c && ti - c < INTRO.sheetFadeMs) cut = c;
+    }
     ctx.save();
     ctx.shadowColor = "rgba(232,168,90,0.55)";
     ctx.shadowBlur = spriteS * 0.05;
-    const walk = this.walk ?? this.fallbackSheet();
-    const sneak = this.sneak ?? this.fallbackSheet();
-    if (b.mode === MODE.walk || b.mode === MODE.out) {
-      if (walk) this.blitSheet(ctx, walk, Math.floor((b.dist / (walk.pxPerCycle * k)) * walk.frames), b.x, ground, k, b.mirrored);
-    } else if (b.mode === MODE.sneak) {
-      if (sneak) this.blitSheet(ctx, sneak, Math.floor((b.dist / (sneak.pxPerCycle * k)) * sneak.frames), b.x, ground, k, b.mirrored);
-    } else if (b.mode === MODE.look) {
-      const look = this.look;
-      const still = this.fallbackSheet();
-      if (look) this.blitSheet(ctx, look, Math.round(b.yaw * (look.frames - 1)), b.x, ground, k, b.mirrored);
-      else if (still) this.blitSheet(ctx, still, 0, b.x, ground, k, b.mirrored);
-    } else if (b.turn < 0.5) {
-      // planting: he is still facing left, and turns on the spot (narrowing) towards the wall
-      const still = this.look ?? this.sneak ?? this.fallbackSheet();
-      if (still) this.blitSheet(ctx, still, 0, b.x, ground, k, true, 1 - 1.6 * b.turn);
-    } else this.drawReach(ctx, plan, sig.pen, b, k, ground, this.walk ?? this.fallbackSheet());
+    this.ga = 1;
+    if (cut >= 0) {
+      sampleReturn(plan, cut - 1, this.bodyOld);
+      this.drawBody(ctx, plan, this.bodyOld, cut - 1, sig, k, ground);
+      const u = (ti - cut) / INTRO.sheetFadeMs;
+      this.ga = u * u * (3 - 2 * u);
+    }
+    this.drawBody(ctx, plan, b, ti, sig, k, ground);
+    this.ga = 1;
     ctx.restore();
   }
 
-  /** The two spray poses whose nozzles are nearest the pen, each carried so its nozzle sits exactly on the pen, cross-faded by distance. */
-  private drawReach(ctx: CanvasRenderingContext2D, plan: ReturnPlan, pen: SigPen, b: BodyState, k: number, ground: number, walk: Sheet | null): void {
+  /** One reach pose drawn with its feet on the planted spot; only the upper body leans (a smooth shear from the knees up) so the nozzle sits exactly on the pen. `cutY`: canvas y above which the pose is drawn (the legs below come from elsewhere), or null. */
+  private drawPose(ctx: CanvasRenderingContext2D, R: ReachSheet, i: number, alpha: number, bx: number, ground: number, k: number, dx: number, dy: number, cutY: number | null): void {
+    const f = R.frame[i] ?? 0;
+    const sx0 = (f % R.cols) * R.size;
+    const sy0 = Math.floor(f / R.cols) * R.size;
+    const ax = bx - (R.hx[i] ?? 0) * k;
+    const ay = ground - R.footY * k;
+    const L = Math.max(1, R.footY - (R.hy[i] ?? 0));
+    ctx.save();
+    if (R.shaded) ctx.shadowColor = "rgba(0,0,0,0)";
+    ctx.globalAlpha = alpha * this.ga;
+    if (cutY !== null) {
+      ctx.beginPath();
+      ctx.rect(bx - 4 * R.size * k, ground - 4 * R.size * k, 8 * R.size * k, cutY - (ground - 4 * R.size * k));
+      ctx.clip();
+    }
+    if (Math.abs(dx) + Math.abs(dy) < 0.4) ctx.drawImage(R.img, sx0, sy0, R.size, R.size, ax, ay, R.size * k, R.size * k);
+    else {
+      const H = 8;
+      ctx.shadowColor = "rgba(0,0,0,0)"; // a glow per strip would band the body
+      for (let r0 = 0; r0 < R.size; r0 += H) {
+        const sh = Math.min(H, R.size - r0);
+        const u = (R.footY - (r0 + sh / 2) - 0.3 * L) / (0.6 * L);
+        const w = u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u);
+        ctx.drawImage(R.img, sx0, sy0 + r0, R.size, sh, ax + dx * w, ay + r0 * k + dy * w, R.size * k, sh * k + 1);
+      }
+    }
+    ctx.restore();
+  }
+
+  /**
+   * The two spray poses whose nozzles are nearest the pen, cross-faded by distance. He stands planted: the feet stay on the spot and only the arm and upper body follow the pen,
+   * each pose leaning just enough that its nozzle sits exactly on it. Between standing places the legs are the walk cycle for the steps.
+   */
+  private drawReach(ctx: CanvasRenderingContext2D, plan: ReturnPlan, pen: SigPen, b: BodyState, ti: number, k: number, ground: number, walk: Sheet | null): void {
     const R = this.reachSheet();
     if (!R) return;
     const p = this.penNow;
-    penAt(plan.write, pen, b.wt, p);
+    penAt(plan.write, pen, Math.max(0, b.wt), p);
     let i1 = 0;
     let i2 = -1;
     let d1 = 1e18;
     let d2 = 1e18;
     for (let i = 0; i < R.n; i++) {
-      // where this pose's nozzle would be if the body stood at b.x
+      // how far this pose's nozzle would be from the pen with the body planted at b.x
       const d = Math.hypot(p.x - (b.x + ((R.nx[i] ?? 0) - (R.hx[i] ?? 0)) * k), p.y - (ground + ((R.ny[i] ?? 0) - R.footY) * k));
       if (d < d1) {
         i2 = i1 === i ? -1 : i1;
@@ -517,44 +721,34 @@ export class IntroSprites {
         d2 = d;
       }
     }
-    const pose = (i: number, alpha: number): void => {
-      const f = R.frame[i] ?? 0;
-      ctx.globalAlpha = alpha;
-      ctx.drawImage(R.img, (f % R.cols) * R.size, Math.floor(f / R.cols) * R.size, R.size, R.size, p.x - (R.nx[i] ?? 0) * k, p.y - (R.ny[i] ?? 0) * k, R.size * k, R.size * k);
-    };
-    // the turn to face the wall: the pose widens from a sliver, about the nozzle so it stays on the pen
+    const shakeY = b.shake * INTRO.shakeAmp * this.spriteS;
+    const dxOf = (i: number): number => p.x - (b.x + ((R.nx[i] ?? 0) - (R.hx[i] ?? 0)) * k);
+    const dyOf = (i: number): number => p.y - (ground + ((R.ny[i] ?? 0) - R.footY) * k) + shakeY;
+    // the turn to face the wall: the pose widens from a sliver, about the body so the feet stay put
     const sx = b.turn < 1 ? 0.2 + 1.6 * (b.turn - 0.5) : 1;
-    const feetY = p.y - ((R.ny[i1] ?? 0) - R.footY) * k; // where the chosen pose's feet land
-    const hipsX = p.x - ((R.nx[i1] ?? 0) - (R.hx[i1] ?? 0)) * k;
     ctx.save();
-    ctx.translate(p.x, p.y);
+    ctx.translate(b.x, 0);
     ctx.scale(sx, 1);
-    ctx.translate(-p.x, -p.y);
+    ctx.translate(-b.x, 0);
+    let cut: number | null = null;
     if (b.stepping && walk) {
-      // mid-shuffle: the legs are the walk cycle (feet stepping on the pose's own baseline), the upper body stays the spray pose so the nozzle stays on the pen
-      const cut = feetY - (walk.footY - 150) * k;
+      // walking to the next place: the legs are the walk cycle (cut at the hips), the upper body stays the spray pose leaning to the pen
+      cut = ground - (walk.footY - 150) * k;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(p.x - 4 * R.size * k, p.y - 4 * R.size * k, 8 * R.size * k, cut - (p.y - 4 * R.size * k));
+      ctx.rect(b.x - 4 * R.size * k, cut, 8 * R.size * k, 8 * R.size * k);
       ctx.clip();
-      pose(i1, 1);
+      this.blitSheet(ctx, walk, Math.floor((b.travelled / (walk.pxPerCycle * k)) * walk.frames), b.x, ground, k, false);
       ctx.restore();
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(p.x - 4 * R.size * k, cut, 8 * R.size * k, 8 * R.size * k);
-      ctx.clip();
-      ctx.globalAlpha = 1;
-      this.blitSheet(ctx, walk, Math.floor((b.travelled / (walk.pxPerCycle * k)) * walk.frames), hipsX, feetY, k, false);
-      ctx.restore();
-    } else {
-      pose(i1, 1);
-      if (i2 >= 0 && d1 + d2 > 0) {
-        ctx.shadowColor = "rgba(0,0,0,0)"; // the glow belongs under the body, not over the first pose
-        pose(i2, 2 * (d1 / (d1 + d2)) ** 2); // squared: the second pose only shows near the halfway point, so the two bodies ghost for less of the time
-      }
+    }
+    this.drawPose(ctx, R, i1, 1, b.x, ground, k, dxOf(i1), dyOf(i1), cut);
+    if (i2 >= 0 && d1 + d2 > 0) {
+      ctx.shadowColor = "rgba(0,0,0,0)"; // the glow belongs under the body, not over the first pose
+      this.drawPose(ctx, R, i2, 2 * (d1 / (d1 + d2)) ** 2, b.x, ground, k, dxOf(i2), dyOf(i2), cut); // squared: the second pose only shows near the halfway point
     }
     ctx.restore();
     ctx.globalAlpha = 1;
+    void ti;
   }
 
   /** Soft puffs at where the nozzle was while it was on the wall (fading over ~0.9 s), and a few fine flecks at the nozzle now. */
