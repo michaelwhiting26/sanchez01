@@ -2,7 +2,7 @@
 (function () {
   document.querySelectorAll("[data-curved-loop]").forEach(function (root) {
     var NS = "http://www.w3.org/2000/svg", text = (root.getAttribute("data-text") || "SANCHEZ ✦ ").replace(/ /g, " ");
-    var STAR = "\u2726", GAP = "\u00a0\u00a0\u00a0\u00a0", pieces = text.split(STAR); text = pieces.join(GAP);   /* the star glyph is not in our font, so each phone draws it from a different fallback with a different width; a run of spaces in our own font is the same everywhere */
+    var STAR = "\u2726", GAP = "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0", pieces = text.split(STAR); text = pieces.join(GAP);   /* the star glyph is not in our font, so each phone draws it from a different fallback with a different width; a run of spaces in our own font is the same everywhere */
     var VW = (root.clientWidth || window.innerWidth) < 700 ? 640 : 1440;   /* the drawing is VW units wide and scaled to the screen: on a phone a narrower drawing keeps the letters big */
     var curve = Number(root.getAttribute("data-curve") || 400) * (VW < 1440 ? 0.6 : 1), speed = Number(root.getAttribute("data-speed") || 1.6);
     var id = "cl-" + Math.random().toString(36).slice(2, 8);

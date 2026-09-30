@@ -458,3 +458,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
   .rise__surface { block-size: 92svh; aspect-ratio: auto; object-fit: cover; object-position: center; }
   .rise__panel { padding-block-start: calc(92svh * 0.111 + clamp(20px, 5vw, 36px)); }
 }
+
+/* blend the seam where the cutout artwork ends and the plain card colour continues: the artwork fades into the card colour over its last 90px */
+.rise__card::before { content: ""; position: absolute; inset-inline: 0; inset-block-start: calc(56.25vw - 90px); block-size: 90px; background: linear-gradient(to bottom, rgb(10 11 13 / 0), #0a0b0d); pointer-events: none; z-index: 1; }
+@media (max-width: 760px) { .rise__card::before { inset-block-start: calc(92svh - 90px); } }
