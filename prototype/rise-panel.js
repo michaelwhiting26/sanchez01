@@ -17,7 +17,7 @@
 
   var smooth = function (x) { return x * x * (3 - 2 * x); };
   /* early rise -> eased plateau (lingers) -> final rise; velocity eases to ~0 at the plateau edges, so there is no kink. */
-  var TEASE = { A: 0.34, B: 0.57, LO: 0.42, HI: 0.46 };
+  var TEASE = { A: 0.34, B: 0.57, LO: 0.6, HI: 0.64 };
   function teaseRise(raw) {
     if (raw < TEASE.A) return TEASE.LO * smooth(raw / TEASE.A);
     if (raw < TEASE.B) return TEASE.LO + (TEASE.HI - TEASE.LO) * smooth((raw - TEASE.A) / (TEASE.B - TEASE.A));

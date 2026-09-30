@@ -415,3 +415,7 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 .rise__hero { min-block-size: calc(100vh - 6.25vw); inline-size: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(24px, 4vh, 44px); }
 .rise__logo { inline-size: clamp(220px, 26vw, 420px); block-size: auto; margin: 0; }
 .rise__hero .rollBtn { margin: 0; }
+
+/* at the scroll hold only part of the card is on screen, so the logo and button sit right under the top edge and are sized to fit */
+.rise__hero { min-block-size: 0; justify-content: flex-start; padding-block: clamp(20px, 3.2vh, 44px) clamp(28px, 5vh, 64px); gap: clamp(16px, 2.4vh, 28px); }
+.rise__logo { inline-size: clamp(120px, min(16vw, 22vh), 240px); }
