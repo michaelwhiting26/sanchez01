@@ -2,17 +2,15 @@
 (function () {
   document.querySelectorAll("[data-curved-loop]").forEach(function (root) {
     var NS = "http://www.w3.org/2000/svg", text = (root.getAttribute("data-text") || "SANCHEZ ✦ ").replace(/ /g, " ");
-    var STAR = "\u2726", GAP = "\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0", pieces = text.split(STAR); text = pieces.join(GAP);   /* the star glyph is not in our font, so each phone draws it from a different fallback with a different width; a run of spaces in our own font is the same everywhere */
+    var STAR = "\u2726", pieces = text.split(STAR).map(function (p) { return p.trim(); });   /* the words alone: the star is a sprite in its own slot, so nothing depends on how a browser measures runs of spaces */
     var VW = (root.clientWidth || window.innerWidth) < 700 ? 640 : 1440;   /* the drawing is VW units wide and scaled to the screen: on a phone a narrower drawing keeps the letters big */
     var curve = Number(root.getAttribute("data-curve") || 400) * (VW < 1440 ? 0.6 : 1), speed = Number(root.getAttribute("data-speed") || 1.6);
     var id = "cl-" + Math.random().toString(36).slice(2, 8);
     var svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 " + VW + " " + (70 + curve / 2)); svg.setAttribute("class", "curved-loop__svg"); svg.setAttribute("aria-hidden", "true");
     var path = document.createElementNS(NS, "path"); path.setAttribute("id", id); path.setAttribute("d", "M-100,50 Q" + VW / 2 + "," + (50 + curve) + " " + (VW + 100) + ",50"); path.setAttribute("fill", "none");
     var measure = document.createElementNS(NS, "text"); measure.setAttribute("class", "curved-loop__text"); measure.style.visibility = "hidden"; measure.textContent = text;
-    var t = document.createElementNS(NS, "text"); t.setAttribute("class", "curved-loop__text");
-    var tp = document.createElementNS(NS, "textPath"); tp.setAttribute("href", "#" + id);
     var defs = document.createElementNS(NS, "defs"); defs.appendChild(path);
-    svg.appendChild(measure); svg.appendChild(defs); t.appendChild(tp); svg.appendChild(t); root.appendChild(svg);
+    svg.appendChild(measure); svg.appendChild(defs); root.appendChild(svg);
     root.setAttribute("aria-label", root.getAttribute("data-text") || "Sanchez");
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var spacing = 0, offset = 0, dir = -1, vel = 0, drag = false, lastX = 0;
@@ -42,25 +40,37 @@
       var g = svgEl("linearGradient", { id: GLINT, x1: "0", y1: "0", x2: "1", y2: "0" }, defs);
       svgEl("stop", { offset: "0", "stop-color": "#fff3d6", "stop-opacity": "0" }, g); svgEl("stop", { offset: "0.5", "stop-color": "#fff3d6", "stop-opacity": "0.7" }, g); svgEl("stop", { offset: "1", "stop-color": "#fff3d6", "stop-opacity": "0" }, g);
     })();
+    /* Layout by arithmetic on the words alone: each word is its own text on the path (its own startOffset), each star sits in a fixed-width slot between words.
+       Word widths are measured one word at a time, which every browser does the same way; a star's distance along the curve = scroll offset + repeat x pattern length + slot centre. */
+    var SLOT = SIZE + 2 * 0.55 * FS, items = [], words = [];
+    function layout() {
+      items = []; var pos = 0;
+      pieces.forEach(function (piece, i) {
+        if (piece) { measure.textContent = piece; var w = measure.getComputedTextLength(); items.push({ w: piece, x: pos, wd: w }); pos += w; }
+        if (i < pieces.length - 1) { items.push({ s: true, c: pos + SLOT / 2 }); pos += SLOT; }
+      });
+      return pos;
+    }
     function build(n) {
-      while (tp.firstChild) tp.removeChild(tp.firstChild);
+      words.forEach(function (w) { if (w.el.parentNode) w.el.parentNode.removeChild(w.el); }); words = [];
       stars.forEach(function (st) { if (st.img.parentNode) st.img.parentNode.removeChild(st.img); }); stars = [];
-      var chars = 0;                                                            /* running character index in the whole text, so each star knows which characters are its gap */
       for (var k = 0; k < n; k++) {
-        var at = 0;
-        pieces.forEach(function (piece, i) {
-          if (piece) { tp.appendChild(document.createTextNode(piece)); at += piece.length; chars += piece.length; }
-          if (i < pieces.length - 1) {
-            var gapA = chars; tp.appendChild(document.createTextNode(GAP)); chars += GAP.length;
-            var before = at ? measure.getSubStringLength(0, at) : 0, adv = measure.getSubStringLength(at, GAP.length);
+        items.forEach(function (it) {
+          if (it.w) {
+            var el = svgEl("text", { "class": "curved-loop__text" }), tp = svgEl("textPath", { href: "#" + id }, el); tp.textContent = it.w; svg.appendChild(el);
+            words.push({ el: el, tp: tp, x: k * spacing + it.x, wd: it.wd });
+          } else {
             var img = svgEl("g", {}); img.style.pointerEvents = "none"; img.style.display = "none";
             svgEl("image", { href: SPRITE, width: SIZE, height: SIZE, filter: "url(#" + FX + ")" }, img);
             var clip = svgEl("g", { mask: "url(#" + MASK + ")" }, img), glint = svgEl("rect", { x: "-30", y: "-6", width: "24", height: SIZE + 12, fill: "url(#" + GLINT + ")", transform: "rotate(18 30 30)" }, clip);
-            svg.appendChild(img); stars.push({ d0: k * spacing + before + adv / 2, img: img, glint: glint, a: gapA, b: gapA + GAP.length - 1 }); at += GAP.length;
+            svg.appendChild(img); stars.push({ d0: k * spacing + it.c, img: img, glint: glint });
           }
         });
       }
       plen = path.getTotalLength();
+    }
+    function moveWords() {
+      for (var i = 0; i < words.length; i++) { var w = words[i], x = offset + w.x, on = x < plen && x + w.wd > -20; w.el.style.display = on ? "" : "none"; if (on) w.tp.setAttribute("startOffset", x.toFixed(2) + "px"); }
     }
     function place() {
       for (var i = 0; i < stars.length; i++) {
@@ -68,9 +78,6 @@
         if (d < 0 || d > plen) { st.img.style.display = "none"; continue; }
         var p0 = path.getPointAtLength(d), pa = path.getPointAtLength(Math.max(0, d - 2)), pb = path.getPointAtLength(Math.min(plen, d + 2));
         var rot = Math.atan2(pb.y - pa.y, pb.x - pa.x);
-        /* Prefer where the browser really laid the gap out on the curve (some phone browsers measure runs of spaces differently from how they draw them); fall back to the arithmetic */
-        try { var g1 = t.getStartPositionOfChar(st.a), g2 = t.getEndPositionOfChar(st.b), gr = t.getRotationOfChar(st.a);
-          if (isFinite(g1.x + g1.y + g2.x + g2.y + gr) && (g1.x || g1.y) && (g2.x || g2.y)) { p0 = { x: (g1.x + g2.x) / 2, y: (g1.y + g2.y) / 2 }; rot = gr * Math.PI / 180; } } catch (err) {}
         var c = Math.cos(rot), sn = Math.sin(rot), up = 0.34 * FS;   /* centre of the glyph: a third of an em above the baseline */
         var cx = p0.x + up * sn, cy = p0.y - up * c;
         if (cx < -80 || cx > VW + 80) { st.img.style.display = "none"; continue; }
@@ -80,9 +87,9 @@
       }
     }
     function setup() {
-      spacing = measure.getComputedTextLength(); if (!spacing) return requestAnimationFrame(setup);
+      spacing = layout(); if (!spacing || !items.length || !items.some(function (it) { return it.wd; })) return requestAnimationFrame(setup);
       var len = path.getTotalLength(), n = Math.ceil(len / spacing) + 2;
-      build(n); offset = -spacing; tp.setAttribute("startOffset", offset + "px"); place();
+      build(n); offset = -spacing; moveWords(); place();
       if (!reduce) requestAnimationFrame(step);
     }
     function wrap() { if (offset <= -spacing) offset += spacing; if (offset > 0) offset -= spacing; }
@@ -92,10 +99,10 @@
       if (!vis) { last = now; requestAnimationFrame(step); return; }   /* off screen: idle */
       var dt = Math.min(0.05, (now - last) / 1000) * 60; last = now;
       if (!drag) offset += dir * speed * dt;
-      wrap(); tp.setAttribute("startOffset", offset + "px"); place(); requestAnimationFrame(step);
+      wrap(); moveWords(); place(); requestAnimationFrame(step);
     }
     root.addEventListener("pointerdown", function (e) { drag = true; lastX = e.clientX; vel = 0; root.setPointerCapture(e.pointerId); });
-    root.addEventListener("pointermove", function (e) { if (!drag) return; var dx = e.clientX - lastX; lastX = e.clientX; offset += dx * (VW / root.clientWidth); vel = dx; wrap(); tp.setAttribute("startOffset", offset + "px"); place(); });
+    root.addEventListener("pointermove", function (e) { if (!drag) return; var dx = e.clientX - lastX; lastX = e.clientX; offset += dx * (VW / root.clientWidth); vel = dx; wrap(); moveWords(); place(); });
     function end() { if (!drag) return; drag = false; if (Math.abs(vel) > 0.5) dir = vel > 0 ? 1 : -1; }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(setup); else setup();
