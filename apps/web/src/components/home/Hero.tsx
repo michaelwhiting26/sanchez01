@@ -16,6 +16,7 @@ export function Hero() {
           ))}
         </svg>
       </div>
+      <div className="wm-hero__glass" aria-hidden="true" />
     </section>
   );
 }

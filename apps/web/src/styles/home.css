@@ -756,3 +756,17 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .orbit-submit:disabled { cursor: default; }
 .orbit-submit:disabled:not(.is-done) { filter: saturate(.5) brightness(.85); }
 .orbit-submit.is-done { background: #f3eadc; border-color: #f3eadc; }
+
+/* Diamond-glass film over the hero: a permanent, crisp pane. Hard-edged facet bands catch light, a hairline bevel runs round the edge, and one slow sheen crosses it.
+   Sits above everything in the hero, never blocks touch or the cursor field, and adds no blur so the artwork stays sharp. */
+.wm-hero { isolation: isolate; }
+.wm-hero__glass { position: absolute; inset: 0; z-index: 30; pointer-events: none; overflow: hidden;
+  background:
+    linear-gradient(115deg, rgb(255 255 255 / .09) 0%, rgb(255 255 255 / 0) 22%, rgb(255 255 255 / 0) 60%, rgb(190 215 255 / .05) 100%),
+    linear-gradient(62deg, transparent 0 34%, rgb(255 255 255 / .045) 34% 34.4%, transparent 34.4% 52%, rgb(255 255 255 / .06) 52% 52.3%, transparent 52.3% 71%, rgb(255 255 255 / .04) 71% 71.5%, transparent 71.5%),
+    linear-gradient(-28deg, transparent 0 18%, rgb(255 255 255 / .035) 18% 18.3%, transparent 18.3% 44%, rgb(255 255 255 / .05) 44% 44.25%, transparent 44.25% 83%, rgb(255 255 255 / .035) 83% 83.4%, transparent 83.4%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), inset 1px 0 0 rgb(255 255 255 / .22), inset 0 -1px 0 rgb(255 255 255 / .1), inset -1px 0 0 rgb(255 255 255 / .08), inset 0 0 60px rgb(190 215 255 / .05); }
+.wm-hero__glass::before { content: ""; position: absolute; inset: -20% -60%; background: linear-gradient(105deg, transparent 42%, rgb(255 255 255 / .05) 46%, rgb(255 255 255 / .2) 49.4%, rgb(255 255 255 / .05) 52.6%, transparent 57%); transform: translateX(-70%); animation: wm-glass-sheen 11s cubic-bezier(.45, 0, .2, 1) 2.4s infinite; mix-blend-mode: screen; }
+.wm-hero__glass::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 70% at 12% 0%, rgb(255 255 255 / .1), transparent 55%), radial-gradient(90% 60% at 100% 100%, rgb(200 220 255 / .06), transparent 60%); }
+@keyframes wm-glass-sheen { 0% { transform: translateX(-70%); } 38%, 100% { transform: translateX(70%); } }
+@media (prefers-reduced-motion: reduce) { .wm-hero__glass::before { animation: none; transform: translateX(-8%); } }
