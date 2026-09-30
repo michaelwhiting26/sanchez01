@@ -10,7 +10,7 @@ import type { PriceResult } from "@/lib/configurator/pricing";
 import { clearSaved, decodeShare, encodeShare, loadSaved, store } from "@/lib/configurator/save";
 import { activeSteps, BOOLEAN_KEYS, GROUPS, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
 import { LOGO_SRC } from "@/lib/site";
-import "../../styles/cockpit.css";
+import "../../styles/cockpit.v3.css";
 
 const colourName = (id: string): string => COLOURS.find((c) => c.id === id)?.name ?? id;
 const pad = (n: number): string => String(n).padStart(2, "0");
@@ -142,17 +142,12 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     if (a.key === "makersMark" || a.key === "anchorRing") setCfg((c) => ({ ...c, [a.key]: value === "yes" }));
     else if (a.key === "sizeFt") set("sizeFt", Number(value) as 3 | 4 | 5);
     else setCfg((c) => ({ ...c, [a.key]: value }));
-    mark(def.id, "answered");
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => advance(def.id), 420); // a beat to see the change, then on to the next question
+    // selecting only selects (the pill gets its border); you move on by pressing Next
   };
   const pickColour = (id: BagConfig["bodyColour"]): void => {
     const a = def.answer;
     if (a.kind !== "swatches") return;
-    set(a.key, id);
-    mark(def.id, "answered");
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => advance(def.id), 420);
+    set(a.key, id); // selecting only selects; you move on by pressing Next
   };
   const done = (): void => {
     mark(def.id, "answered");

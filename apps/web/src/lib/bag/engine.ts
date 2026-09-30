@@ -33,6 +33,26 @@ export interface BagEngineOptions {
 /** The parts the camera can fly to. */
 export type FocusPart = "whole" | "body" | "top" | "bottom" | "patch" | "hardware";
 
+/** What the builder has chosen, in the terms the 3D bag understands. Everything here changes what you see. */
+export interface BuildOptions {
+  plain: boolean;
+  sizeFt: 3 | 4 | 5;
+  hardware: "black" | "silver";
+  hanging: "chain-4pt" | "heavy-swivel" | "strap";
+  stitching: "tonal" | "contrast" | "accent";
+  material: "vinyl" | "leather" | "canvas";
+  layout: "single" | "split-vertical" | "bands" | "three-panel";
+  bodyHex: number;
+  accentHex: number;
+  bottomHex: number;
+  logoSize: "S" | "M" | "L" | "full";
+  makersMark: boolean;
+  anchorRing: boolean;
+  piping: "none" | "contrast";
+  text: string;
+  font: "classic" | "block" | "script" | "stencil";
+}
+
 const isBody = (n: string): boolean => /^(body|crown)/.test(n);
 
 type AnyMesh = THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
@@ -81,6 +101,23 @@ export class BagEngine {
   /** When set (by the builder), this look is applied instead of the current product's, so any colours or artwork can be previewed. */
   private override: BagProduct | null = null;
   private readonly partBoxes = new Map<FocusPart, THREE.Box3>();
+  private opts: BuildOptions | null = null;
+  private metalMat: THREE.MeshStandardMaterial | null = null;
+  private stitchMat: THREE.MeshStandardMaterial | null = null;
+  private chain: AnyMesh[] = [];
+  private hook: AnyMesh[] = [];
+  private swivel: AnyMesh[] = [];
+  private patchMeshes: AnyMesh[] = [];
+  private readonly baseScale = new WeakMap<THREE.Object3D, THREE.Vector3>();
+  private modelFt = 4;
+  private loadingFt = 0;
+  private modelTop = HOOK;
+  private anchor: THREE.Mesh | null = null;
+  private readonly pipes: THREE.Mesh[] = [];
+  private bandTopBox: THREE.Box3 | null = null;
+  private readonly layoutTex = new Map<string, THREE.CanvasTexture>();
+  private bandImg: HTMLImageElement | null = null;
+  private bandTextKey = "";
   private focusPart: FocusPart = "whole";
   /** Half the height of the frame, in scene units: smaller is closer. The home page shows the bag with room below it; the builder frames it tight. */
   private half = 1.42;
@@ -133,6 +170,7 @@ export class BagEngine {
   start(): void {
     const { signal } = this.abort;
     new GLTFLoader().load("/assets/bag3d/bag_4ft.glb", (g) => {
+      this.modelFt = 4;
       if (signal.aborted) return;
       this.attachModel(g.scene);
       this.show(0, true);
@@ -204,7 +242,22 @@ export class BagEngine {
   }
 
   private attachModel(model: THREE.Object3D): void {
-    model.position.y = -HOOK;
+    if (this.model) {
+      this.spinGroup.remove(this.model); // a new size: take the old bag away
+      this.partBoxes.clear();
+      this.bodyMeshes = [];
+      this.chain = [];
+      this.hook = [];
+      this.swivel = [];
+      this.patchMeshes = [];
+      this.anchor = null;
+      this.pipes.length = 0;
+    }
+    model.updateWorldMatrix(true, true);
+    const top = new THREE.Box3().setFromObject(model).max.y;
+    this.modelTop = top > 0.5 ? top : HOOK;
+    this.pivot.position.y = this.modelTop; // the hook stays at the pivot however long the bag is
+    model.position.y = -this.modelTop;
     const patch = new THREE.MeshPhysicalMaterial({ map: this.image("/assets/bag3d/patch.png"), roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     const strap = new THREE.MeshStandardMaterial({ color: 0xd8d8d2, roughness: 0.7 });
     const stitch = new THREE.MeshStandardMaterial({ color: 0xe4e4e0, roughness: 0.8 });
@@ -212,11 +265,18 @@ export class BagEngine {
     const band = new THREE.MeshPhysicalMaterial({ color: 0xf3eadc, roughness: 0.45, clearcoat: 0.3 });
     const pick = (n: string): THREE.Material =>
       isBody(n) ? this.bodyMaterial : /^band_top/.test(n) ? this.bandTop : /^band_bottom/.test(n) ? this.bandBottom : /^band/.test(n) ? band : /^strap/.test(n) ? strap : /^stitch/.test(n) ? stitch : /^metal/.test(n) ? metal : /^patch/.test(n) ? patch : this.bodyMaterial;
+    this.metalMat = metal;
+    this.stitchMat = stitch;
     model.traverse((o) => {
       const m = asMesh(o);
       if (m) {
         m.material = pick(m.name);
+        this.baseScale.set(m, m.scale.clone());
         if (isBody(m.name)) this.bodyMeshes.push(m);
+        if (/^metal_link/.test(m.name)) this.chain.push(m);
+        else if (/^metal_hook/.test(m.name)) this.hook.push(m);
+        else if (/^metal_(swivel|disc)/.test(m.name)) this.swivel.push(m);
+        else if (/^patch/.test(m.name)) this.patchMeshes.push(m);
       }
     });
     this.spinGroup.add(model);
@@ -232,7 +292,14 @@ export class BagEngine {
       if (acc) acc.union(b);
       else this.partBoxes.set(part, b);
     });
+    const bt = new THREE.Box3();
+    model.traverse((o) => {
+      const m = asMesh(o);
+      if (m && /^band_top/.test(m.name)) bt.expandByObject(m);
+    });
+    this.bandTopBox = bt.isEmpty() ? null : bt;
     this.aspect = this.cylindricalUV(model);
+    this.applyOptions();
   }
 
   /** The exported body has collapsed UVs, so map it cylindrically: u wraps once round the bag, v runs bottom to top (u = 0.5 faces the camera). */
@@ -340,6 +407,200 @@ export class BagEngine {
     this.onProduct(index);
   }
 
+  // ------------------------------------------------------------ build options
+
+  /** Apply everything the builder has chosen. Safe to call before the model has loaded: it is applied as soon as it is. */
+  build(o: BuildOptions): void {
+    this.opts = o;
+    if (o.sizeFt !== this.modelFt && this.loadingFt !== o.sizeFt) {
+      const ft = o.sizeFt;
+      this.loadingFt = ft;
+      new GLTFLoader().load(`/assets/bag3d/bag_${ft}ft.glb`, (g) => {
+        if (this.abort.signal.aborted) return;
+        this.loadingFt = 0;
+        this.modelFt = ft;
+        this.attachModel(g.scene);
+        this.apply(this.current);
+        this.applyOptions();
+        this.fit();
+      });
+    }
+    this.applyOptions();
+  }
+
+  private applyOptions(): void {
+    const o = this.opts;
+    if (!o || !this.model) return;
+    const silver = o.hardware === "silver";
+    if (this.metalMat) {
+      this.metalMat.color.setHex(silver ? 0xd6d9df : 0x1b1b1d);
+      this.metalMat.roughness = silver ? 0.16 : 0.28;
+      this.metalMat.needsUpdate = true;
+    }
+    const chained = o.hanging !== "strap";
+    for (const m of [...this.chain, ...this.hook]) m.visible = chained;
+    for (const m of this.swivel) {
+      m.visible = chained;
+      const base = this.baseScale.get(m);
+      if (base) m.scale.copy(base).multiplyScalar(o.hanging === "heavy-swivel" ? 1.75 : 1);
+    }
+    if (this.stitchMat) {
+      const body = new THREE.Color(o.bodyHex);
+      const tonal = body.clone().offsetHSL(0, 0, body.getHSL({ h: 0, s: 0, l: 0 }).l > 0.55 ? -0.16 : 0.16);
+      this.stitchMat.color.setHex(o.stitching === "tonal" ? tonal.getHex() : o.stitching === "contrast" ? 0xf3eadc : o.accentHex);
+    }
+    const scale = { S: 0.72, M: 1, L: 1.4, full: 1.8 }[o.logoSize];
+    for (const m of this.patchMeshes) {
+      m.visible = o.makersMark;
+      const base = this.baseScale.get(m);
+      if (base) m.scale.copy(base).multiplyScalar(scale);
+    }
+    this.applyBody();
+    this.applyAnchor(o.anchorRing);
+    this.applyPiping(o.piping === "contrast", o.accentHex);
+    this.applyBandText();
+  }
+
+  /** Material feel, and the panel layout, on a plain bag (the artwork bags carry their own look). */
+  private applyBody(): void {
+    const o = this.opts;
+    const m = this.bodyMaterial;
+    if (!o || !o.plain) return;
+    if (o.layout !== "single") {
+      m.map = this.layoutTexture(o.layout, o.bodyHex, o.accentHex);
+      m.color.setHex(0xffffff);
+    }
+    if (o.material === "leather") {
+      m.roughness = 0.58;
+      m.clearcoat = 0.05;
+      m.clearcoatRoughness = 0.55;
+      m.sheen = 0;
+    } else if (o.material === "canvas") {
+      m.roughness = 0.96;
+      m.clearcoat = 0;
+      m.sheen = 0.9;
+      m.sheenRoughness = 0.5;
+      m.sheenColor.setHex(0xffffff);
+    } else {
+      m.roughness = 0.5;
+      m.clearcoat = 0.18;
+      m.clearcoatRoughness = 0.3;
+      m.sheen = 0;
+    }
+    m.needsUpdate = true;
+  }
+
+  private layoutTexture(layout: BuildOptions["layout"], bodyHex: number, accentHex: number): THREE.CanvasTexture {
+    const key = `${layout}:${bodyHex}:${accentHex}`;
+    const hit = this.layoutTex.get(key);
+    if (hit) return hit;
+    const W = 1024;
+    const H = 1024;
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const g = c.getContext("2d");
+    const css = (h: number): string => `#${h.toString(16).padStart(6, "0")}`;
+    if (g) {
+      g.fillStyle = css(bodyHex);
+      g.fillRect(0, 0, W, H);
+      g.fillStyle = css(accentHex);
+      const seams: Array<[number, number, number, number]> = [];
+      if (layout === "split-vertical") {
+        g.fillRect(W / 2, 0, W / 2, H);
+        seams.push([W / 2, 0, 3, H], [0, 0, 3, H]);
+      } else if (layout === "three-panel") {
+        g.fillRect(W / 3, 0, W / 3, H);
+        seams.push([W / 3, 0, 3, H], [(2 * W) / 3, 0, 3, H], [0, 0, 3, H]);
+      } else if (layout === "bands") {
+        for (const [y0, y1] of [[0.3, 0.42], [0.58, 0.7]] as const) {
+          g.fillRect(0, H * y0, W, H * (y1 - y0));
+          seams.push([0, H * y0, W, 3], [0, H * y1, W, 3]);
+        }
+      }
+      g.fillStyle = "rgba(0,0,0,0.28)"; // a fine seam where two panels meet
+      for (const [x, y, w, h] of seams) g.fillRect(x, y, w, h);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = this.anisotropy;
+    t.flipY = false;
+    this.layoutTex.set(key, t);
+    return t;
+  }
+
+  private applyAnchor(on: boolean): void {
+    if (!this.model) return;
+    if (!on) {
+      if (this.anchor) this.anchor.visible = false;
+      return;
+    }
+    if (!this.anchor) {
+      this.anchor = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.012, 14, 36), this.metalMat ?? new THREE.MeshStandardMaterial({ color: 0x1b1b1d, metalness: 1, roughness: 0.28 }));
+      const bottom = this.partBoxes.get("bottom");
+      this.anchor.position.set(0, (bottom?.min.y ?? 0) - 0.045, 0);
+      this.model.add(this.anchor);
+    }
+    this.anchor.visible = true;
+  }
+
+  private applyPiping(on: boolean, hex: number): void {
+    if (!this.model || !this.bandTopBox) return;
+    if (!this.pipes.length && on) {
+      const b = this.bandTopBox;
+      const r = (b.max.x - b.min.x) / 2 + 0.004;
+      for (const y of [b.min.y, b.max.y]) {
+        const p = new THREE.Mesh(new THREE.TorusGeometry(r, 0.0065, 8, 64), new THREE.MeshStandardMaterial({ color: hex, roughness: 0.5 }));
+        p.rotation.x = Math.PI / 2;
+        p.position.set(0, y, 0);
+        this.model.add(p);
+        this.pipes.push(p);
+      }
+    }
+    for (const p of this.pipes) {
+      p.visible = on;
+      (p.material as THREE.MeshStandardMaterial).color.setHex(hex);
+    }
+  }
+
+  /** The visitor's own words, printed round the bottom band in the chosen lettering. */
+  private applyBandText(): void {
+    const o = this.opts;
+    if (!o) return;
+    const text = o.text.trim().toUpperCase();
+    const key = `${text}|${o.font}`;
+    if (key === this.bandTextKey) return;
+    this.bandTextKey = key;
+    if (!text) {
+      this.bandBottom.map = this.image("/assets/bag3d/band_bottom_plain.png");
+      this.bandBottom.needsUpdate = true;
+      return;
+    }
+    const draw = (): void => {
+      const c = document.createElement("canvas");
+      c.width = 2048;
+      c.height = 256;
+      const g = c.getContext("2d");
+      if (!g) return;
+      g.fillStyle = "#ffffff";
+      g.fillRect(0, 0, c.width, c.height);
+      const face = { classic: "700 96px Georgia, 'Times New Roman', serif", block: "900 100px Impact, 'Arial Black', sans-serif", script: "italic 700 110px 'Brush Script MT', 'Snell Roundhand', cursive", stencil: "800 96px 'Courier New', monospace" }[o.font];
+      g.font = face;
+      g.fillStyle = "#1a1a1a";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      for (const x of [c.width * 0.125, c.width * 0.375, c.width * 0.625, c.width * 0.875]) g.fillText(text, x, c.height / 2, c.width * 0.22); // repeated round the bag so it reads from any side
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = this.anisotropy;
+      t.flipY = false;
+      this.bandBottom.map = t;
+      this.bandBottom.needsUpdate = true;
+    };
+    draw();
+  }
+
   // ----------------------------------------------------------------- camera
 
   /** Frame the whole bag tighter or looser (the builder wants it big). */
@@ -389,10 +650,10 @@ export class BagEngine {
     this.cam.aspect = w / h;
     this.cam.updateProjectionMatrix();
     const f = THREE.MathUtils.degToRad(this.cam.fov);
-    const half = this.half;
+    const half = this.half < 1.3 ? 2.128 / 2 + 0.12 : this.half; // tight framing is fixed to the tallest (5 ft) bag, so a shorter bag really looks shorter
     const d = Math.max(half / Math.tan(f / 2), 0.55 / (Math.tan(f / 2) * this.cam.aspect));
     this.home.pos.set(0.35, 0.9, d);
-    this.home.look.set(0, 0.66 + (1.42 - half) * 0.33, 0); // looks a little low (and lower still when framed tight, so the top of the bag is not cropped), so the product sits high and the name has room below it
+    this.home.look.set(0, this.half < 1.3 ? 2.128 / 2 : 0.66 + (1.42 - half) * 0.33, 0); // looks a little low (and lower still when framed tight, so the top of the bag is not cropped), so the product sits high and the name has room below it
     this.aim(true);
   }
 

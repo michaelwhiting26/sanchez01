@@ -60,3 +60,10 @@
   .ck__sheet { border: 1px solid rgb(243 234 220 / .14); }
 }
 @media (prefers-reduced-motion: reduce) { .ck__track li[aria-current="step"] button::before { box-shadow: none; } }
+
+/* the bag's own container fills the stage (these used to live in the inner-page stylesheet, which the cockpit does not load) */
+.ck__stage .bd__bag, .ck__stage .bd__bag-host { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; }
+.ck__stage canvas { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
+.bd__bag-still { position: absolute; inset: 0; margin: auto; block-size: 88%; inline-size: auto; }
+
+.bd__size{position:absolute;right:16px;top:50%;margin:0;font:600 11px/1 var(--font-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:#c9a45c;writing-mode:vertical-rl;pointer-events:none}
