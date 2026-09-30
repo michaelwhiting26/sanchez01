@@ -94,3 +94,6 @@ Stop only for credentials or business decisions. In that case add them to `.env.
 - pnpm isn't installed globally: use `npx pnpm@9` or npm workspaces.
 - Node 24 is available.
 - Never commit secrets or the large media. Commit messages end with the co-author line from the session instructions.
+
+## Locked decisions
+Read `docs/LOCKED-DECISIONS.md` before changing any home, build-flow or product-page behaviour. Do not undo a line there without the owner saying so; update the line when the owner changes their mind.
