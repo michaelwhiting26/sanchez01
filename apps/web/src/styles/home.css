@@ -72,10 +72,12 @@
 @media (min-width: 640px) { .lgc .sm\:text-\[17px\] { font-size: 17px; } .lgc .sm\:text-\[15px\] { font-size: 15px; } }
 
 /* ---- Big SANCHEZ marquee ---- */
-.sz-marquee { overflow: hidden; background: #090706; padding-block: clamp(6px, 1.5vh, 16px) clamp(8px, 2vh, 20px); }
+.sz-marquee { display: grid; gap: clamp(2px, .7vh, 10px); overflow: hidden; background: #090706; padding-block: clamp(6px, 1.5vh, 16px) clamp(8px, 2vh, 20px); }
 .sz-marquee__track { display: flex; inline-size: max-content; white-space: nowrap; will-change: transform; }
 .sz-marquee__track span { display: block; margin-inline-end: 2.5rem; font: 900 clamp(2.5rem, 1rem + 8vw, 8rem)/.74 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: -.02em; color: #2b2622; text-transform: uppercase; }
 .sz-marquee__track span:nth-child(odd) { color: transparent; -webkit-text-stroke: 1px rgb(243 234 220 / .28); }
+.sz-marquee__track--alt span:nth-child(odd) { color: #2b2622; -webkit-text-stroke: 0; }
+.sz-marquee__track--alt span:nth-child(even) { color: transparent; -webkit-text-stroke: 1px rgb(243 234 220 / .28); }
 
 /* ---- Black wordmark hero (top of the home page) ---- */
 .wm-hero { display: grid; place-items: center; min-block-size: calc(100svh - var(--header-h, 72px)); padding: clamp(24px, 6vw, 96px) var(--gutter, 1rem); background: #000; overflow: hidden; }
