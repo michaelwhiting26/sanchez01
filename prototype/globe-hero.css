@@ -401,3 +401,11 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 /* the heading sits fully on the card: the card's top edge is 11.1% down the surface artwork (128/1152), so start below it */
 .rise__panel { padding-block-start: calc(max(100vh, 720px) * 0.111 + clamp(28px, 4vw, 64px)); }
 .rise__statement { margin-block-start: 0; }
+
+/* deterministic: the artwork keeps its own 2048:1152 shape, so its top edge (128/1152) is always 6.25vw down; the heading starts well below that */
+.rise__surface { block-size: auto; aspect-ratio: 2048 / 1152; }
+.rise__panel { padding-block-start: calc(6.25vw + clamp(36px, 4.5vw, 72px)); }
+
+/* Mona Sans (GitHub, SIL OFL) for the button, exactly as on mr-2: heavy, slightly condensed, no tracking */
+@font-face { font-family: "Mona Sans"; src: url("assets/fonts/MonaSans-Variable.woff2") format("woff2"); font-weight: 200 900; font-stretch: 75% 125%; font-style: normal; font-display: swap; }
+.enq__text { font-family: "Mona Sans", var(--font-display), Arial, sans-serif; font-weight: 800; font-variation-settings: "wdth" 86; font-size: 1rem; line-height: 1; letter-spacing: 0; text-transform: uppercase; }
