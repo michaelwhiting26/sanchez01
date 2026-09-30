@@ -13,3 +13,9 @@ Rules: spray density/motion/hand, coverage 0.84, FLAG_PALETTE, WAVES, tan bucket
 Assets: runner + bag = Blender pre-rendered sprite atlases (runner 24f/320px, bag 36f turntable) drawn on the existing canvas; water/bubbles/leakage inside Canvas2D engine (leakage drawn AFTER tan waves, alpha<=0.25). "Custom" = SVG dashoffset driven by runner B nozzle x. No GitHub repo needed.
 Timeline ms: hold 0-600 | cloudFade 600-2100 | bagsIn 1500-3800 | settle 3400-4000 | runnersEnter 4000-4700 | spray 4700-9900 | runOff 9900-10900 | B back 11300-12300 | Custom 12300-14100 | B off 14100-15000 | bubbles from 5200 | corner flow from 9900.
 Steps: 1 timeline.ts+tests (?heroT freeze) 2 reorder clouds [CP1] 3 runner atlas (fix nozzle: hand.head + normalized(hand.head - forearm.head)*0.18, world heads only) 4 bag turntable 5 sprites.ts [CP2] 6 bag settle 7 Custom callback 8 water.ts + engine.measure() [CP3] 9 fallbacks/perf [CP4]. Repo root IS git (sanchez01); commit at each checkpoint.
+
+## Added 30 Sep 2026: hero -> page 2 seam
+7. Scrolling past the hero (after the "Custom" Sanchez signature + diamond): take that part of the screen and let the tan wave dots flow LEFT so they meet the horizon of the golden arch, join the left edge of the screen, then flow continuously DOWN, so there is no visible break between the hero and the second page. (Extends the hero field's flow/orbit; the tan waves themselves keep their look.)
+
+## Added 30 Sep 2026: DNA spine (after the hero intro)
+8. Site as one 3D space built around a DNA helix on the page's centre axis, start to finish; existing elements attach to its turn. Candidates: Lenis (smooth scroll, ~/Code/libraries/lenis) + GSAP ScrollTrigger + three.js. Proof of concept first (2 sections), then attach the rest.
