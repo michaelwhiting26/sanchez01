@@ -540,3 +540,19 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 /* MR-2 structure: the panel is a fixed layer riding --rise; the section itself is only the scroll length beneath it */
 .rise.is-pinned .rise__stage { position: static; block-size: auto; overflow: visible; }
 .rise.is-pinned .rise__card { position: fixed; inset-inline: 0; inset-block-start: 0; z-index: 30; min-block-size: 100vh; block-size: auto; transform: translate3d(0, calc((1 - var(--rise, 0)) * 100vh - var(--more, 0) * var(--overflow, 0px)), 0); }
+
+/* load sequence: "Custom" is drawn in by the returning runner (the engine sets clip-path), so its own draw-in animation is off */
+[data-hero-rings].is-intro .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; }
+[data-hero-rings].is-intro .sig { clip-path: inset(0 100% 0 0); }
+
+/* Gallery backdrop: fully opaque (nothing of the hero field shows through) with a film tape top and bottom, drawn in the tape's amber and sprocket holes */
+.lgc-track .lgc-section { background: #090706; overflow: hidden; }
+.lgc-track .lgc-section::before, .lgc-track .lgc-section::after {
+  content: ""; position: absolute; inset-inline: 0; block-size: 34px; z-index: 3; pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='34'%3E%3Crect x='11' y='9' width='22' height='16' rx='4' fill='%23090706'/%3E%3Crect x='11' y='9' width='22' height='16' rx='4' fill='none' stroke='%23e8a85a' stroke-opacity='.35'/%3E%3C/svg%3E") repeat-x center / 44px 34px,
+    linear-gradient(180deg, #8a4a1a 0%, #b5641f 45%, #7a3f16 100%);
+  box-shadow: 0 0 24px rgb(0 0 0 / .6);
+}
+.lgc-track .lgc-section::before { inset-block-start: 0; }
+.lgc-track .lgc-section::after { inset-block-end: 0; }

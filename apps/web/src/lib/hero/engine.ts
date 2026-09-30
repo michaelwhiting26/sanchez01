@@ -20,11 +20,13 @@ import {
   RIDGES,
   RING_MAP,
   SPRAY,
+  INTRO,
   TAN,
   WAVES,
   type Rgb,
 } from "./config";
 import { FlagLookup, loadFlagIndices } from "./flag";
+import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
 import { createSeededNoise, fbm3, hashSeed, type Noise3 } from "./noise";
 import { createWaveTables, fillWaveTables, hash1 } from "./waves";
 
@@ -41,6 +43,8 @@ export interface HeroOverrides {
   orbit?: number | undefined;
   /** Add to the orbit spin, in units of 12 cells of flow. */
   spin?: number | undefined;
+  /** Freeze the load sequence at this many ms from its start (screenshots and tests). */
+  introMs?: number | undefined;
 }
 
 interface Ripple {
@@ -117,6 +121,10 @@ export class HeroEngine {
   private warp = new Float32Array(0);
   private lgcTrack: Element | null = null;
   private sprayStart = 0;
+  private intro: IntroSprites | null = null;
+  private ti = 0;
+  private sigEl: HTMLElement | null = null;
+  private introGeom: IntroGeom | null = null;
   private cursor = { x: 0, y: 0, active: false };
   private ripples: Ripple[] = [];
   private moving = false;
@@ -167,6 +175,16 @@ export class HeroEngine {
     this.resize(true);
     this.canvas.classList.add("is-ready");
     this.ready = true;
+    if (!this.reduce) {
+      this.sigEl = this.hero.querySelector<HTMLElement>(".sig");
+      this.hero.classList.add("is-intro"); // hides "Custom" until the runner sprays it
+      const sprites = new IntroSprites();
+      void sprites.load(segmentLetters(this.mapLetters, this.mw, this.mh)).then((ok) => {
+        if (this.abort.signal.aborted) return;
+        if (ok) this.intro = sprites;
+        else this.hero.classList.remove("is-intro"); // assets missing: show the plain hero
+      });
+    }
     if (this.reduce) this.draw(0);
     else this.raf = requestAnimationFrame(this.loop);
   }
@@ -176,6 +194,8 @@ export class HeroEngine {
     cancelAnimationFrame(this.raf);
     window.clearTimeout(this.resizeTimer);
     this.canvas.classList.remove("is-ready");
+    this.hero.classList.remove("is-intro");
+    if (this.sigEl) this.sigEl.style.clipPath = "";
   }
 
   /** Reshape the ridges for a name: the same name always gives the same print. */
@@ -464,11 +484,14 @@ export class HeroEngine {
     this.counts.fill(0);
 
     // ---- spray timeline
-    const tp = t - (this.sprayStart || t) - SPRAY.leadInMs;
+    const ti = reduce ? 1e9 : (this.overrides.introMs ?? t - (this.sprayStart || t));
+    this.ti = ti;
+    const tp = ti - INTRO.sprayStartMs;
     let sp = reduce ? 1 : Math.min(1, Math.max(0, tp / SPRAY.durationMs));
     const sprayOverride = this.overrides.spray;
     if (sprayOverride !== undefined) sp = sprayOverride;
-    let cf = reduce ? 0 : sp >= 1 && tp >= SPRAY.durationMs ? Math.max(0, 1 - (tp - SPRAY.durationMs) / SPRAY.cloudFadeMs) : 1; // clouds show during the first pass only
+    // clouds hold at load, melt away first, and only then does the spray start
+    let cf = reduce ? 0 : 1 - clamp01((ti - INTRO.cloudHoldMs) / INTRO.cloudFadeMs);
     if (sprayOverride !== undefined) cf = 1 - clamp01((sprayOverride - 0.92) / 0.08);
     const sweeping = !reduce && sp > 0.005 && sp < 1;
     const tn = Math.max(0, tp) / 1000;
@@ -500,7 +523,7 @@ export class HeroEngine {
     const span = Math.max(1, sx1 - sx0);
 
     // ---- wave sets (one per quarter) and the smooth noise flow
-    const waveSeconds = (t - (this.sprayStart || t)) / 1000 - (SPRAY.durationMs / 1000) * 0.7 - 0.7; // the first set starts just after the spray intro, as in the prototype
+    const waveSeconds = tp / 1000 - (SPRAY.durationMs / 1000) * 0.7; // the first set starts just after the spray intro, as in the prototype
     fillWaveTables(this.waveTables, waveSeconds, reduce);
     const wcx = (sx0 + sx1) / 2;
     const wcy = mh / 2;
@@ -715,6 +738,26 @@ export class HeroEngine {
       }
     }
     this.paint(sp, cf, sweeping, { hx, hy, hI, hR, FF, SLOPE, PSMAX, span, sy0 });
+    this.drawIntro(ti, sy0, PSMAX, SLOPE);
+  }
+
+  /** The bags and runners on top of the field, and the reveal of "Custom" that follows the returning runner. */
+  private drawIntro(ti: number, sy0: number, psmax: number, slope: number): void {
+    const intro = this.intro;
+    if (!intro || this.reduce) return;
+    let sig: IntroGeom["sig"] = null;
+    const el = this.sigEl;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      sig = { left: r.left * this.dpr, right: r.right * this.dpr, y: (r.top + r.height * 0.55) * this.dpr };
+    }
+    const g: IntroGeom = { cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
+    this.introGeom = g;
+    if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 200) intro.draw(this.ctx, ti, g);
+    if (el) {
+      const hidden = intro.signatureHidden(ti, g);
+      el.style.clipPath = `inset(0 ${(hidden * 100).toFixed(2)}% 0 0)`; // inline beats the stylesheet's hidden default
+    }
   }
 
   /** Draw every bucket in one pass, then the overspray mist. */

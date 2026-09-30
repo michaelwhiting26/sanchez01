@@ -58,8 +58,13 @@ mat = bpy.data.materials.new("silhouette")
 mat.use_nodes = True
 nt = mat.node_tree
 nt.nodes.clear()
-em = nt.nodes.new("ShaderNodeEmission"); em.inputs["Color"].default_value = (0, 0, 0, 1)
-out = nt.nodes.new("ShaderNodeOutputMaterial"); nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+lw = nt.nodes.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.5
+ramp = nt.nodes.new("ShaderNodeValToRGB")
+ramp.color_ramp.elements[0].position = 0.12; ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
+ramp.color_ramp.elements[1].position = 0.45; ramp.color_ramp.elements[1].color = (0.84, 0.71, 0.53, 1)   # thin tan rim so the silhouette reads on black
+em = nt.nodes.new("ShaderNodeEmission")
+out = nt.nodes.new("ShaderNodeOutputMaterial")
+nt.links.new(lw.outputs["Fresnel"], ramp.inputs["Fac"]); nt.links.new(ramp.outputs["Color"], em.inputs["Color"]); nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
 for o in bpy.data.objects:
     if o.type == "MESH":
         o.data.materials.clear(); o.data.materials.append(mat)

@@ -55,7 +55,7 @@ export function WorkshopGallery() {
           className="lgc"
           data-lgc=""
           data-lgc-nowheel=""
-          data-bg="transparent"
+          data-bg="#090706"
           data-panel="690"
           data-items={JSON.stringify(GALLERY_SLIDES)}
           ref={hostRef}

@@ -22,3 +22,6 @@ Steps: 1 timeline.ts+tests (?heroT freeze) 2 reorder clouds [CP1] 3 runner atlas
 
 ## Clarification 30 Sep 2026: items 7 + 8 are ONE system
 The hero->page-2 flow (left to the arch horizon, left edge, then down) is the front-on view of everything orbiting the DNA centre axis in 3D. Build the seam and the DNA spine together: extend the field's existing orbit (ORBIT.axis, shared flow P) from the gallery to the whole stretch, helix on the same centre line. Tan waves keep their look; only the path changes.
+
+## Change 30 Sep 2026 (user): ONE runner, not two
+A single character sprays the word, runs off right, then runs back for "Custom" and runs off again. (Supersedes "two silhouettes / both run off / one returns".)

@@ -69,6 +69,33 @@ export const SPRAY = {
   cloudFadeMs: 2500,
 } as const;
 
+/**
+ * The load sequence, in ms from the start of the engine. Cloud bank holds then melts; seven bag silhouettes spin in and settle into the letters;
+ * one runner arrives at the spray front and sprays the word (the SPRAY timeline below is unchanged, it just starts later), runs off right,
+ * then runs back left past "Custom", sprays it in, and runs off.
+ */
+export const INTRO = {
+  cloudHoldMs: 600,
+  cloudFadeMs: 1500,
+  bagsStartMs: 1500,
+  bagStaggerMs: 120,
+  bagDurMs: 1400,
+  settleStartMs: 3400,
+  settleMs: 600,
+  sprayStartMs: 4700,
+  runnerEnterMs: 900,
+  runOffMs: 1000,
+  returnStartMs: 11300,
+  returnArriveMs: 12300,
+  customPassMs: 1800,
+  returnExitMs: 1000,
+  /** Runner height as a share of the letter height, and the row (share of the letter height) it sprays at. */
+  runnerScale: 1.1,
+  /** The single runner sprays at this share of the letter height. */
+  row: 0.5,
+  assets: { runner: "/assets/runner/runner.webp", runnerMeta: "/assets/runner/meta.json", bag: "/assets/bag3d/bag_spin.webp", bagMeta: "/assets/bag3d/bag_spin.json" },
+} as const;
+
 export const WAVES = {
   count: 7,
   bins: 480,
