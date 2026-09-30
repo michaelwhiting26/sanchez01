@@ -12,8 +12,8 @@ const LINE_STITCH_CYCLES = 44.0;                    /* running-stitch dashes alo
 const LINE_FLOW_FREQUENCY = 3.0;                    /* pulses along the length of a wall */
 const CONFIG = {
   bg: 0x161311,
-  card: { w: 0.8, h: 1, radius: 0.045 },        /* hero is 4:5 */
-  camera: { fov: 35, heroHeightFraction: 0.47 },  /* the hero fills this much of the viewport height */
+  card: { w: 0.74, h: 1, radius: 0.045 },       /* a taller card than 4:5 */
+  camera: { fov: 35, heroHeightFraction: 0.64 },  /* the hero fills this much of the viewport height */
   segments: { x: 168, y: 48 },
   visible: 1.6,                                  /* |p| beyond this is not drawn: at most hero + two neighbours are legible */
   layout: {
@@ -35,7 +35,7 @@ const CONFIG = {
     haloHeight: 0.16, haloStrength: 1.0,
   },
   optics: { aberration: 0.0035, aberrationVelocity: 0.0016, rim: 0.9 },
-  portrait: { below: 1.0, heroWidth: 0.54, restGap: 0.74, yawRest: 1.3, wallLength: 0.4, textScale: 1.45 },   /* phones/tablets held upright: smaller hero, neighbours tucked in and turned further, a short bell that starts inside the screen */
+  portrait: { below: 1.0, heroWidth: 0.6, restGap: 0.74, yawRest: 1.3, wallLength: 0.4, heightGain: 2.0, textScale: 1.45 },   /* phones/tablets held upright: smaller hero, neighbours tucked in and turned further, a short bell that starts inside the screen */
   motion: { omega: 8, omegaReduced: 20, dragPerCard: 0.26, wheelPerCard: 420, maxVelocity: 9, flick: 0.2, snapDelayMs: 140 },
 };
 
@@ -74,7 +74,7 @@ function start(root) {
   const cxOf = (a) => W * L.restGap * Math.pow(Math.min(a, 1), L.nearPow) + Math.max(0, a - 1) * W * 0.9;
 
   /* ---- card textures: duotone picture, one side smeared into streaks, then the card's own quiet type ---- */
-  const TW = 1060, TH = 1325, K = TW / 530;
+  const TW = 1060, TH = Math.round(TW * H / W), K = TW / 530;                          /* texture matches the card's proportions */
   const loadImg = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
   async function paintCard(c) {
     const cv = document.createElement("canvas"); cv.width = TW; cv.height = TH; const g = cv.getContext("2d");
@@ -236,7 +236,8 @@ function start(root) {
     const dH = visH / 2 / Math.tan(f / 2), dW = (W / (portrait ? C.portrait.heroWidth : 0.62)) / 2 / (Math.tan(f / 2) * cam.aspect);
     cam.position.set(0, 0, Math.max(dH, dW)); cam.lookAt(0, 0, 0); dirty = true;
     const len = portrait ? C.portrait.wallLength : WL.length * Math.max(1, cam.aspect / 1.45);   /* wider screens need a longer bell so it still runs off both edges; upright screens a short one */
-    slides.forEach((sl) => { sl.u.uLen.value = sl.hu.uLen.value = len; });
+    const yf = portrait ? C.portrait.heightGain : WL.heightGain;                     /* upright: a gentler flare, so the walls do not slam into the section edges */
+    slides.forEach((sl) => { sl.u.uLen.value = sl.hu.uLen.value = len; sl.u.uYf.value = sl.hu.uYf.value = yf; });
   }
   const ro = new ResizeObserver(fit); ro.observe(stage); fit();
 

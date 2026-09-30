@@ -374,4 +374,8 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 .rise.is-pinned .rise__stage { position: sticky; top: 0; block-size: 100vh; overflow: hidden; }
 .rise.is-pinned .rise__card { transform: translate3d(0, calc((1 - var(--rise, 0)) * 100%), 0); will-change: transform; }
 
-@media (max-width: 760px) { .flare--embed { block-size: clamp(500px, 72svh, 680px); } }
+@media (max-width: 760px) {
+  /* phones: the section melts into the page above and below instead of ending in a hard box */
+  .flare--embed { block-size: clamp(500px, 72svh, 680px); -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 18%, #000 82%, transparent 100%); }
+  .flare--embed .flare__hint { bottom: 14%; }
+}
