@@ -19,22 +19,27 @@ SIZE = int(opt("--size", "512"))
 ARM = [float(v) for v in opt("--arm", "0,0,-100").split(",")]     # degrees, bone-local euler for RightArm
 FORE = [float(v) for v in opt("--fore", "0,0,0").split(",")]      # degrees, bone-local euler for RightForeArm
 TEST = "--test" in argv
-JESSE = "--jesse" in argv   # Jesse: a stockier build and short cropped hair, from the workshop footage
+JESSE = "--jesse" in argv
+MODEL = opt("--model", "xbot")   # xbot: the Mixamo mannequin; soldier: the Mixamo "Vanguard" (a real clothed human: jacket, trousers, boots, short hair)   # Jesse: a stockier build and short cropped hair, from the workshop footage
 os.makedirs(OUT, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "Xbot.glb"))
+bpy.ops.import_scene.gltf(filepath=os.path.join(os.path.dirname(os.path.abspath(__file__)), "Soldier.glb" if MODEL == "soldier" else "Xbot.glb"))
 scene = bpy.context.scene
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 for o in list(bpy.data.objects):
-    if o.name.startswith("Icosphere"):
+    if o.name.startswith("Icosphere") or o.name == "vanguard_visor":   # the helper sphere, and the soldier's goggles
         bpy.data.objects.remove(o, do_unlink=True)
 
-if JESSE:
+if JESSE and MODEL != "soldier":
     arm.scale = (arm.scale[0], arm.scale[1] * 1.16, arm.scale[2])   # broader through the chest and back (depth, side-on), same height
 
+if MODEL == "soldier":
+    from mathutils import Matrix
+    arm.matrix_world = Matrix.Rotation(math.pi, 4, "Z") @ arm.matrix_world   # the Vanguard faces -Y: turn him (about world up) to run screen-right like the mannequin
+
 # the stock run cycle
-act = bpy.data.actions["run"]
+act = bpy.data.actions["Run" if MODEL == "soldier" else "run"]
 arm.animation_data.action = act
 start, end = act.frame_range
 
@@ -88,7 +93,7 @@ def unit(kind):
     o = bpy.context.active_object; o.data.materials.append(mat); o.rotation_mode = "QUATERNION"
     for p in o.data.polygons: p.use_smooth = True
     return o
-if JESSE:
+if JESSE and MODEL != "soldier":
     # Jesse, from the Instagram footage: short dark cropped hair with a fade, a real profile (nose, jaw), a thick neck, a stocky build, dark hoodie
     for name, kind in [("hair", "sphere"), ("nose", "cone"), ("chin", "sphere"), ("neck", "cyl"), ("hood", "sphere"), ("torso", "sphere"), ("hips", "sphere"),
                        ("uaR", "cyl"), ("faR", "cyl"), ("uaL", "cyl"), ("faL", "cyl")]:
@@ -98,7 +103,7 @@ def limb(o, p, q, r):
     d = q - p; L = d.length or 1e-4
     o.location = (p + q) / 2; o.scale = (r, r, L); o.rotation_quaternion = d.normalized().to_track_quat("Z", "Y")
 def place_jesse():
-    if not JESSE: return
+    if not JESSE or MODEL == "soldier": return
     h = pb("Head")
     top = arm.matrix_world @ (TOP.head if TOP else HEAD.tail)
     up = (top - h).normalized() if (top - h).length > 1e-4 else Vector((0, 0, 1))
