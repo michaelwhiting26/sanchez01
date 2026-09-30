@@ -66,7 +66,7 @@ export const SPRAY = {
   paintAlpha: 0.72,
   dimCoat: 0.55,
   /** The clouds melt away over this long once the first pass has finished. */
-  cloudFadeMs: 2500,
+  cloudFadeMs: 1300,
   /**
    * Paint stays in the lettering: over the outline and outside it only in tiny places.
    * `outlineCoat` is the share of outline dots that get a second coat (was 0.5+), `haloReach` how far past the outline stray paint goes (cells), `haloShare` how likely.
@@ -82,22 +82,24 @@ export const SPRAY = {
  * then runs back left past "Custom", sprays it in, and runs off.
  */
 export const INTRO = {
-  cloudHoldMs: 600,
+  cloudHoldMs: 300,
   cloudFadeMs: 1500,
-  bagsStartMs: 1500,
-  bagStaggerMs: 120,
-  bagDurMs: 1400,
-  settleStartMs: 3400,
-  settleMs: 600,
-  sprayStartMs: 4700,
-  runnerEnterMs: 900,
-  runOffMs: 1000,
-  returnStartMs: 11300,
-  returnArriveMs: 12300,
-  customPassMs: 1800,
-  returnExitMs: 1000,
+  bagsStartMs: 700,
+  bagStaggerMs: 70,
+  bagDurMs: 950,
+  settleStartMs: 1900,
+  settleMs: 380,
+  sprayStartMs: 2500,
+  runnerEnterMs: 800,
+  runOffMs: 900,
+  returnStartMs: 8500,
+  returnArriveMs: 9300,
+  customPassMs: 1600,
+  returnExitMs: 800,
   /** Runner height as a share of the letter height, and the row (share of the letter height) it sprays at. */
   runnerScale: 1.1,
+  /** On tall (phone) canvases the runner is at least this share of the canvas height (frame size), so he reads. */
+  runnerMinShare: 0.36,
   /** The single runner sprays at this share of the letter height. */
   row: 0.5,
   assets: { runner: "/assets/runner/runner.webp", runnerMeta: "/assets/runner/meta.json", bag: "/assets/bag3d/bag_spin.webp", bagMeta: "/assets/bag3d/bag_spin.json" },

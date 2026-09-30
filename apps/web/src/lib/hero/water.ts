@@ -7,7 +7,7 @@ export const WATER = {
   runoffRate: 5,
   maxParticles: 90,
   bubbleLife: [0.9, 1.7] as const,
-  bubbleRadius: [1.4, 3.4] as const,
+  bubbleRadius: [2.2, 5.0] as const,
   runoffLife: [1.6, 2.8] as const,
   runoffSpeed: [5, 13] as const,
   /** Faint colour left in the waves behind a runoff bubble (alpha never above this). */
@@ -124,7 +124,7 @@ export class WaterPaint {
       if (!c || c[0] - f.sx0 + f.slope * c[1] > front) continue;
       const [ox, oy] = this.outward(c[0], c[1]);
       const sp = rand(...WATER.runoffSpeed);
-      parts.push({ kind: 1, x: c[0], m: c[1], vx: ox * sp, vy: oy * sp, r: rand(1.2, 2.6), age: 0, life: rand(...WATER.runoffLife), colour: f.colourAt((c[0] - f.sx0) / f.span, c[1] / f.mh), trail: [] });
+      parts.push({ kind: 1, x: c[0], m: c[1], vx: ox * sp, vy: oy * sp, r: rand(2, 4), age: 0, life: rand(...WATER.runoffLife), colour: f.colourAt((c[0] - f.sx0) / f.span, c[1] / f.mh), trail: [] });
     }
     this.carry.b = Math.min(this.carry.b, 2);
     this.carry.r = Math.min(this.carry.r, 2);

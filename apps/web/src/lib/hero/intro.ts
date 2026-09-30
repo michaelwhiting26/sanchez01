@@ -44,6 +44,7 @@ export interface IntroGeom {
   r0: number;
   sy0: number;
   cw: number;
+  ch: number;
   mw: number;
   mh: number;
   sx0: number;
@@ -109,6 +110,11 @@ export class IntroSprites {
     return true;
   }
 
+  /** Letter centres in grid units and the time each bag lands, for the field's landing ripples. */
+  landings(): Array<{ cx: number; cy: number; at: number }> {
+    return this.letters.map((l, i) => ({ cx: l.cx, cy: (l.top + l.bottom) / 2, at: INTRO.bagsStartMs + i * INTRO.bagStaggerMs + INTRO.bagDurMs * 0.86 }));
+  }
+
   /** How much of "Custom" is still hidden from the right, 0..1 (1 hidden, 0 fully shown): it is sprayed in left to right behind the runner. */
   signatureHidden(ti: number, g: IntroGeom): number {
     if (!g.sig) return 0;
@@ -142,11 +148,12 @@ export class IntroSprites {
     this.letters.forEach((l, i) => {
       const p = clamp01((ti - INTRO.bagsStartMs - i * INTRO.bagStaggerMs) / INTRO.bagDurMs);
       if (p <= 0) return;
-      const e = 1 - (1 - p) ** 3;
+      const q = p - 1;
+      const e = 1 + 2.4 * q * q * q + 1.6 * q * q; // ease-out-back: lands, dips past its mark, settles
       const cx = g.ox + (l.cx + 0.5) * g.cell;
       const cy = g.r0 * g.cell - g.sy0 + ((l.top + l.bottom) / 2) * g.cell;
       const y = -bagH + (cy + bagH) * e;
-      const turns = 3 * (1 - p) ** 1.6; // spins fast, then eases to the side-on frame as it lands
+      const turns = 1.5 * (1 - p) ** 1.4; // a turn and a half, fast then easing to the side-on frame as it lands
       const frame = Math.floor(turns * bag.frames) % bag.frames;
       ctx.globalAlpha = fade * Math.min(1, p * 4);
       ctx.drawImage(bag.img, (frame % bag.cols) * bag.w, Math.floor(frame / bag.cols) * bag.h, bag.w, bag.h, cx - bagW / 2, y - bagH / 2, bagW, bagH);
@@ -214,6 +221,8 @@ export class IntroSprites {
     ctx.save();
     ctx.translate(x, y);
     if (mirrored) ctx.scale(-1, 1);
+    ctx.shadowColor = "rgba(232,168,90,0.55)"; // a soft amber edge light so the black body separates from the dark ground
+    ctx.shadowBlur = spriteS * 0.05;
     ctx.drawImage(r.img, (frame % r.cols) * r.w, Math.floor(frame / r.cols) * r.h, r.w, r.h, -r.nozzleX * k, -r.nozzleY * k, spriteS, spriteS);
     ctx.restore();
   }
@@ -221,7 +230,7 @@ export class IntroSprites {
   private drawRunners(ctx: CanvasRenderingContext2D, ti: number, g: IntroGeom): void {
     if (!this.runner) return;
     const Lh = this.letterHeightPx(g);
-    const spriteS = Lh * INTRO.runnerScale;
+    const spriteS = Math.max(Lh * INTRO.runnerScale, g.ch * INTRO.runnerMinShare);
     const top = Math.min(...this.letters.map((l) => l.top));
     const rowsPx = (row: number): number => g.r0 * g.cell - g.sy0 + row * g.cell;
     const rowAt = (share: number): number => top + share * (Lh / g.cell);

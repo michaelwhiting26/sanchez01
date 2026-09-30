@@ -124,6 +124,7 @@ export class HeroEngine {
   private sprayStart = 0;
   private intro: IntroSprites | null = null;
   private ti = 0;
+  private lastIntroTi = -1;
   private water: WaterPaint | null = null;
   private lastT = 0;
   private readonly stats = { letters: 0, coat: 0, halo: 0 };
@@ -785,8 +786,13 @@ export class HeroEngine {
       const r = el.getBoundingClientRect();
       sig = { left: r.left * this.dpr, right: r.right * this.dpr, y: (r.top + r.height * 0.55) * this.dpr };
     }
-    const g: IntroGeom = { cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
+    const g: IntroGeom = { cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
     this.introGeom = g;
+    // each bag landing sends a ripple through the dots: the field reacts to the impact
+    for (const l of intro.landings()) {
+      if (this.lastIntroTi < l.at && ti >= l.at) this.ripples.push({ x: this.ox + (l.cx + 0.5) * this.cell, y: (this.r0 + l.cy) * this.cell - sy0, start: performance.now() });
+    }
+    this.lastIntroTi = ti;
     if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 200) intro.draw(this.ctx, ti, g);
     if (el) {
       const hidden = intro.signatureHidden(ti, g);
