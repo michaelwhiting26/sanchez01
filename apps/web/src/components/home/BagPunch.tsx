@@ -44,6 +44,7 @@ export function BagPunch() {
   const rootRef = useRef<HTMLElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BagEngine | null>(null);
+  const buildRef = useRef<HTMLAnchorElement>(null);
   const [index, setIndex] = useState(0);
   const [fallback, setFallback] = useState(false);
   const [category, setCategory] = useState<CategoryId>("bags");
@@ -64,6 +65,78 @@ export function BagPunch() {
     return () => {
       engine.destroy();
       engineRef.current = null;
+    };
+  }, []);
+
+  // "Build yourself" runs away from the cursor (a magnet in reverse) and drifts about on its own. It is meant to be playful, not hostile: the push is gentle
+  // and capped, the button settles if the cursor stays on it for a moment or presses down, and touch screens, keyboards and reduced motion never see it move.
+  useEffect(() => {
+    const el = buildRef.current;
+    if (!el) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const RADIUS = 210; // how close the cursor has to get before it backs away
+    const PUSH = 95; // the furthest it is ever shoved, px
+    let px = -9999;
+    let py = -9999;
+    let x = 0;
+    let y = 0;
+    let raf = 0;
+    let onScreen = true;
+    let overSince = 0;
+    let calmUntil = 0;
+    const t0 = performance.now();
+    const move = (e: PointerEvent): void => {
+      px = e.clientX;
+      py = e.clientY;
+    };
+    const leave = (): void => {
+      px = -9999;
+      py = -9999;
+    };
+    const press = (): void => {
+      calmUntil = performance.now() + 1500; // a press always lands: the button holds still
+    };
+    const io = new IntersectionObserver((en) => (onScreen = en[0]?.isIntersecting ?? true));
+    io.observe(el);
+    const frame = (now: number): void => {
+      raf = requestAnimationFrame(frame);
+      if (!onScreen) return;
+      const r = el.getBoundingClientRect();
+      const bx = r.left + r.width / 2 - x; // where the button would sit with no offset
+      const by = r.top + r.height / 2 - y;
+      const inside = px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+      if (inside) overSince ||= now;
+      else overSince = 0;
+      const mercy = now < calmUntil || (overSince > 0 && now - overSince > 650) ? 0.12 : 1; // cursor rests on it: it lets you have it
+      const dx = bx - px;
+      const dy = by - py;
+      const d = Math.hypot(dx, dy) || 1;
+      let tx = 0;
+      let ty = 0;
+      if (d < RADIUS) {
+        const f = 1 - d / RADIUS;
+        const push = f * f * PUSH * mercy;
+        tx = (dx / d) * push;
+        ty = (dy / d) * push;
+      }
+      const t = (now - t0) / 1000; // a slow idle drift so it always seems to float about
+      tx += Math.sin(t * 0.9) * 9;
+      ty += Math.cos(t * 0.7) * 7;
+      x += (tx - x) * 0.13;
+      y += (ty - y) * 0.13;
+      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    document.addEventListener("pointerleave", leave);
+    el.addEventListener("pointerdown", press);
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+      window.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerleave", leave);
+      el.removeEventListener("pointerdown", press);
+      el.style.transform = "";
     };
   }, []);
 
@@ -136,7 +209,7 @@ export function BagPunch() {
           <a className="bag-punch__btn" href={order.href}>
             {order.label}
           </a>
-          <a className="bag-punch__btn bag-punch__btn--ghost" href={build.href}>
+          <a className="bag-punch__btn bag-punch__btn--ghost bag-punch__btn--runs" href={build.href} ref={buildRef}>
             {build.label}
           </a>
         </div>

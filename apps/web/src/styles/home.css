@@ -688,3 +688,6 @@ html.gallery-locked .gallery-skip { display: inline-flex; }
 .bag-punch__cta { margin-block-start: 38px; gap: 22px; }
 .bag-punch__cta--again { margin-block-start: 26px; }
 @media (max-width: 600px) { .bag-punch { --cta-zone: 560px; } }
+
+/* "Build yourself" floats and backs away from the cursor (BagPunch.tsx); the transform is set by script */
+.bag-punch__btn--runs { will-change: transform; position: relative; z-index: 4; }
