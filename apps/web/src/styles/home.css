@@ -618,3 +618,8 @@ html.gallery-locked { overscroll-behavior: none; }
 /* the price line under the product name */
 .bag-punch__price { margin: 6px 0 0; font: 600 15px/1.2 var(--font-text, Barlow, sans-serif); letter-spacing: .14em; color: #f3eadc; }
 .bag-punch__price.is-placeholder { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
+
+/* the spotlight: outside the gallery's pill everything is blocked out, so only the gallery is lit (opacity is set by the film script while the gallery fills the screen) */
+.gallery-spot { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0; overflow: hidden; }
+.gallery-spot::before { content: ""; position: absolute; inset: -45%; background: radial-gradient(ellipse 44% 33% at 50% 50%, rgb(0 0 0 / 0) 56%, rgb(0 0 0 / .6) 76%, rgb(0 0 0 / .96) 96%); transform: rotate(-24deg); }
+.lgc-track .lgc-section { z-index: 2; }

@@ -55,12 +55,8 @@ export function WorkshopGallery() {
       .then(([, dwellMs]) => {
         if (cancelled) return;
         const notes = new Map(GALLERY_SLIDES.map((s) => [s.title, s.note] as const));
-        const hero = document.querySelector<HTMLElement>("[data-hero-rings]");
-        const film = hero
-          ? new FilmHelix({ start: hero, end: track, reduced })
-          : null;
-        if (process.env.NODE_ENV !== "production") (window as Window & { __film?: FilmHelix | null }).__film = film;
-        cleanup = [attachGalleryScroll(track, host, pin, { autoplay: !reduced, dwellMs }), attachGalleryRuler(host, GALLERY_SLIDES.length), attachGalleryNote(host, notes), () => film?.destroy()];
+        const film = new FilmHelix({ track, reduced });
+        cleanup = [attachGalleryScroll(track, host, pin, { autoplay: !reduced, dwellMs }), attachGalleryRuler(host, GALLERY_SLIDES.length), attachGalleryNote(host, notes), () => film.destroy()];
       })
       .catch(() => {
         /* the gallery is decorative; the page stands without it */

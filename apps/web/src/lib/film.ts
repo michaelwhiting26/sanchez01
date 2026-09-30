@@ -109,62 +109,37 @@ export function makeTapeTexture(): HTMLCanvasElement {
 }
 
 export interface FilmOptions {
-  /** The tornado starts at the bottom of this element (the hero) and ends at the bottom of `end` (the gallery track). */
-  start: HTMLElement;
-  end: HTMLElement;
+  /** The gallery's tall track: the film and the spotlight show only while it fills the screen. */
+  track: HTMLElement;
   reduced: boolean;
 }
 
 /**
- * Free-flowing film: three ribbons of tape that each take their own route down the page in orbit, from the bottom of the hero to the end of the
- * gallery. They are not wrapped round any axis: each is a smooth 3D curve that wanders sideways (running off the page and coming back), swings
- * in and out of the screen, and twists as it goes. The far side of every pass is full film behind the page; the near side is only a 5% outline, so
- * nothing ever stands in front of the gallery. Two fixed viewport canvases show the part of the paths that is on screen.
+ * The film on display: two real strips of film sweep in from the empty corners of the gallery (bottom-left, top-right), curling and slowly turning as they
+ * run along their path with the scroll, and a spotlight blocks out the background round the gallery's pill so the gallery is the only thing lit.
+ * No outlines or lines: only the film itself. Everything sits below the gallery and above the hero field.
  */
-interface Strand {
-  /** Cycles per viewport height of the sideways, depth and vertical wander, and their phases. */
-  fx: number;
-  fx2: number;
-  fz: number;
-  fy: number;
-  px: number;
-  px2: number;
-  pz: number;
-  py: number;
-  twist: number;
-}
-
-const STRANDS: readonly Strand[] = [
-  { fx: 0.55, fx2: 1.31, fz: 0.7, fy: 0.9, px: 0, px2: 1.2, pz: 0.4, py: 0.2, twist: 0.8 },
-  { fx: 0.62, fx2: 1.18, fz: 0.58, fy: 1.05, px: 2.3, px2: 3.9, pz: 2.4, py: 2.1, twist: -0.6 },
-  { fx: 0.48, fx2: 1.47, fz: 0.83, fy: 0.76, px: 4.4, px2: 0.5, pz: 4.5, py: 4.0, twist: 0.5 },
-];
-
 export class FilmHelix {
-  private readonly back = document.createElement("canvas");
-  private readonly front = document.createElement("canvas");
-  private readonly bctx: CanvasRenderingContext2D | null;
-  private readonly fctx: CanvasRenderingContext2D | null;
+  private readonly canvas = document.createElement("canvas");
+  private readonly spot = document.createElement("div");
+  private readonly ctx: CanvasRenderingContext2D | null;
   private readonly tex = makeTapeTexture();
   private raf = 0;
   private w = 0;
   private h = 0;
   private dpr = 1;
-  private active = false;
-  private last = 0;
+  private visible = false;
   private readonly onScroll = (): void => this.kick();
   private readonly ro: ResizeObserver;
 
   constructor(private readonly o: FilmOptions) {
-    const css = (z: number): string => `position:fixed;inset:0;inline-size:100%;block-size:100%;pointer-events:none;z-index:${z}`;
-    this.back.className = "film film--back";
-    this.front.className = "film film--front";
-    this.back.style.cssText = css(-1);
-    this.front.style.cssText = css(6);
-    for (const cv of [this.back, this.front]) cv.setAttribute("aria-hidden", "true");
-    this.bctx = this.back.getContext("2d");
-    this.fctx = this.front.getContext("2d");
-    document.body.append(this.back, this.front);
+    this.canvas.className = "film";
+    this.canvas.style.cssText = "position:fixed;inset:0;inline-size:100%;block-size:100%;pointer-events:none;z-index:1";
+    this.canvas.setAttribute("aria-hidden", "true");
+    this.spot.className = "gallery-spot";
+    this.spot.setAttribute("aria-hidden", "true");
+    this.ctx = this.canvas.getContext("2d");
+    document.body.append(this.spot, this.canvas);
     window.addEventListener("scroll", this.onScroll, { passive: true });
     window.addEventListener("resize", this.onScroll);
     this.ro = new ResizeObserver(this.onScroll);
@@ -178,8 +153,8 @@ export class FilmHelix {
     window.removeEventListener("scroll", this.onScroll);
     window.removeEventListener("resize", this.onScroll);
     this.ro.disconnect();
-    this.back.remove();
-    this.front.remove();
+    this.canvas.remove();
+    this.spot.remove();
   }
 
   private kick(): void {
@@ -187,7 +162,7 @@ export class FilmHelix {
     this.raf = requestAnimationFrame((t) => {
       this.raf = 0;
       this.draw(t);
-      if (this.active && !this.o.reduced) this.kick(); // while it is on screen the ribbons keep drifting in their orbit
+      if (this.visible && !this.o.reduced) this.kick(); // the film keeps drifting while the gallery is on screen
     });
   }
 
@@ -198,98 +173,73 @@ export class FilmHelix {
     if (w === this.w && h === this.h) return;
     this.w = w;
     this.h = h;
-    for (const cv of [this.back, this.front]) {
-      cv.width = w;
-      cv.height = h;
-    }
+    this.canvas.width = w;
+    this.canvas.height = h;
   }
 
   draw(now = performance.now()): void {
-    const { bctx, fctx } = this;
-    if (!bctx || !fctx) return;
+    const ctx = this.ctx;
+    if (!ctx) return;
     this.resize();
     const { w, h, dpr } = this;
-    bctx.setTransform(1, 0, 0, 1, 0, 0);
-    fctx.setTransform(1, 0, 0, 1, 0, 0);
-    bctx.clearRect(0, 0, w, h);
-    fctx.clearRect(0, 0, w, h);
-    const scrollY = window.scrollY;
-    const yStart = this.o.start.getBoundingClientRect().bottom + scrollY;
-    const yEnd = this.o.end.getBoundingClientRect().bottom + scrollY;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    // how much of the screen the gallery's track fills decides how strongly the spotlight and film show
+    const r = this.o.track.getBoundingClientRect();
     const vh = window.innerHeight;
-    const vw = window.innerWidth;
-    this.active = scrollY + vh > yStart && scrollY < yEnd;
-    if (!this.active || this.o.reduced) return;
-    if (now - this.last < 28) return; // ~35fps is plenty for a slow drift
-    this.last = now;
-
-    const L = yEnd - yStart;
-    const drift = now * 0.00007; // the slow free drift of every path
-    const f = vw * 1.6;
-    const bandH = vh * 0.12;
-    const ds = 16;
-    const TAU = Math.PI * 2;
-    const sMin = Math.max(0, scrollY - vh * 1.0 - yStart);
-    const sMax = Math.min(L, scrollY + vh * 2.0 - yStart);
-    const cx = vw / 2;
-    type V = { x: number; y: number; z: number };
-    for (const st of STRANDS) {
-      const at = (sPx: number): V => {
-        const c = sPx / vh;
-        return {
-          x: 0.5 * vw * Math.sin(TAU * st.fx * c + st.px + drift) + 0.28 * vw * Math.sin(TAU * st.fx2 * c + st.px2 - drift * 1.3),
-          y: yStart + sPx + 0.3 * vh * Math.sin(TAU * st.fy * c + st.py + drift * 0.8),
-          z: 0.45 * vw * Math.sin(TAU * st.fz * c + st.pz + drift * 1.1),
-        };
+    const overlap = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / vh;
+    const k = Math.min(1, Math.max(0, (overlap - 0.55) / 0.35));
+    this.visible = k > 0.01;
+    this.spot.style.opacity = k.toFixed(3);
+    if (!this.visible) return;
+    const t = this.o.reduced ? 0 : now / 1000;
+    const scroll = window.scrollY;
+    const W = w;
+    const H = h;
+    const unit = Math.min(W, H);
+    // two strips: [start, control, control, end] in screen fractions, and the film's half-width
+    const strips = [
+      { p: [[-0.06, 1.06], [0.16, 0.86], [0.03, 0.6], [0.22, 0.38]] as const, hw: unit * 0.075, ph: 0, dir: 1 },
+      { p: [[1.06, -0.06], [0.82, 0.14], [0.97, 0.36], [0.78, 0.6]] as const, hw: unit * 0.075, ph: 2.1, dir: -1 },
+    ];
+    ctx.globalAlpha = k * 0.96;
+    for (const st of strips) {
+      const wob = (i: number): { x: number; y: number } => ({
+        x: (st.p[i]?.[0] ?? 0) * W + Math.sin(t * 0.35 + st.ph + i) * unit * 0.018,
+        y: (st.p[i]?.[1] ?? 0) * H + Math.cos(t * 0.3 + st.ph + i * 1.7) * unit * 0.018,
+      });
+      const P0 = wob(0);
+      const P1 = wob(1);
+      const P2 = wob(2);
+      const P3 = wob(3);
+      const at = (u: number): { x: number; y: number; tx: number; ty: number } => {
+        const m = 1 - u;
+        const x = m * m * m * P0.x + 3 * m * m * u * P1.x + 3 * m * u * u * P2.x + u * u * u * P3.x;
+        const y = m * m * m * P0.y + 3 * m * m * u * P1.y + 3 * m * u * u * P2.y + u * u * u * P3.y;
+        const tx = 3 * m * m * (P1.x - P0.x) + 6 * m * u * (P2.x - P1.x) + 3 * u * u * (P3.x - P2.x);
+        const ty = 3 * m * m * (P1.y - P0.y) + 6 * m * u * (P2.y - P1.y) + 3 * u * u * (P3.y - P2.y);
+        const l = Math.hypot(tx, ty) || 1;
+        return { x, y, tx: tx / l, ty: ty / l };
       };
-      // walk the whole path from its start so the texture never crawls as the visible window moves
-      const pts: Array<{ v: V; w: V; u: number; s: number }> = [];
-      let uAcc = 0;
-      let prev: V | null = null;
-      for (let sPx = 0; sPx <= L; sPx += ds) {
-        const p = at(sPx);
-        const pn = at(sPx + 2);
-        const T = { x: pn.x - p.x, y: pn.y - p.y, z: pn.z - p.z };
-        const tl = Math.hypot(T.x, T.y, T.z) || 1;
-        T.x /= tl;
-        T.y /= tl;
-        T.z /= tl;
-        const th = TAU * st.twist * 0.45 * (sPx / vh);
-        let a = { x: Math.cos(th), y: Math.sin(th) * 0.5, z: Math.sin(th) * 0.35 }; // mostly face-on, easing edge-on as it twists
-        const dot = a.x * T.x + a.y * T.y + a.z * T.z;
-        a = { x: a.x - T.x * dot, y: a.y - T.y * dot, z: a.z - T.z * dot };
-        const al = Math.hypot(a.x, a.y, a.z) || 1;
-        if (prev) uAcc += Math.hypot(p.x - prev.x, p.y - prev.y, p.z - prev.z) * (TEX_H / bandH);
-        pts.push({ v: p, w: { x: a.x / al, y: a.y / al, z: a.z / al }, u: uAcc, s: sPx });
-        prev = p;
-      }
-      const proj = (v: V, wv: V, side: number): { x: number; y: number; z: number } => {
-        const x = v.x + (wv.x * bandH * side) / 2;
-        const y = v.y + (wv.y * bandH * side) / 2;
-        const z = v.z + (wv.z * bandH * side) / 2;
-        const sc = f / (f - z);
-        return { x: (cx + x * sc) * dpr, y: ((y - scrollY - vh / 2) * sc + vh / 2) * dpr, z };
-      };
-      const fade = (sPx: number): number => Math.min(1, Math.min(sPx / (vh * 0.4), (L - sPx) / (vh * 0.4)));
-      for (let j = Math.floor(sMin / ds); j < Math.min(pts.length - 1, Math.ceil(sMax / ds)); j++) {
-        const A = pts[j];
-        const B = pts[j + 1];
-        if (!A || !B) continue;
-        const fd = fade(A.s);
-        if (fd <= 0.01) continue;
-        const a0 = proj(A.v, A.w, -1);
-        const b0 = proj(B.v, B.w, -1);
-        const c0 = proj(A.v, A.w, 1);
-        const d0 = proj(B.v, B.w, 1);
-        const zMid = (A.v.z + B.v.z) / 2;
-        const isBack = zMid < 0;
-        const ctx = isBack ? bctx : fctx;
-        const sw = Math.max(1, B.u - A.u);
-        const u0 = A.u % TEX_W;
-        ctx.globalAlpha = (isBack ? 0.95 : 0.05) * fd;
+      const N = 110;
+      const run = (scroll * 0.9 * dpr + t * 26 * dpr) * st.dir; // the film runs along its path as you scroll and slowly on its own
+      let dist = 0;
+      let prev = at(0);
+      for (let i = 0; i < N; i++) {
+        const u1 = (i + 1) / N;
+        const cur = at(u1);
+        const seg = Math.hypot(cur.x - prev.x, cur.y - prev.y);
+        const twist = 0.72 + 0.28 * Math.cos(t * 0.6 + st.ph + u1 * 5.2); // the strip turns a little as it travels, so it reads as film in space
+        const hwA = st.hw * (0.72 + 0.28 * Math.cos(t * 0.6 + st.ph + (i / N) * 5.2));
+        const hwB = st.hw * twist;
+        const a = { x: prev.x - prev.ty * hwA, y: prev.y + prev.tx * hwA };
+        const b = { x: cur.x - cur.ty * hwB, y: cur.y + cur.tx * hwB };
+        const c = { x: prev.x + prev.ty * hwA, y: prev.y - prev.tx * hwA };
+        const sw = Math.max(1, seg * (TEX_H / (st.hw * 2)));
+        const u0 = (((dist * (TEX_H / (st.hw * 2)) + run) % TEX_W) + TEX_W) % TEX_W;
         const paint = (sx: number, sWidth: number, off: number): void => {
-          const k = sWidth / sw;
-          ctx.setTransform(((b0.x - a0.x) * k) / sWidth, ((b0.y - a0.y) * k) / sWidth, (c0.x - a0.x) / TEX_H, (c0.y - a0.y) / TEX_H, a0.x + (b0.x - a0.x) * off, a0.y + (b0.y - a0.y) * off);
+          const kk = sWidth / sw;
+          ctx.setTransform(((b.x - a.x) * kk) / sWidth, ((b.y - a.y) * kk) / sWidth, (c.x - a.x) / TEX_H, (c.y - a.y) / TEX_H, a.x + (b.x - a.x) * off, a.y + (b.y - a.y) * off);
           ctx.drawImage(this.tex, sx, 0, sWidth, TEX_H, 0, 0, sWidth + 0.8, TEX_H);
         };
         if (u0 + sw <= TEX_W) paint(u0, sw, 0);
@@ -298,32 +248,11 @@ export class FilmHelix {
           paint(u0, first, 0);
           paint(0, sw - first, first / sw);
         }
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        if (isBack) {
-          const depth = Math.min(1, Math.max(0, (zMid + vw * 0.45) / (vw * 0.9)));
-          ctx.globalAlpha = fd;
-          ctx.beginPath();
-          ctx.moveTo(a0.x, a0.y);
-          ctx.lineTo(b0.x, b0.y);
-          ctx.lineTo(d0.x, d0.y);
-          ctx.lineTo(c0.x, c0.y);
-          ctx.closePath();
-          ctx.fillStyle = `rgba(6,3,1,${(0.32 * (1 - depth)).toFixed(3)})`;
-          ctx.fill();
-        } else {
-          ctx.globalAlpha = 0.3 * fd; // the near side is only a thin outline
-          ctx.strokeStyle = "rgba(255,181,112,1)";
-          ctx.lineWidth = Math.max(1, dpr * 0.8);
-          ctx.beginPath();
-          ctx.moveTo(a0.x, a0.y);
-          ctx.lineTo(b0.x, b0.y);
-          ctx.moveTo(c0.x, c0.y);
-          ctx.lineTo(d0.x, d0.y);
-          ctx.stroke();
-        }
+        dist += seg;
+        prev = cur;
       }
     }
-    bctx.globalAlpha = 1;
-    fctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
   }
 }
