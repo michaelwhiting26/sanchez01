@@ -19,6 +19,7 @@ SIZE = int(opt("--size", "512"))
 ARM = [float(v) for v in opt("--arm", "0,0,-100").split(",")]     # degrees, bone-local euler for RightArm
 FORE = [float(v) for v in opt("--fore", "0,0,0").split(",")]      # degrees, bone-local euler for RightForeArm
 TEST = "--test" in argv
+JESSE = "--jesse" in argv   # Jesse: a stockier build and short cropped hair, from the workshop footage
 os.makedirs(OUT, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -28,6 +29,9 @@ arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 for o in list(bpy.data.objects):
     if o.name.startswith("Icosphere"):
         bpy.data.objects.remove(o, do_unlink=True)
+
+if JESSE:
+    arm.scale = (arm.scale[0], arm.scale[1] * 1.16, arm.scale[2])   # broader through the chest and back (depth, side-on), same height
 
 # the stock run cycle
 act = bpy.data.actions["run"]
@@ -73,6 +77,27 @@ for o in bpy.data.objects:
 bpy.ops.mesh.primitive_cylinder_add(radius=0.05, depth=0.2, location=(0, 0, 0))
 can = bpy.context.active_object; can.name = "can"; can.data.materials.append(mat); can.rotation_mode = "QUATERNION"
 HAND = arm.pose.bones["mixamorig:RightHand"]
+HEAD = arm.pose.bones["mixamorig:Head"]
+TOP = arm.pose.bones.get("mixamorig:HeadTop_End")
+hair = None
+if JESSE:
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, location=(0, 0, 0), segments=32, ring_count=16)
+    hair = bpy.context.active_object; hair.name = "hair"; hair.data.materials.append(mat)
+    for p in hair.data.polygons: p.use_smooth = True
+    # a neck and thicker trapezius line so the silhouette reads as a solid build
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.055, depth=0.11, location=(0, 0, 0))
+    neck = bpy.context.active_object; neck.name = "neck"; neck.data.materials.append(mat); neck.rotation_mode = "QUATERNION"
+def place_jesse():
+    if not JESSE: return
+    h = arm.matrix_world @ HEAD.head
+    top = arm.matrix_world @ (TOP.head if TOP else HEAD.tail)
+    up = (top - h).normalized() if (top - h).length > 1e-4 else Vector((0, 0, 1))
+    c = h + up * 0.115                     # centre of the head
+    hair.location = c + up * 0.02          # the cropped hair sits a little proud of the skull
+    hair.scale = (0.098, 0.108, 0.108)
+    hair.rotation_euler = (0, 0, 0)
+    neck.location = h - up * 0.01
+    neck.rotation_quaternion = up.to_track_quat("Z", "Y")
 FORE = arm.pose.bones["mixamorig:RightForeArm"]
 def place_can():
     hand = arm.matrix_world @ HAND.head
@@ -104,6 +129,7 @@ for i in range(count):
     f = start + (end - start) * i / N
     scene.frame_set(int(f), subframe=f - int(f))
     bpy.context.view_layer.update()
+    place_jesse()
     nozzle_pos = place_can()
     bpy.context.view_layer.update()
     p = os.path.join(OUT, f"frame_{i:02d}.png")
