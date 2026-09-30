@@ -23,6 +23,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
     let vh = 0;
     let rootTop = 0;
     let reveal = 0;
+    let delay = 0;
     let over = 0;
     let ticking = false;
     let raf = 0;
@@ -31,7 +32,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
     const update = (): void => {
       ticking = false;
       if (!mq.matches) return;
-      const x = window.scrollY + vh - rootTop; // 0 when the section's top edge reaches the bottom of the screen
+      const x = window.scrollY + vh - rootTop - delay; // 0 a little after the section's top edge reaches the bottom of the screen: the panel waits, so the buttons above stay readable
       const raw = Math.min(1, Math.max(0, x / reveal));
       const rise = teaseRise(raw);
       root.style.setProperty("--rise", rise.toFixed(4));
@@ -62,9 +63,10 @@ export function RisePanel({ children }: { children: ReactNode }) {
       }
       root.style.marginTop = "";
       reveal = Math.round(vh * 1.2); // the extra scroll: rise, stall on the shaped edge, rise again
+      delay = Math.round(vh * 0.55); // the pause before the panel starts to rise (the bag section stays pinned, showing its buttons)
       over = Math.max(0, card.offsetHeight - vh); // the footer is taller than the screen: scroll on through it
       root.style.setProperty("--overflow", `${over}px`);
-      root.style.height = `${reveal + over}px`;
+      root.style.height = `${reveal + over + delay}px`;
       rootTop = root.getBoundingClientRect().top + window.scrollY;
       update();
     };
@@ -82,7 +84,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
     void document.fonts?.ready.then(measure);
     measure();
     const ro = new ResizeObserver(() => {
-      if (mq.matches && card.offsetHeight > 0 && Math.abs(root.offsetHeight - reveal - Math.max(0, card.offsetHeight - vh)) > 2) measure();
+      if (mq.matches && card.offsetHeight > 0 && Math.abs(root.offsetHeight - reveal - delay - Math.max(0, card.offsetHeight - vh)) > 2) measure();
     });
     ro.observe(card);
     return () => {
