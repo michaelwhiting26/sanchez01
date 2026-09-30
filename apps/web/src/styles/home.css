@@ -846,7 +846,7 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .globe-slot { padding-block-start: 150px; }
 .orbit-layer { overflow: visible; }
 .orbit-tether { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; pointer-events: none; z-index: 2; }
-.orbit-tether line { stroke: #6fb4e8; stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 4px rgb(111 180 232 / .6)); }
+.orbit-tether { display: none; } /* owner, 30 Sep 19:25: no visible line between the globe and Submit; the bar still floats and is pulled by the globe */
 .orbit-submit { inline-size: min(78vw, 360px); block-size: 64px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 14px; transform-origin: 50% 50%; will-change: transform; pointer-events: auto; z-index: 3; opacity: 1 !important;
   font: 800 1.15rem/1 "Mona Sans", var(--font-display), Arial, sans-serif; font-variation-settings: "wdth" 86; letter-spacing: .02em; text-transform: uppercase; background: #a24a2e; border-color: #a24a2e; color: #fff; box-shadow: 0 14px 34px rgb(0 0 0 / .5); }
 .orbit-submit svg { inline-size: 20px; block-size: 20px; }
