@@ -916,3 +916,12 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 .orbit-submit { font-size: clamp(2.1rem, 9.2vw, 2.9rem); gap: .3em; }
 /* no glow inside the rolling-letter window (it clips the blur into a visible box): a tight shadow only */
 .orbit-submit, .orbit-submit .enq__text { text-shadow: 0 2px 3px rgb(60 0 0 / .6); }
+
+/* Submit: the WHOLE bag tumbles on hover, not just the word (owner, 30 Sep 20:18). The bag picture is its own layer (::before) so it can roll
+   independently of the transform the tether script sets on the button; it does one full barrel roll with the same easing as the rolling letters. */
+.orbit-submit { isolation: isolate; perspective: 900px; background: none !important; }
+.orbit-submit::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url("/assets/brand/bag-button.webp") center / 100% 100% no-repeat; transform-origin: 50% 50%; backface-visibility: visible; }
+.orbit-submit:hover:not(:disabled)::before, .orbit-submit:focus-visible::before { animation: bag-tumble .75s cubic-bezier(.215, .61, .355, 1); }
+.orbit-submit:hover:not(:disabled) .enq__clip, .orbit-submit:focus-visible .enq__clip { animation: bag-tumble .75s cubic-bezier(.215, .61, .355, 1); }
+@keyframes bag-tumble { 0% { transform: rotateX(0) scale(1); } 45% { transform: rotateX(200deg) scale(1.06); } 100% { transform: rotateX(360deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .orbit-submit::before, .orbit-submit .enq__clip { animation: none !important; } }
