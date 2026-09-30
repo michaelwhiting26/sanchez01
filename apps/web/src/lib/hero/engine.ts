@@ -612,6 +612,14 @@ export class HeroEngine {
         waves.push({ cx: cell2[0], cy: cell2[1], ca: Math.cos(ang), sa: Math.sin(ang), size: 9 + 8 * hash1(k * 5.93), a: Math.sin(Math.PI * p) ** 0.75, k });
       }
     }
+    // the seam between the hero and page two: as you scroll off the hero the tan lines flow LEFT toward the arch's horizon and the left edge, then carry on DOWN,
+    // so there is no visible break. Only where the ridges are sampled from changes (never the word itself); the lines keep their look.
+    const heroEnd = this.hero.getBoundingClientRect().bottom + scrollY;
+    const vhPx = window.innerHeight;
+    const qq = reduce ? 0 : clamp01((scrollY - (heroEnd - vhPx)) / (vhPx * 1.6));
+    const easeS = (v: number): number => v * v * (3 - 2 * v);
+    const seamX = Math.round(easeS(clamp01(qq / 0.5)) * 70);
+    const seamY = Math.round(easeS(clamp01((qq - 0.35) / 0.65)) * 170);
     const stats = this.stats;
     stats.letters = 0;
     stats.coat = 0;
@@ -718,6 +726,15 @@ export class HeroEngine {
               }
             }
 
+            if (env <= 0.01 && (seamX || seamY)) {
+              const xs2 = x + seamX;
+              const ys2 = pr - seamY;
+              const ms2 = ys2 - r0;
+              if (xs2 >= 0 && xs2 < mw && ys2 >= 0 && ys2 < R && !(ms2 >= 0 && ms2 < mh)) {
+                dw = at(this.ridgeDist, ys2 * mw + xs2);
+                tv = at(this.ridgeAngle, ys2 * mw + xs2);
+              }
+            }
             // the cloud bank (intro only)
             let cl = 0;
             if (cf > 0 && noise && dw > CLOUDS.innerCells && dw < CLOUDS.outerCells) {

@@ -79,29 +79,45 @@ can = bpy.context.active_object; can.name = "can"; can.data.materials.append(mat
 HAND = arm.pose.bones["mixamorig:RightHand"]
 HEAD = arm.pose.bones["mixamorig:Head"]
 TOP = arm.pose.bones.get("mixamorig:HeadTop_End")
-hair = None
+FOREB = arm.pose.bones["mixamorig:RightForeArm"]
+extras = {}
+def unit(kind):
+    if kind == "sphere": bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, segments=24, ring_count=12)
+    elif kind == "cyl": bpy.ops.mesh.primitive_cylinder_add(radius=1.0, depth=1.0, vertices=24)
+    else: bpy.ops.mesh.primitive_cone_add(radius1=1.0, radius2=0.0, depth=1.0, vertices=16)
+    o = bpy.context.active_object; o.data.materials.append(mat); o.rotation_mode = "QUATERNION"
+    for p in o.data.polygons: p.use_smooth = True
+    return o
 if JESSE:
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=1.0, location=(0, 0, 0), segments=32, ring_count=16)
-    hair = bpy.context.active_object; hair.name = "hair"; hair.data.materials.append(mat)
-    for p in hair.data.polygons: p.use_smooth = True
-    # a neck and thicker trapezius line so the silhouette reads as a solid build
-    bpy.ops.mesh.primitive_cylinder_add(radius=0.055, depth=0.11, location=(0, 0, 0))
-    neck = bpy.context.active_object; neck.name = "neck"; neck.data.materials.append(mat); neck.rotation_mode = "QUATERNION"
+    # Jesse, from the Instagram footage: short dark cropped hair with a fade, a real profile (nose, jaw), a thick neck, a stocky build, dark hoodie
+    for name, kind in [("hair", "sphere"), ("nose", "cone"), ("chin", "sphere"), ("neck", "cyl"), ("hood", "sphere"), ("torso", "sphere"), ("hips", "sphere"),
+                       ("uaR", "cyl"), ("faR", "cyl"), ("uaL", "cyl"), ("faL", "cyl")]:
+        extras[name] = unit(kind)
+def pb(name): return arm.matrix_world @ arm.pose.bones["mixamorig:" + name].head
+def limb(o, p, q, r):
+    d = q - p; L = d.length or 1e-4
+    o.location = (p + q) / 2; o.scale = (r, r, L); o.rotation_quaternion = d.normalized().to_track_quat("Z", "Y")
 def place_jesse():
     if not JESSE: return
-    h = arm.matrix_world @ HEAD.head
+    h = pb("Head")
     top = arm.matrix_world @ (TOP.head if TOP else HEAD.tail)
     up = (top - h).normalized() if (top - h).length > 1e-4 else Vector((0, 0, 1))
-    c = h + up * 0.115                     # centre of the head
-    hair.location = c + up * 0.02          # the cropped hair sits a little proud of the skull
-    hair.scale = (0.098, 0.108, 0.108)
-    hair.rotation_euler = (0, 0, 0)
-    neck.location = h - up * 0.01
-    neck.rotation_quaternion = up.to_track_quat("Z", "Y")
-FORE = arm.pose.bones["mixamorig:RightForeArm"]
+    fwd = Vector((0, 1, 0))                                     # he runs screen-right, +Y
+    c = h + up * 0.105                                           # centre of the head
+    hair = extras["hair"]; hair.location = c + up * 0.028 - fwd * 0.004; hair.scale = (0.088, 0.098, 0.088)   # cropped close, fade at the sides
+    n = extras["nose"]; n.location = c + fwd * 0.096 - up * 0.008; n.scale = (0.019, 0.019, 0.034); n.rotation_quaternion = fwd.to_track_quat("Z", "Y")
+    ch = extras["chin"]; ch.location = c + fwd * 0.058 - up * 0.085; ch.scale = (0.034, 0.038, 0.03)          # square jaw
+    limb(extras["neck"], h - up * 0.045, pb("Spine2") + up * 0.02, 0.062)                                   # thick neck
+    hd = extras["hood"]; hd.location = h - fwd * 0.06 - up * 0.02; hd.scale = (0.075, 0.085, 0.07)           # the bunched hood behind the neck
+    sp2 = pb("Spine2"); sp1 = pb("Spine")
+    t = extras["torso"]; t.location = (sp2 + sp1) / 2; t.scale = (0.2, 0.185, 0.27); t.rotation_quaternion = (sp2 - sp1).normalized().to_track_quat("Z", "Y")   # hoodie body
+    hp = extras["hips"]; hp.location = pb("Hips") + Vector((0, 0, 0.02)); hp.scale = (0.17, 0.165, 0.13)
+    limb(extras["uaR"], pb("RightArm"), pb("RightForeArm"), 0.066); limb(extras["faR"], pb("RightForeArm"), pb("RightHand"), 0.052)
+    limb(extras["uaL"], pb("LeftArm"), pb("LeftForeArm"), 0.066); limb(extras["faL"], pb("LeftForeArm"), pb("LeftHand"), 0.052)
+
 def place_can():
     hand = arm.matrix_world @ HAND.head
-    fore = arm.matrix_world @ FORE.head
+    fore = arm.matrix_world @ FOREB.head
     d = (hand - fore).normalized()
     mid = hand + d * 0.09
     can.location = mid
