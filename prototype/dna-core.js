@@ -31,7 +31,9 @@
     var fadeOut = 1 - sm(fieldEnd - vh * 1.4, fieldEnd - vh * 0.4, y);       /* gone once the transparent sections are behind you */
     var bag = document.querySelector(".bag-punch"), bagK = 1;                   /* the bag is the centrepiece: the helix steps back while the bag fills the screen */
     if (bag) { var r = bag.getBoundingClientRect(), cover = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / vh; bagK = 1 - 0.8 * sm(0.35, 0.9, cover); }
-    var alpha = grow * fadeOut * bagK; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    var lgc = document.querySelector(".lgc-track"), lgcK = 1;                       /* gone while the workshop carousel is being scrolled through */
+    if (lgc) { var lr = lgc.getBoundingClientRect(), lcover = Math.max(0, Math.min(lr.bottom, vh) - Math.max(lr.top, 0)) / vh; lgcK = 1 - sm(0.12, 0.55, lcover); }
+    var alpha = grow * fadeOut * bagK * lgcK; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     if (alpha < 0.01) return;
     var cx = W / 2, amp = Math.min(W * 0.16, 84) * grow, tilt = reduce ? 0 : (now - t0) / 1000 * 0.32;
     var turn = y / pitch * 2 * Math.PI * 0.55 + tilt + phase0, per = pitch;

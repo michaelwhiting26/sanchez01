@@ -117,17 +117,19 @@
   }
 
   /* colour every dot on screen into one of NB shades (brightness x warmth), then draw each shade in one pass */
+  var lgcTrack = null;
   function draw(t) {
-    var sy = scrollY * dpr; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
+    var sy = (typeof window.__sy === "number" ? window.__sy : scrollY) * dpr; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
     var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 1.1;
     counts.fill(0);
-    /* TORNADO: while the workshop carousel is scrolled through, a vortex sits at the centre of the screen and twists the ridges around it. It is the same field
-       (the ridges the hero fingerprint sends down the page), so the lines flow out of the hero, spin up into a tornado behind the carousel, and unwind again after it.
-       The page scrolls the ridges through the vortex, and the vortex also turns as you scroll, so the lines pass through the design. Twisted ridges are pushed to full gold. */
-    var env = 0, trk = reduce ? null : document.querySelector(".lgc-track");
+    /* EGG SPIN: while the workshop carousel is scrolled through, the lines are painted on an egg at the centre of the screen and the egg spins: the lines travel across it left to right
+       and top to bottom (its axis is tilted), foreshortening round the curve like a globe, then unwind after the section. It is the same field the hero fingerprint sends down the
+       page, so the lines flow out of the hero, wrap round the egg and carry on. The page scrolls the lines through it and the spin advances with the scroll. Lines on the egg are full gold. */
+    var env = 0, trk = reduce ? null : (lgcTrack || (lgcTrack = document.querySelector(".lgc-track")));
     if (trk) { var tr = trk.getBoundingClientRect(), pp = Math.min(1, Math.max(0, (innerHeight - tr.top) / (tr.height + innerHeight))); env = Math.pow(Math.sin(Math.PI * pp), 1.1); }
-    if (typeof window.__tornado === "number") env = window.__tornado;                 /* dev: force the tornado on for screenshots */
-    var vcx = MW / 2, vcy = topRow + (ch / 2 + sub) / cell, sig2 = Math.pow(MW * 0.42, 2), tw = env * (3.4 + scrollY * 0.0012);
+    if (typeof window.__tornado === "number") env = window.__tornado;                 /* dev: force the effect on for screenshots */
+    var ecx = MW / 2, ecy = topRow + (ch / 2 + sub) / cell, erx = MW * 0.36, ery = (ch / cell) * 0.46, spin = env * (2.4 + scrollY * 0.0018) + (typeof window.__spin === "number" ? window.__spin : 0);
+    var TILT = 0.6, cbt = Math.cos(TILT), sbt = Math.sin(TILT);
     for (var y = 0, i = 0; y < nRows; y++) {
       var pr = topRow + y, m = pr - r0, inMap = m >= 0 && m < MH, base = pr * MW;
       for (var x = 0; x < MW; x++, i++) {
@@ -137,13 +139,16 @@
           else if (!(inMap && bl[m * MW + x])) {
             var dw = ddw[base + x], tv = thv[base + x], vf = 0;
             if (env > 0.01) {
-              var dxv = x - vcx, dyv = pr - vcy, d2v = dxv * dxv + dyv * dyv;
-              if (d2v < 9 * sig2) {
-                var fv = Math.exp(-d2v / sig2), phv = tw * fv, cv_ = Math.cos(phv), sv_ = Math.sin(phv);
-                var xr = Math.round(vcx + cv_ * dxv - sv_ * dyv), yr = Math.round(vcy + sv_ * dxv + cv_ * dyv);
-                var mr = yr - r0;
-                if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself: no holes */
-                vf = fv * env;
+              var u0 = (x - ecx) / erx, v0 = (pr - ecy) / ery;
+              var u1 = cbt * u0 + sbt * v0, v1 = -sbt * u0 + cbt * v0;                 /* tilt the spin axis: lines travel left to right AND top to bottom */
+              var ue = u1 / (1 + 0.14 * v1), r2 = ue * ue + v1 * v1;                    /* an egg: a little fuller toward the bottom */
+              if (r2 < 1) {
+                var z = Math.sqrt(1 - r2), lat = Math.asin(v1), lon = Math.atan2(ue, z) - spin, cl = Math.cos(lat);
+                var un = cl * Math.sin(lon) * (1 + 0.14 * v1), rim = Math.min(1, Math.max(0, (Math.sqrt(r2) - 0.8) / 0.2)), keepW = 1 - rim * rim * (3 - 2 * rim);
+                var u0n = cbt * un - sbt * v1, v0n = sbt * un + cbt * v1;
+                var xr = Math.round(x + (ecx + u0n * erx - x) * keepW), yr = Math.round(pr + (ecy + v0n * ery - pr) * keepW), mr = yr - r0;
+                if (xr >= 0 && xr < MW && yr >= 0 && yr < R && !(mr >= 0 && mr < MH)) { var i2 = yr * MW + xr; dw = ddw[i2]; tv = thv[i2]; }   /* never sample from inside the word itself */
+                vf = env * keepW * (0.4 + 0.6 * z);                                     /* brighter and more gold on the front of the egg */
               }
             }
             if (dw > 2.2) {
@@ -154,7 +159,7 @@
               if (ph < WIDTH && inD && !gone) {
                 var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
                 var pulse = reduce ? 0 : Math.exp(-Math.pow((dw - wave) / 7, 2)) * 0.55;
-                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 0.6 * vf)), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
+                var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 1.6 * vf)), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
                 var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
               }
             }
