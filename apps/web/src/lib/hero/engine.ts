@@ -26,7 +26,6 @@ import {
   type Rgb,
 } from "./config";
 import { FlagLookup, loadFlagIndices } from "./flag";
-import { WaterPaint } from "./water";
 import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
 import { createSeededNoise, fbm3, hashSeed, type Noise3 } from "./noise";
 import { createWaveTables, fillWaveTables, hash1 } from "./waves";
@@ -126,7 +125,6 @@ export class HeroEngine {
   private ti = 0;
   private waveCells: Array<[number, number]> = [];
   private lastIntroTi = -1;
-  private water: WaterPaint | null = null;
   private lastT = 0;
   private readonly stats = { letters: 0, coat: 0, halo: 0 };
   private sigEl: HTMLElement | null = null;
