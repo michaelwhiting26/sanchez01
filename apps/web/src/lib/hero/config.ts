@@ -145,17 +145,52 @@ export const INTRO = {
   sprayStartMs: 2500,
   runnerEnterMs: 800,
   runOffMs: 900,
+  /** The return pass (all ms): he walks in from the right, looks behind and ahead twice, tiptoes to the start of the C, writes "Custom", pauses, walks off right. */
   returnStartMs: 8500,
-  returnArriveMs: 9900,
-  customPassMs: 3400,
-  returnExitMs: 800,
+  /** Walk in from the right edge to the spot in front of the wordmark. */
+  walkInMs: 4200,
+  /** A beat standing still before the first look. */
+  lookLeadMs: 250,
+  /** Time to turn the head one way (each of the four turns). */
+  lookTurnMs: 500,
+  /** Hold after each turn: back, forward, back, forward. */
+  lookHoldMs: [500, 400, 500, 400] as readonly number[],
+  /** Tiptoe: time of one full sneak cycle (the speed follows from its pxPerCycle, so the feet never slide). */
+  sneakCycleMs: 1100,
+  /** Planting the feet at the C before the first stroke. */
+  plantMs: 350,
+  /** Time to write the whole signature, lifts included. */
+  customWriteMs: 8000,
+  /** A finished stroke fills in over this long. */
+  fillMs: 300,
+  /** Nozzle lift between strokes (no paint). */
+  liftMs: 240,
+  /** Pause after the last stroke, then he walks off right. */
+  finishHoldMs: 600,
+  walkOutMs: 1800,
+  /** A shuffle step when the pen leaves comfortable reach: tolerance (share of the sprite height) and step time. */
+  reachTolShare: 0.16,
+  stepMs: 420,
+  /** Where he stands to look, as a share of the sprite height right of the C (at least), and the exponent of the walk-in's slow-down (1 = steady, higher = more of the walk is at the start and he eases to a stop). */
+  lookAheadShare: 1.1,
+  walkEaseExp: 1.5,
   /** Runner height as a share of the letter height, and the row (share of the letter height) it sprays at. */
   runnerScale: 1.1,
   /** On tall (phone) canvases the runner is at least this share of the canvas height (frame size), so he reads. */
   runnerMinShare: 0.36,
   /** The single runner sprays at this share of the letter height. */
   row: 0.5,
-  assets: { runner: "/assets/runner/runner.webp", runnerMeta: "/assets/runner/meta.json", bag: "/assets/bag3d/bag_spin.webp", bagMeta: "/assets/bag3d/bag_spin.json" },
+  assets: {
+    runner: "/assets/runner/runner.webp",
+    runnerMeta: "/assets/runner/meta.json",
+    /** Optional sheets for the return pass: each is `<name>.webp` + `<name>.json`; if one is missing the runner's own frames stand in. */
+    walk: "/assets/runner/walk",
+    look: "/assets/runner/look",
+    sneak: "/assets/runner/sneak",
+    reach: "/assets/runner/reach",
+    bag: "/assets/bag3d/bag_spin.webp",
+    bagMeta: "/assets/bag3d/bag_spin.json",
+  },
 } as const;
 
 export const WAVES = {

@@ -27,6 +27,7 @@ import {
 } from "./config";
 import { FlagLookup, loadFlagIndices } from "./flag";
 import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
+import { SigPen, tabulate } from "./sigpen";
 import { createSeededNoise, fbm3, hashSeed, type Noise3 } from "./noise";
 import { createWaveTables, fillWaveTables, hash1 } from "./waves";
 
@@ -140,11 +141,14 @@ export class HeroEngine {
   private sprayStart = 0;
   private intro: IntroSprites | null = null;
   private ti = 0;
-  private penTable: { xs: Float32Array; ss: Float32Array } | null = null;
+  private sigPen: SigPen | null = null;
   private penKey = "";
   private sigPaths: SVGPathElement[] = [];
-  private sigLens: number[] = [];
-  private sigTotal = 0;
+  private sigLens = new Float64Array(0);
+  private inkLens = new Float64Array(0);
+  private inkFill = new Float64Array(0);
+  /** Last values written to each stroke's style, so a still frame writes nothing. */
+  private inkDone = new Float64Array(0);
   private waveCells: Array<[number, number]> = [];
   // the writer's hand: paint dose per map cell, deposited by a fixed-step simulation of the nozzle (see advanceSpray)
   private sprayAmt = new Float32Array(0);
@@ -227,6 +231,35 @@ export class HeroEngine {
     }
     if (this.reduce) this.draw(0);
     else this.raf = requestAnimationFrame(this.loop);
+    if (process.env.NODE_ENV !== "production" && !this.reduce) this.exposeDevSeek();
+  }
+
+  /** Draw the whole scene as it is `ms` after the engine started, with no rAF: the same draw the loop runs, at a chosen time. */
+  renderAt(ms: number): void {
+    this.overrides.introMs = ms;
+    this.draw(this.sprayStart + ms);
+  }
+
+  /** DEV ONLY: `window.__hero.seek(ms)` renders an exact frame (the loop is stopped so it stays put); `duration` is the intro's end, `timeline()` its phases. */
+  private exposeDevSeek(): void {
+    const plan = (): ReturnType<IntroSprites["returnPlan"]> => (this.introGeom ? (this.intro?.returnPlan(this.introGeom) ?? null) : null);
+    const api = {
+      seek: (ms: number): void => {
+        cancelAnimationFrame(this.raf);
+        this.renderAt(ms);
+      },
+      timeline: (): unknown => {
+        const p = plan();
+        return p ? { start: p.p.startMs, walkEnd: p.tWalkEnd, lookEnd: p.tLookEnd, sneakEnd: p.tSneakEnd, write0: p.tWrite0, write1: p.tWrite1, holdEnd: p.tHoldEnd, end: p.tEnd, strokes: Array.from(p.write.t0, (t0, i) => [t0 + p.tWrite0, t0 + p.tWrite0 + (p.write.td[i] ?? 0)]), steps: p.steps.length } : null;
+      },
+      play: (): void => {
+        this.overrides.introMs = undefined;
+        this.sprayStart = performance.now();
+        this.raf = requestAnimationFrame(this.loop);
+      },
+    };
+    Object.defineProperty(api, "duration", { get: () => plan()?.tEnd ?? 0 });
+    (window as unknown as { __hero?: unknown }).__hero = api;
   }
 
   destroy(): void {
@@ -1037,102 +1070,56 @@ export class HeroEngine {
     const el = this.sigEl;
     if (el) {
       const r = el.getBoundingClientRect();
-      sig = { left: r.left * this.dpr, right: r.right * this.dpr, y: (r.top + r.height * 0.55) * this.dpr };
+      this.buildPen(r);
+      const pen = this.sigPen;
+      if (pen) {
+        pen.setOrigin(r.left, r.top);
+        sig = { left: r.left * this.dpr, right: r.right * this.dpr, y: (r.top + r.height * 0.55) * this.dpr, key: this.penKey, pen };
+      }
     }
     const flagRef = this.flag;
-    const penNow = this.penTable && el ? this.penTable : null;
-    const rectLeft = el ? el.getBoundingClientRect().left : 0;
-    const dprNow = this.dpr;
-    const g: IntroGeom = { pen: penNow ? (sv: number) => (rectLeft + this.penAt(penNow, sv)) * dprNow : null, colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
+    const g: IntroGeom = { colourAt: (u, v) => flagRef.colour(u, v), cell: this.cell, ox: this.ox, r0: this.r0, sy0, cw: this.cw, ch: this.ch, mw: this.mw, mh: this.mh, sx0: this.sx0, sx1: this.sx1, slope, psmax, sig };
     this.introGeom = g;
     // each bag landing sends a ripple through the dots: the field reacts to the impact
     for (const l of intro.landings()) {
       if (this.lastIntroTi < l.at && ti >= l.at) this.ripples.push({ x: this.ox + (l.cx + 0.5) * this.cell, y: (this.r0 + l.cy) * this.cell - sy0, start: performance.now() });
     }
     this.lastIntroTi = ti;
-    if (ti <= INTRO.returnArriveMs + INTRO.customPassMs + INTRO.returnExitMs + 1200) intro.draw(this.ctx, ti, g);
-    if (el) {
-      this.buildPen();
-      this.applyInk(intro.inkProgress(ti));
-    }
+    intro.draw(this.ctx, ti, g);
+    if (sig && intro.inkAt(ti, this.inkLens, this.inkFill)) this.applyInk();
   }
 
-  /** Where the signature's pen is (relative to the signature's left edge, in CSS px) at ink progress s: never goes backwards. */
-  private penAt(t: { xs: Float32Array; ss: Float32Array }, s: number): number {
-    const { xs, ss } = t;
-    if (s <= 0) return xs[0] ?? 0;
-    if (s >= 1) return xs[xs.length - 1] ?? 0;
-    let lo = 0;
-    let hi = ss.length - 1;
-    while (hi - lo > 1) {
-      const mid = (lo + hi) >> 1;
-      if ((ss[mid] ?? 0) <= s) lo = mid;
-      else hi = mid;
-    }
-    const s0 = ss[lo] ?? 0;
-    const s1 = ss[hi] ?? 1;
-    const f = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
-    return (xs[lo] ?? 0) + ((xs[hi] ?? 0) - (xs[lo] ?? 0)) * f;
-  }
-
-  /** Sample the signature's strokes in the order they are drawn, to know where the pen is as the ink goes down. */
-  private buildPen(): void {
+  /** Tabulate the signature's strokes in screen space (once per layout): the pen's path, and each stroke's length. */
+  private buildPen(rect: DOMRect): void {
     const el = this.sigEl;
     if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const key = `${Math.round(rect.width)}x${Math.round(rect.height)}`;
-    if (this.penKey === key) return;
+    const key = `${Math.round(rect.width)}x${Math.round(rect.height)}@${this.dpr}`;
+    if (this.penKey === key && this.sigPen) return;
     const paths = Array.from(el.querySelectorAll<SVGPathElement>("path"));
-    if (!paths.length) return;
-    const lens = paths.map((p) => p.getTotalLength());
-    const total = lens.reduce((a, b) => a + b, 0);
-    if (total <= 0) return;
-    const xs: number[] = [];
-    const ss: number[] = [];
-    let acc = 0;
-    paths.forEach((p, i) => {
-      const L = lens[i] ?? 0;
-      const ctm = p.getScreenCTM();
-      if (!ctm) return;
-      const n = Math.max(2, Math.ceil(L / 5));
-      for (let k = 0; k <= n; k++) {
-        const pt = p.getPointAtLength((L * k) / n);
-        xs.push(new DOMPoint(pt.x, pt.y).matrixTransform(ctm).x - rect.left);
-        ss.push((acc + (L * k) / n) / total);
-      }
-      acc += L;
-    });
-    if (xs.length < 4) return;
-    for (let i = 1; i < xs.length; i++) xs[i] = Math.max(xs[i] ?? 0, xs[i - 1] ?? 0); // the runner cannot go backwards
-    const w = Math.max(3, Math.round(xs.length * 0.03)); // smooth so a doubled-back stroke slows him gently
-    const sm = xs.map((_, i) => {
-      let sum = 0;
-      let n = 0;
-      for (let j = Math.max(0, i - w); j <= Math.min(xs.length - 1, i + w); j++) {
-        sum += xs[j] ?? 0;
-        n++;
-      }
-      return sum / n;
-    });
-    sm[0] = xs[0] ?? 0;
-    sm[sm.length - 1] = xs[xs.length - 1] ?? 0;
-    this.penTable = { xs: Float32Array.from(sm), ss: Float32Array.from(ss) };
+    const ctm = paths[0]?.getScreenCTM();
+    if (!paths.length || !ctm) return;
+    const tables = paths.map((p) => tabulate(p.getTotalLength(), (l) => p.getPointAtLength(l)));
+    this.sigPen = new SigPen(tables, { a: ctm.a, b: ctm.b, c: ctm.c, d: ctm.d, e: ctm.e, f: ctm.f }, this.dpr, rect.left, rect.top);
     this.sigPaths = paths;
-    this.sigLens = lens;
-    this.sigTotal = total;
+    this.sigLens = Float64Array.from(tables.map((t) => t.len));
+    this.inkLens = new Float64Array(paths.length);
+    this.inkFill = new Float64Array(paths.length);
+    this.inkDone = new Float64Array(paths.length).fill(-1);
     this.penKey = key;
   }
 
-  /** Lay the ink down: each stroke is drawn in turn as the pen reaches it, and fills in once it is done. */
-  private applyInk(s: number): void {
-    if (!this.sigPaths.length) return;
-    let acc = 0;
+  /** Lay the ink down: each stroke's dash reveals to the length the nozzle has drawn, and it fills in once nearly done. Only touches a stroke's style when it changed. */
+  private applyInk(): void {
     this.sigPaths.forEach((p, i) => {
       const L = this.sigLens[i] ?? 0;
-      const local = L > 0 ? Math.min(1, Math.max(0, (s * this.sigTotal - acc) / L)) : 1;
+      const got = this.inkLens[i] ?? 0;
+      const fill = this.inkFill[i] ?? 0;
+      const sig = got + fill * 1e6; // one number to tell whether either changed
+      if (this.inkDone[i] === sig) return;
+      this.inkDone[i] = sig;
+      const local = L > 0 ? Math.min(1, Math.max(0, got / L)) : 1;
       p.style.strokeDashoffset = String(1 - local);
-      p.style.fillOpacity = String(Math.min(1, Math.max(0, (local - 0.55) / 0.45)));
-      acc += L;
+      p.style.fillOpacity = String(fill);
     });
   }
 
