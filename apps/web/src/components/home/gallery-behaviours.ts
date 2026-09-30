@@ -215,13 +215,7 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
       steps = n;
       track.style.setProperty("--lgc-steps", String(n - 1)); // track length follows the slide count
     }
-    // the gate: the page cannot leave the pinned gallery until the carousel has run to the last slide (a phone flick can carry straight past the end)
-    if (n > 1 && cur >= 0 && cur < n - 1 && progress() > REACH + 0.01) {
-      const headG = parseFloat(getComputedStyle(track).getPropertyValue("--header-h")) || 0;
-      const docTop = track.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo(0, docTop - headG + REACH * (track.offsetHeight - pin.offsetHeight));
-    }
-    if (n > 1 && cur >= 0 && (!hold || (cur < n - 1 && progress() >= REACH))) {
+    if (n > 1 && cur >= 0 && !hold) {
       const want = Math.min(n - 1, Math.round(Math.min(1, progress() / REACH) * (n - 1)));
       if (want !== cur && now - lastPress > GAP_MS) {
         press(want > cur ? 1 : -1);

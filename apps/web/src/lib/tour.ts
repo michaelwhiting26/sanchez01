@@ -16,7 +16,7 @@ export interface TourStop {
 
 export const TOUR_STOPS: readonly TourStop[] = [
   { selector: ".curved-loop", at: 0.12, dwellMs: 1600 },
-  { selector: ".lgc-track", at: -1, dwellMs: 1500, waitFor: "gallery:autoplay-done" },
+  { selector: ".lgc-track", at: -3, dwellMs: 600 }, // the gallery is scroll-driven: the tour just scrolls through it
   { selector: ".sz-marquee", at: 0.3, dwellMs: 1400 },
   { selector: "[data-bag-punch]", at: 0, dwellMs: 4200 },
   { selector: "#waitlist", at: -2, dwellMs: 0 }, // the end: the rise panel with the waitlist, the globe and the bag
@@ -109,6 +109,7 @@ export class AutoTour {
       return top - head + 14;
     }
     if (at === -2) return document.documentElement.scrollHeight - window.innerHeight; // the very end of the page
+    if (at === -3) return top + el.offsetHeight - window.innerHeight; // the bottom of the track: the whole gallery has played
     return top - window.innerHeight * at;
   }
 

@@ -220,7 +220,7 @@ body.on-hero .site-header:not(:focus-within) { transform: translateY(-100%); opa
 @media (prefers-reduced-motion: reduce) { .hero-cursor__ring svg { animation: none; } }
 
 /* Workshop carousel driven by page scroll (lgc-scroll.js): a tall track, the carousel pinned inside it. 65svh of scroll per slide change. */
-.lgc-track { position: relative; block-size: calc(100svh - var(--header-h) + var(--lgc-steps, 5) * 65svh); background: #090706; }
+.lgc-track { position: relative; block-size: calc(100svh - var(--header-h) + var(--lgc-steps, 5) * 40svh); background: #090706; }
 .lgc-track .lgc-section { position: sticky; inset-block-start: var(--header-h); block-size: calc(100svh - var(--header-h)); padding-block: 0; display: flex; align-items: center; }
 .lgc-track .lgc { inline-size: 100%; block-size: min(calc(100svh - var(--header-h) - 32px), 760px); }
 
@@ -580,7 +580,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 
 /* phones: the gallery takes the whole screen (edge to edge, top to bottom); the film is only a fine edge definition */
 @media (max-width: 767px) {
-  .lgc-track { block-size: calc(100svh + var(--lgc-steps, 5) * 90svh); }
+  .lgc-track { block-size: calc(100svh + var(--lgc-steps, 5) * 55svh); }
   .lgc-track .lgc-section { inset-block-start: 0; block-size: 100svh; inline-size: 100vw; margin-inline: calc(50% - 50vw); padding: 0; }
   .lgc-track .lgc { block-size: 100svh; inline-size: 100vw; }
   .lgc-track .lgc-section::before { inset-block-start: env(safe-area-inset-top, 0px); }
