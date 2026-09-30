@@ -773,7 +773,7 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 
 /* Clear glass over the hero: invisible as an object (no edges, no facets, no sheen). It only lifts what is behind it, a touch more contrast,
    colour and light, so the screen simply reads sharper and more vivid. Never blocks touch or the cursor field. */
-.wm-hero { isolation: isolate; }
+/* no isolation on .wm-hero: it would lift the hero's fixed field canvas above the DNA spiral and hide the spiral on the whole page (owner bug, 30 Sep 19:05) */
 .wm-hero__glass { position: absolute; inset: 0; z-index: 30; pointer-events: none; background: transparent;
   -webkit-backdrop-filter: contrast(1.12) saturate(1.18) brightness(1.04); backdrop-filter: contrast(1.12) saturate(1.18) brightness(1.04); }
 
