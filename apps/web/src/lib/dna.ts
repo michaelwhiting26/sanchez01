@@ -131,12 +131,10 @@ export class DnaCore {
       wmBot = wr.bottom;
       holdTop = wr.bottom;
     }
-    const opt = document.querySelector(".sz-options"); // the tab-pill band sits between the wordmark and the bag: the spiral stays quiet behind it too
+    const opt = document.querySelector(".sz-options"); // the tab-pill band sits between the wordmark and the bag
     if (opt) {
       const or = opt.getBoundingClientRect();
-      wmTop = Math.min(wmTop, or.top);
-      wmBot = Math.max(wmBot, or.bottom);
-      holdTop = or.bottom;
+      holdTop = or.bottom; // the options band only holds the taper back: the spiral is NOT dimmed behind it (owner: it must keep pumping down to the bag)
     }
     let lgcK = 1; // gone while the workshop gallery is being scrolled through
     const lgc = document.querySelector(".lgc-track");
@@ -162,7 +160,7 @@ export class DnaCore {
       return amp * t * t * (3 - 2 * t); // full width far above the ring, a single thread at the ring
     };
     // the thread steps back behind the big SANCHEZ rows so the wordmark reads on its own, and comes back below them
-    const wmFade = 0.14;
+    const wmFade = 0.4;
     const seeAt = (yv: number): number => (yv > wmTop - 40 && yv < wmBot + 40 ? wmFade + (1 - wmFade) * (1 - Math.min(1, Math.min(yv - (wmTop - 40), wmBot + 40 - yv) / 60)) : 1);
     // the flick: through the hand-off the narrowing thread swings from side to side, the swing dying away exactly at the ring so the thread lands dead centre on the chain
     const sw = Math.min(w * 0.2, 96) * grow;
