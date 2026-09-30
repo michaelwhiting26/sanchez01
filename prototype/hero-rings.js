@@ -130,7 +130,7 @@
   }
 
   /* colour every dot on screen into one of NB shades (brightness x warmth), then draw each shade in one pass */
-  var lgcTrack = null, warpG = null, sx0 = 0, sx1 = 0, sprayStart = 0, SPRAY_MS = 4600;
+  var lgcTrack = null, warpG = null, waveTab = null, sx0 = 0, sx1 = 0, sprayStart = 0, SPRAY_MS = 4600;
   function draw(t) {
     var sy = (typeof window.__sy === "number" ? window.__sy : scrollY) * dpr, sy0 = sy; topRow = Math.max(0, Math.floor(sy / cell)); sub = sy - topRow * cell;
     var tsec0 = t / 1000; var maxD = Math.hypot(MW, MH) * 0.5, wave = ((t / 1000) % PULSE_EVERY) / PULSE_EVERY * maxD * 1.15, drift = reduce ? 0 : t / 1000 * 0.9;
@@ -140,6 +140,20 @@
     var eOut = function (v) { v = Math.min(1, Math.max(0, v)); return 1 - Math.pow(1 - v, 2.2); };
     var fw = sx0 - 6 + (sx1 - sx0 + 14) * eOut(sp / 0.72), fr = sx0 - 6 + (MW + 30 - sx0) * eOut((sp - 0.3) / 0.7);
     if (sp >= 1) { fw = MW + 30; fr = MW + 30; }
+    /* WAVE SETS: every SET_PERIOD seconds a set of seven waves rolls out from the word. Each crest has its own power (the middle ones are strongest, every set differs a little),
+       and the lines brighten and swell as a crest passes. Built as a 1-D table over distance, so it costs almost nothing per dot. */
+    var WAVES = 7, SET_PERIOD = 16, WSPEED = 20, WSPACING = 17, WWIDTH = 8.5, BINS = 480, tW = (t - (sprayStart || t)) / 1000 - SPRAY_MS / 1000 * 0.7;
+    if (!waveTab) waveTab = new Float32Array(BINS + 1);
+    waveTab.fill(0);
+    if (!reduce && tW > 0) {
+      var setI = Math.floor(tW / SET_PERIOD), loc = tW - setI * SET_PERIOD;
+      for (var wk = 0; wk < WAVES; wk++) {
+        var wh = Math.abs(Math.sin((setI + 3) * 12.9898 + wk * 78.233) * 43758.5453 % 1), env7 = [0.42, 0.68, 0.92, 1.0, 0.8, 0.58, 0.36][wk], amp = env7 * (0.72 + 0.5 * wh);   /* each wave its own power */
+        var rk = loc * WSPEED - wk * WSPACING; if (rk < -WWIDTH * 3 || rk > BINS / 2 + WWIDTH * 3) continue;
+        var b0 = Math.max(0, Math.floor((rk - WWIDTH * 3) * 2)), b1 = Math.min(BINS, Math.ceil((rk + WWIDTH * 3) * 2));
+        for (var wb = b0; wb <= b1; wb++) { var dd = wb / 2 - rk; waveTab[wb] += amp * Math.exp(-(dd * dd) / (WWIDTH * WWIDTH)); }
+      }
+    }
     var GS = 8, gcols = Math.ceil(MW / GS) + 2, grows = Math.ceil(nRows / GS) + 2, tsn = t / 1000;
     if (!warpG || warpG.length !== gcols * grows) warpG = new Float32Array(gcols * grows);
     for (var gy = 0; gy < grows; gy++) for (var gx = 0; gx < gcols; gx++) {           /* smooth flow, sampled coarsely and interpolated: cheap, and never steps */
@@ -186,14 +200,14 @@
               var wv = (warpG[gi] * (1 - tx) + warpG[gi + 1] * tx) * (1 - ty) + (warpG[gi + gcols] * (1 - tx) + warpG[gi + gcols + 1] * tx) * ty;
               var wt = Math.min(1, Math.max(0, (dw - 6) / (maxD * 0.25)));               /* the defined lines right at the word stay put; further out the thread drifts */
               var flow = wv * 1.7 * wt;
-              var rel = dw - drift * (1 - env) + flow, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
+              var rel = dw - drift * (1 - env) + flow - waveTab[Math.min(BINS, (dw * 2) | 0)] * 1.4, ring = Math.floor(rel / PERIOD), ph = rel - ring * PERIOD;
               /* stitch: dashes of STITCH cells with a small gap, measured along the ridge (angle x radius), each ridge starting a little apart */
               var run = (tv * (dw + 34)) / (STITCH + GAP) + ring * 0.37 + (Math.sin(ring * 12.9898) * 43758.5453 % 1), seg = Math.floor(run), inD = (run - seg) * (STITCH + GAP) < STITCH;
               var gone = Math.abs(Math.sin(ring * 78.233 + seg * 37.719) * 43758.5453 % 1) < 0.07;      /* the odd stitch missing: the flaw that makes it a print */
               var ph2 = ph > PERIOD - 0.9 ? ph - PERIOD : ph, cov = 1 - Math.abs(ph2 - WIDTH * 0.5) / (WIDTH * 0.5 + 0.7), dpos = (run - seg) * (STITCH + GAP), dcv = Math.min(1, Math.min(dpos + 0.6, STITCH - dpos + 0.6));
               if (cov > 0.02 && dcv > 0.02 && !gone) {                                    /* soft edges: a ridge or a stitch fades in and out over a cell instead of switching on and off */
                 var fade = FLOOR + (1 - FLOOR) * Math.exp(-dw / (maxD * 0.34));                         /* bright at the word, a quiet floor further out so it flows on down the page */
-                var pulse = reduce ? 0 : 0;
+                var wIdx = Math.min(BINS, (dw * 2) | 0), wav = waveTab[wIdx], pulse = wav * 0.6;   /* the wave passing this ridge */
                 var kk = Math.min(1, (0.34 * fade + pulse * fade) * (1 + 1.3 * vf) * Math.pow(cov * dcv, 0.7) * 1.25), warm = Math.min(1, Math.max(dw / (maxD * 0.55), vf * 1.15));   /* in the tornado the lines are full gold and a little brighter */
                 var lv2 = Math.round(kk * LEVELS); if (lv2 > 0) b = lv2 * WARMS + Math.round(warm * (WARMS - 1));
               }
