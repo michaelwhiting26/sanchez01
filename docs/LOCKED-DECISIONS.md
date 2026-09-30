@@ -11,7 +11,7 @@ The owner's current word on how each part of the site behaves. Anyone changing t
 6. **Options band**: Bags / Gloves / Mitts pill on its own beat after the rows, before the bag, with a one-time highlight so nobody misses the toggles. Bag still not visible.
 7. **Hand-off**: spiral narrows and flicks onto the bag's chain ring (`.sz-handoff`), then the bag appears and spins in, landing with the Tiger face to the front.
 7b. **2D Jesse** (`.jesse-2d`, from his Instagram pad-work footage) sits under the bag for now; the owner will reposition it.
-8. **Footer**: globe large (`min(98vw, 480px)`; 400px desktop). Bag hangs under it on a chain, no background/box behind it, swings when tapped. **Waitlist Submit is tethered to the globe** (owner, 30 Sep 18:10, replacing the orbit): a wide Submit bar floats just above the globe, held to its top edge by a short tether; it bobs and leans, is drawn a little towards the mouse, and springs back (`OrbitSubmit.tsx`).
+8. **Footer**: globe large (`min(98vw, 480px)`; 400px desktop). Bag hangs under it on a chain, no background/box behind it, swings when tapped. **Waitlist Submit is tethered to the globe** (owner, 30 Sep 18:10, replacing the orbit): a wide Submit bar floats just above the globe, held by the globe's pull with NO visible tether line (owner, 19:25); it bobs and leans, is drawn a little towards the mouse, and springs back (`OrbitSubmit.tsx`).
 
 ## Build flow (/configure)
 - One question at a time, top-to-bottom order, every answer pre-selected. Tapping an answer only selects it (outlined); **Next** moves on.
