@@ -452,3 +452,9 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 
 /* pixel field overlay inside each depth card: above the photo and shade, below the caption */
 .depth-card__px { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; pointer-events: none; }
+
+/* phones: the Figma cutout is as tall as on mr-2 (92% of the screen), its artwork covering that height; only the size changes */
+@media (max-width: 760px) {
+  .rise__surface { block-size: 92svh; aspect-ratio: auto; object-fit: cover; object-position: center; }
+  .rise__panel { padding-block-start: calc(92svh * 0.111 + clamp(20px, 5vw, 36px)); }
+}
