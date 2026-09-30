@@ -21,7 +21,7 @@
     var k = lv / LEVELS, t = w / (WARMS - 1);
     styles.push("rgb(" + Math.round((CREAM[0] + (GOLD[0] - CREAM[0]) * t) * k) + "," + Math.round((CREAM[1] + (GOLD[1] - CREAM[1]) * t) * k) + "," + Math.round((CREAM[2] + (GOLD[2] - CREAM[2]) * t) * k) + ")");
   }
-  styles.push("rgb(" + Math.round(0.75 * 255 + 0.25 * CREAM[0]) + "," + Math.round(0.75 * 255 + 0.25 * CREAM[1]) + "," + Math.round(0.75 * 255 + 0.25 * CREAM[2]) + ")");   /* the outline wording: 75% bright white, 25% tan */
+  styles.push("rgb(" + CREAM[0] + "," + CREAM[1] + "," + CREAM[2] + ")");   /* the SANCHEZ outline wording: 100% tan, its own shade so it can be tuned separately from the ridges */
   var cursor = { x: 0, y: 0, active: false }, ripples = [], cell = 1, ox = 0, dpr = 1, moving = false, fieldEnd = 1e9, cw = 0, ch = 0;
 
   function load() {

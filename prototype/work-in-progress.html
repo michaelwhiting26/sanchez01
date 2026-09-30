@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css?v=1790705042">
-  <link rel="stylesheet" href="globe-hero.css?v=1790727047">
+  <link rel="stylesheet" href="globe-hero.css?v=park1">
   <script>try{var l=JSON.parse(localStorage.getItem("sz.lang"));if(l){document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr"}}catch(e){}</script>
   <script type="importmap">{"imports":{"three":"./assets/vendor/three/three.module.js","three/addons/":"./assets/vendor/three/addons/"}}</script>
   <script type="module" src="globe-hero.js?v=1790690154"></script>
@@ -25,6 +25,23 @@
 
   <section class="wip-banner" aria-labelledby="wip-title"><div class="container"><p class="eyebrow">Sanchez Custom Boxing</p><h1 id="wip-title">Work in progress</h1>
   <p>Sections taken off the home screen while the site takes shape. Everything here still works. <a href="index.html">Back to home</a></p></div></section>
+
+  <!-- PARKED FROM THE HOME PAGE: the flare carousel (one hero card, neighbours flare into huge curved walls). Kept here while we brainstorm. -->
+  <div class="wip-parked" style="padding:clamp(24px,5vh,56px) var(--gutter,1rem) 8px"><p class="eyebrow">Parked from the home page</p><h2 class="display-2" style="margin:0">Flare carousel</h2></div>
+  <section id="flare" class="flare flare--embed" data-flare data-embed aria-roledescription="carousel" aria-label="Sanchez in pictures" data-cards='[
+      {"title":"The workshop","sub":"Pattaya","foot":"Handmade in Pattaya","src":"assets/carousel/clip1.jpg","colors":["#1f0a06","#902b1a","#c27446"],"dir":1},
+      {"title":"On the machine","sub":"Cut and sewn by hand","foot":"Handmade in Pattaya","src":"assets/carousel/clip2.jpg","colors":["#1f160f","#5b3a1e","#b98a60"],"dir":-1},
+      {"title":"The finished bag","sub":"Designed in Sydney","foot":"Designed in Sydney · Handmade in Pattaya","src":"assets/carousel/clip3.jpg","colors":["#2a0d08","#af4d25","#d18b63"],"dir":1},
+      {"title":"Sanchez Custom","sub":"Every panel, your colours","foot":"","src":"assets/carousel/workshop.jpg","colors":["#18120d","#92502c","#e4c9ab"],"dir":-1},
+      {"title":"Out in the world","sub":"Gyms we build for","pill":"PLACEHOLDER","foot":"Client names need written consent","src":"assets/carousel/clip4.jpg","colors":["#1b0a08","#5a1a12","#b56e3c"],"dir":1},
+      {"title":"Tools of the trade","sub":"The bench","foot":"","src":"assets/carousel/clip5.jpg","colors":["#1f160f","#372212","#a66d3b"],"dir":-1}
+    ]'>
+    <div class="flare__stage" data-flare-stage tabindex="0"></div>
+    <p class="flare__hint">Drag, scroll or use ← →</p>
+    <p class="visually-hidden" data-flare-live aria-live="polite"></p>
+  </section>
+  <script type="module" src="flare-carousel.js?v=11"></script>
+
 
   <!-- SCROLL PORTAL: fly through nested frames on scroll (our own implementation; scroll-portal.js) -->
   <section class="portal" data-scroll-portal aria-label="From Sydney to your gym">
