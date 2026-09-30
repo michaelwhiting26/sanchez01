@@ -151,6 +151,8 @@
     /* SPRAY PAINT: on load the word is sprayed on left to right. The word's front leads; the ridges paint in behind it. Each dot has its own ragged edge so the front is a spray, not a wipe. */
     var tp = t - (sprayStart || t) - 700, sp = reduce ? 1 : Math.min(1, Math.max(0, tp / SPRAY_MS)), passK = 0;
     if (typeof window.__spray === "number") sp = window.__spray;
+    var cf = reduce ? 0 : (sp >= 1 && tp >= SPRAY_MS ? Math.max(0, 1 - (tp - SPRAY_MS) / 2500) : 1);   /* the clouds are there while the flag is being sprayed, then melt away and leave only the lines */
+    if (typeof window.__spray === "number") cf = 1 - Math.max(0, Math.min(1, (window.__spray - 0.92) / 0.08));
     var sweeping = !reduce && sp > 0.005 && sp < 1, later = false, tn = Math.max(0, tp) / 1000;
     /* THE HAND: after the first pass the paint keeps being worked by a hand that drifts over the word and moves closer and further away: near = tight and dense, far = wide and soft. */
     var hc = 0.5 + 0.5 * Math.sin(tn * 0.55 + 1.3) * Math.cos(tn * 0.21), hR = 4 + 20 * (1 - hc), hI = 0.45 + 0.55 * hc;
@@ -232,12 +234,12 @@
             /* THE CLOUD BANK: the word sits in billowing cumulus, stippled in tan and shaded as if lit from the top left (bright tops, darker undersides), drifting very slowly.
                Big mounds and gaps come from smooth noise; the cloud stops a hair off the outline so the letters stay crisp. */
             var cl = 0;
-            if (dw > 2.6 && dw < 72) {
+            if (cf > 0 && dw > 2.6 && dw < 72) {
               var cxn = x * 0.032, cyn = pr * 0.05, ctn = tn * 0.02, f1 = cloudN(cxn, cyn, ctn), f2 = cloudN(cxn - 0.06, cyn - 0.06, ctn), lim = 10 + 40 * (0.5 + 0.5 * f1) + 8 * (0.5 + 0.5 * cloudN(cxn * 2.4 + 5, cyn * 2.4, ctn * 1.4));   /* big round mounds, up to ~60 cells off the letters */
               var cness = Math.min(1, (lim - dw) / 9);
               if (cness > 0) {
                 var shade = Math.min(1, Math.max(0.12, 0.55 + (f2 - f1) * 5)), body = 0.4 + 0.6 * Math.min(1, (lim - dw) / lim + 0.25);
-                if (pseed[base + x] < 0.42 + 0.55 * cness * body) { cl = Math.round(LEVELS * Math.min(1, cness * (0.16 + 0.92 * shade * body))); }
+                if (pseed[base + x] < (0.42 + 0.55 * cness * body) * cf) { cl = Math.round(LEVELS * Math.min(1, cness * (0.16 + 0.92 * shade * body))); }
               }
             }
             if (cl > 0) b = cl * WARMS;
