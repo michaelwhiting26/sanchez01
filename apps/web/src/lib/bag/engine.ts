@@ -301,7 +301,7 @@ export class BagEngine {
       m.envMapIntensity = 0.45; // less studio reflection, so the colour stays true instead of washing out
       m.needsUpdate = true;
       this.bandTop.color.setHex(p.trim);
-      this.bandBottom.color.setHex(p.trim);
+      this.bandBottom.color.setHex(p.trimBottom ?? p.trim);
       this.renderer.domElement.setAttribute("aria-label", `Interactive ${p.name.toLowerCase()}. Drag to spin, click or tap to hit it.`);
       this.onProduct(index);
       return;
@@ -335,7 +335,7 @@ export class BagEngine {
     }
     m.needsUpdate = true;
     this.bandTop.color.setHex(p.trim);
-    this.bandBottom.color.setHex(p.trim);
+    this.bandBottom.color.setHex(p.trimBottom ?? p.trim);
     this.renderer.domElement.setAttribute("aria-label", `Interactive ${p.name.toLowerCase()}. Drag to spin, click or tap to hit it.`);
     this.onProduct(index);
   }
@@ -367,11 +367,13 @@ export class BagEngine {
       const f = THREE.MathUtils.degToRad(this.cam.fov);
       const fitH = size.y / 2 / Math.tan(f / 2);
       const fitW = Math.max(size.x, size.z) / 2 / (Math.tan(f / 2) * this.cam.aspect);
-      const dist = Math.min(this.home.pos.z, Math.max(fitH, fitW) * 1.7 + 0.35);
+      const dist = Math.min(this.home.pos.z, Math.max(fitH, fitW) * 1.35 + 0.3); // the part fills most of the frame
       g.look.copy(ctr);
       g.pos.set(ctr.x + 0.12, ctr.y + size.y * 0.18, ctr.z + dist);
       // the patch sits on one side of the bag: turn the bag so it faces the camera
-      this.spinGoal = this.focusPart === "patch" ? -Math.atan2(ctr.x, ctr.z) : null;
+      const patch = this.partBoxes.get("patch");
+      const pc = patch ? patch.getCenter(new THREE.Vector3()) : null;
+      this.spinGoal = this.focusPart === "hardware" ? null : pc ? -Math.atan2(pc.x, pc.z) : 0; // turn the bag so the branded front faces you
     }
     if (instant) {
       this.cam.position.copy(g.pos);

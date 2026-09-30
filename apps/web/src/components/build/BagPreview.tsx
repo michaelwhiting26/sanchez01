@@ -11,7 +11,7 @@ const hex = (id: string): number => parseInt((COLOURS.find((c) => c.id === id)?.
 export function lookFor(cfg: BagConfig): BagProduct {
   if (cfg.preset === "tigerfull") return BAG_PRODUCTS.find((p) => p.id === "tiger") ?? plain("custom", "Your bag", hex(cfg.bodyColour));
   if (cfg.preset === "monogram") return BAG_PRODUCTS.find((p) => p.id === "monogram") ?? plain("custom", "Your bag", hex(cfg.bodyColour));
-  return { ...plain("custom", "Your bag", hex(cfg.bodyColour)), trim: hex(cfg.capColour) };
+  return { ...plain("custom", "Your bag", hex(cfg.bodyColour)), trim: hex(cfg.capColour), trimBottom: hex(cfg.bottomColour) };
 }
 
 /** The interactive 3D bag, always on screen while building: drag to spin, tap to hit it. It follows every choice. */

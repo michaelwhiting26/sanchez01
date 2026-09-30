@@ -8,7 +8,7 @@ import { BagConfigSchema, COLOURS, DEFAULT_BAG, type BagConfig, type Issue, type
 import { CURRENCIES, formatMoney, type Currency } from "@/lib/commerce/money";
 import type { PriceResult } from "@/lib/configurator/pricing";
 import { clearSaved, decodeShare, encodeShare, loadSaved, store } from "@/lib/configurator/save";
-import { activeSteps, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
+import { activeSteps, BOOLEAN_KEYS, GROUPS, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
 import { LOGO_SRC } from "@/lib/site";
 import "../../styles/cockpit.css";
 
@@ -25,7 +25,7 @@ interface PriceResponse {
 function summary(def: StepDef, c: BagConfig): string {
   const a = def.answer;
   if (a.kind === "pills") {
-    const raw = a.key === "makersMark" ? (c.makersMark ? "yes" : "no") : String(c[a.key]);
+    const raw = BOOLEAN_KEYS.includes(a.key) ? (c[a.key] ? "yes" : "no") : String(c[a.key]);
     return a.options.find((o) => String(o.id) === raw)?.name ?? raw;
   }
   if (a.kind === "swatches") return colourName(c[a.key]);
@@ -139,7 +139,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const pick = (value: string | number): void => {
     const a = def.answer;
     if (a.kind !== "pills") return;
-    if (a.key === "makersMark") set("makersMark", value === "yes");
+    if (a.key === "makersMark" || a.key === "anchorRing") setCfg((c) => ({ ...c, [a.key]: value === "yes" }));
     else if (a.key === "sizeFt") set("sizeFt", Number(value) as 3 | 4 | 5);
     else setCfg((c) => ({ ...c, [a.key]: value }));
     mark(def.id, "answered");
@@ -239,6 +239,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
               {price?.status === "unpriced" && <p className="ck__note">{price.reason} Ordering opens once prices are set.</p>}
               {error && <p className="ck__note ck__note--err" role="alert">{error}</p>}
               <div className="ck__sheetrow">
+                <button type="button" className="ck__btn ck__btn--ghost" onClick={back}>Back</button>
                 <select aria-label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
                 <button type="button" className="ck__btn ck__btn--pay" disabled={!canPay || busy} onClick={() => void startCheckout()}>{busy ? "One moment…" : `Make it mine · ${priceText}`}</button>
               </div>
@@ -247,13 +248,13 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
         </section>
       )}
 
-      <section className="ck__dock" aria-label="Build controls" hidden={sheet && !last ? true : false}>
-        <p className="ck__ask"><span>{pad(idx + 1)}/{pad(steps.length)}</span> {def.question}</p>
+      <section className="ck__dock" aria-label="Build controls" hidden={sheet}>
+        <p className="ck__ask"><span>{pad(idx + 1)}/{pad(steps.length)} · {GROUPS[def.group]}</span> {def.question}{!last && <button type="button" className="ck__skip" onClick={skip}>Skip</button>}</p>
         <div className="ck__row">
           <button type="button" className="ck__icon" onClick={back} disabled={idx === 0} aria-label="Previous question">‹</button>
           <div className="ck__scroll" role="radiogroup" aria-label={def.question}>
             {a.kind === "pills" && a.options.map((o) => {
-              const cur = a.key === "makersMark" ? (cfg.makersMark ? "yes" : "no") : String(cfg[a.key]);
+              const cur = BOOLEAN_KEYS.includes(a.key) ? (cfg[a.key] ? "yes" : "no") : String(cfg[a.key]);
               return <button key={String(o.id)} type="button" role="radio" aria-checked={String(o.id) === cur} onClick={() => pick(o.id)}>{o.name}</button>;
             })}
             {a.kind === "swatches" && COLOURS.map((c) => (
@@ -272,8 +273,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
               </div>
             )}
           </div>
-          {(a.kind === "multi" || a.kind === "text" || a.kind === "stepper") && <button type="button" className="ck__icon ck__icon--go" onClick={done} aria-label="Next question">✓</button>}
-          <button type="button" className="ck__icon" onClick={skip} aria-label="Skip for now">›</button>
+          <button type="button" className="ck__icon ck__icon--go" onClick={done} aria-label="Next question: keep what is selected">›</button>
         </div>
         {errors.filter((i) => stepForKey(i.path) === def.id).map((i) => <p key={i.code} className="ck__err" role="alert">{i.message}</p>)}
       </section>

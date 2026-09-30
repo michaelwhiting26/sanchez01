@@ -14,6 +14,8 @@ export interface BagProduct {
   readonly color?: number;
   /** Trim colour of the top and bottom bands. */
   readonly trim: number;
+  /** Bottom band colour, if it differs from the top (`trim`). */
+  readonly trimBottom?: number;
   readonly bump: number;
   /** Price in minor units of one currency (e.g. 129900 = 1,299.00). null until Jesse confirms it: the site shows a marked placeholder, never an invented number. */
   readonly price: { readonly amountMinor: number; readonly currency: string } | null;
