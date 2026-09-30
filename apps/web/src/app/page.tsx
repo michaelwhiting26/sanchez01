@@ -28,6 +28,9 @@ export default function HomePage() {
         <div className="sz-transit" aria-hidden="true" data-transit="" />
         <Marquee />
         <BagPunch />
+        <section className="jesse-2d" aria-label="Jesse Sanchez">
+          <img src="/assets/jesse/jesse-pads.webp" alt="Jesse Sanchez holding Sanchez focus pads" width={676} height={1118} loading="lazy" decoding="async" />
+        </section>
         <RisePanel>
           <Waitlist />
           <div className="globe-slot" data-globe-slot="">

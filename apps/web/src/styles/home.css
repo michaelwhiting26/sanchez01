@@ -837,3 +837,7 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
 @keyframes sz-opt-sweep { 0% { transform: scaleX(0); opacity: 0; } 15% { opacity: 1; } 60% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
 @keyframes sz-opt-nudge { 0%, 100% { color: rgb(243 234 220 / .7); transform: none; } 45% { color: #e8b866; transform: translateY(-3px); } }
 @media (prefers-reduced-motion: reduce) { .bag-punch > *, .bag-punch__view { transition: none; } .bag-punch__view { transform: none; } }
+
+/* Jesse, 2D (from his own Instagram training footage), placed under the bag for now; the owner will reposition it */
+.jesse-2d { position: relative; z-index: 1; display: grid; place-items: center; padding-block: clamp(32px, 8svh, 96px); }
+.jesse-2d img { display: block; block-size: min(72svh, 620px); inline-size: auto; max-inline-size: 92vw; object-fit: contain; }
