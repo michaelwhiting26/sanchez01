@@ -674,10 +674,11 @@ html.gallery-locked { overscroll-behavior: none; }
 @media (max-width: 600px) { .bag-punch { --cta-zone: 440px; } }
 
 /* Skip: bottom right, shown only while the gallery holds the page AND from slide 2 on (html.gallery-locked.gallery-skippable) */
-.gallery-skip { display: none; position: fixed; z-index: 70; inset-inline-end: clamp(16px, 3vw, 36px); inset-block-end: clamp(16px, 3vh, 34px); align-items: center; gap: 10px; padding: 14px 24px; border: 1px solid rgb(243 234 220 / .35); border-radius: 999px; background: rgb(14 11 9 / .6); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #f3eadc; cursor: pointer; font: 500 .8rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .24em; text-indent: .24em; text-transform: uppercase; transition: background .3s ease, color .3s ease, border-color .3s ease; }
-.gallery-skip::after { content: ""; inline-size: 7px; block-size: 7px; border-block-start: 1.5px solid currentColor; border-inline-end: 1.5px solid currentColor; transform: rotate(45deg); margin-inline-start: -4px; }
+.gallery-skip { display: none; position: fixed; z-index: 70; inset-inline-end: clamp(20px, 3.4vw, 44px); inset-block-end: clamp(18px, 3.4vh, 38px); align-items: center; padding: 10px 4px; border: 0; background: transparent; cursor: pointer; color: #f3eadc; font: 500 15px/1 var(--font-text, Barlow, Arial, sans-serif); letter-spacing: .18em; text-transform: uppercase; opacity: .85; transition: opacity .3s ease; }   /* typography identical to the gallery heading (Barlow 500, uppercase, .18em, 15px / 17px); no pill */
 html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
-.gallery-skip:hover, .gallery-skip:focus-visible { background: #f3eadc; color: #0e0b09; border-color: #f3eadc; outline: none; }
+.gallery-skip:hover, .gallery-skip:focus-visible { opacity: 1; outline: none; }
+.gallery-skip:focus-visible { outline: 1px solid #c9a45c; outline-offset: 6px; }
+@media (min-width: 640px) { .gallery-skip { font-size: 17px; } }
 
 /* Bag section text block: lifted up off the bottom edge, with room to breathe between every line and button */
 .bag-punch { --cta-zone: 500px; }
