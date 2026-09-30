@@ -56,7 +56,7 @@ export function WorkshopGallery() {
           data-lgc=""
           data-lgc-nowheel=""
           data-bg="transparent"
-          data-panel="460"
+          data-panel="690"
           data-items={JSON.stringify(GALLERY_SLIDES)}
           ref={hostRef}
           suppressHydrationWarning
