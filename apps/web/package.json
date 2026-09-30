@@ -20,6 +20,8 @@
     "@sanchez/analytics": "*",
     "@sanchez/config3d": "*",
     "@sanchez/domain": "*",
+    "@stripe/react-stripe-js": "^6.12.0",
+    "@stripe/stripe-js": "^9.17.0",
     "animejs": "^4.5.0",
     "file-type": "^22.1.1",
     "graphql": "^16.8.1",

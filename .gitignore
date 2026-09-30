@@ -13,3 +13,6 @@ media-scrape
 media-assets
 prototype/media/
 
+
+# dev order store (JSON file), never committed
+apps/web/.data/
