@@ -13,6 +13,7 @@ import { RollingLink } from "@/components/ui/RollingButton";
 export function RisePanel({ children }: { children: ReactNode }) {
   const rootRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const prevRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -40,6 +41,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
       if (!mq.matches) {
         root.style.height = "";
         root.style.marginTop = "";
+        prevRef.current?.classList.remove("rise-under");
         document.documentElement.classList.remove("rise-pinned");
         root.classList.remove("is-pinned");
         root.style.setProperty("--rise", "1");
@@ -48,8 +50,13 @@ export function RisePanel({ children }: { children: ReactNode }) {
       }
       root.classList.add("is-pinned");
       document.documentElement.classList.add("rise-pinned");
-      const prev = document.getElementById("flare"); // pull up over a pinned carousel only if one is on the page
-      root.style.marginTop = prev ? `${-prev.offsetHeight}px` : "";
+      const prev = prevRef.current ?? (root.previousElementSibling as HTMLElement | null); // pull up over the section before us and pin it while we ride over it
+      prevRef.current = prev;
+      if (prev) {
+        prev.classList.add("rise-under");
+        prev.style.top = `${Math.min(0, vh - prev.offsetHeight)}px`;
+        root.style.marginTop = `${-prev.offsetHeight}px`;
+      } else root.style.marginTop = "";
       reveal = Math.round(vh * 1.4); // the extra scroll: rise, pause, rise again
       over = Math.max(0, card.offsetHeight - vh); // the footer is taller than the screen: scroll on through it while the stage stays pinned
       root.style.setProperty("--overflow", `${over}px`);
@@ -82,6 +89,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
       mq.removeEventListener("change", measure);
       ro.disconnect();
       document.documentElement.classList.remove("rise-pinned");
+      prevRef.current?.classList.remove("rise-under");
     };
   }, []);
 

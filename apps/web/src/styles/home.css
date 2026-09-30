@@ -532,3 +532,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 /* workshop gallery: fills the pinned screen (was capped at 760px with a 32px margin) and is a touch brighter */
 .lgc { block-size: min(94svh, 1100px); }
 .lgc-track .lgc { block-size: min(calc(100svh - var(--header-h) - 12px), 1100px); filter: brightness(1.2) saturate(1.04); }
+
+/* whatever section precedes the rise panel is pinned under it: the panel rides up and over it, no dead space */
+.rise-under { position: sticky; z-index: 0; }
+.rise.is-pinned { background: transparent; z-index: 1; }
