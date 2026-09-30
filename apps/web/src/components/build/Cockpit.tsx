@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BagPreview } from "./BagPreview";
 import { PaymentStep, type CheckoutResult } from "./PaymentStep";
-import { BagConfigSchema, COLOURS, DEFAULT_BAG, PRESETS, type BagConfig, type Issue, type Preset } from "@/lib/configurator/schema";
+import { BagConfigSchema, COLOURS, DEFAULT_BAG, type BagConfig, type Issue, type Preset } from "@/lib/configurator/schema";
 import { CURRENCIES, formatMoney, type Currency } from "@/lib/commerce/money";
 import type { PriceResult } from "@/lib/configurator/pricing";
 import { clearSaved, decodeShare, encodeShare, loadSaved, store } from "@/lib/configurator/save";
-import { STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
+import { activeSteps, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
 import { LOGO_SRC } from "@/lib/site";
 import "../../styles/cockpit.css";
 
-const PRESET_LABEL: Record<Preset, string> = { plain: "Plain", tigerfull: "Tiger", monogram: "Monogram" };
-const COUNTRIES = [["AU", "Australia"], ["TH", "Thailand"], ["GB", "United Kingdom"], ["US", "United States"], ["AE", "UAE"], ["SG", "Singapore"]] as const;
 const colourName = (id: string): string => COLOURS.find((c) => c.id === id)?.name ?? id;
 const pad = (n: number): string => String(n).padStart(2, "0");
 
@@ -23,56 +21,29 @@ interface PriceResponse {
   depositMinor: number | null;
 }
 
-function Chips<T extends string | number>({ value, options, onChange, label }: { value: T; options: ReadonlyArray<{ id: T; name: string }>; onChange: (v: T) => void; label: string }) {
-  return (
-    <div className="ck__chips" role="radiogroup" aria-label={label}>
-      {options.map((o) => (
-        <button key={String(o.id)} type="button" role="radio" aria-checked={o.id === value} onClick={() => onChange(o.id)}>
-          {o.name}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Swatches({ value, onChange, label }: { value: string; onChange: (v: BagConfig["bodyColour"]) => void; label: string }) {
-  return (
-    <div className="ck__swatches" role="radiogroup" aria-label={label}>
-      {COLOURS.map((c) => (
-        <button key={c.id} type="button" role="radio" aria-checked={c.id === value} aria-label={c.name} title={c.name} style={{ background: c.hex }} onClick={() => onChange(c.id)} />
-      ))}
-    </div>
-  );
-}
-
-/** What was chosen on a step, in words (for the review). */
-function summary(id: StepId, c: BagConfig): string {
-  switch (id) {
-    case "design": return PRESET_LABEL[c.preset];
-    case "size": return `${c.sizeFt} ft`;
-    case "delivery": return `${COUNTRIES.find(([k]) => k === c.country)?.[1] ?? c.country}, ${c.fill === "filled" ? "filled" : "unfilled"}`;
-    case "material": return c.material;
-    case "body": return colourName(c.bodyColour);
-    case "layout": return `${c.panelLayout}, accent ${colourName(c.accentColour)}`;
-    case "caps": return colourName(c.capColour);
-    case "branding": return `${c.brandingMethod}, ${c.placement}`;
-    case "logo": return `${c.logoSize}${c.extraText ? `, “${c.extraText}”` : ""}${c.makersMark ? "" : ", no maker's mark"}`;
-    case "hardware": return `${c.hanging}, ${c.hardware}`;
-    case "extras": return c.extras.length ? c.extras.join(", ") : "none";
-    case "quantity": return `×${c.quantity}`;
-    case "review": return "";
+/** What the visitor has chosen on a step, in words (for the review). */
+function summary(def: StepDef, c: BagConfig): string {
+  const a = def.answer;
+  if (a.kind === "pills") {
+    const raw = a.key === "makersMark" ? (c.makersMark ? "yes" : "no") : String(c[a.key]);
+    return a.options.find((o) => String(o.id) === raw)?.name ?? raw;
   }
+  if (a.kind === "swatches") return colourName(c[a.key]);
+  if (a.kind === "multi") return c.extras.length ? c.extras.join(", ") : "none";
+  if (a.kind === "text") return c.extraText || "none";
+  if (a.kind === "stepper") return `×${c.quantity}`;
+  return "";
 }
 
 /**
- * The build cockpit. The bag fills the screen and the camera flies to the part you are deciding; one question at a time, in a dock along the bottom.
- * You can skip a question and come back (the track shows what is answered, skipped, or still open), the build saves as you go, and the last step
- * leads to the deposit payment. The browser never computes a price: it shows what the server says.
+ * The build cockpit. The bag fills the screen and the camera flies to the part being decided. One continuous flow that only ever asks one question:
+ * the answers are compact pills that scroll sideways in a thin dock, tapping one moves you on. Skip anything and come back to it (the track shows what is
+ * answered, skipped or still open), the build saves as you go and can be shared, and the last step leads to the deposit. The server prices everything.
  */
 export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [cfg, setCfg] = useState<BagConfig>({ ...DEFAULT_BAG, preset: initialPreset });
   const [currency, setCurrency] = useState<Currency>("AUD");
-  const [step, setStep] = useState(0);
+  const [stepId, setStepId] = useState<StepId>("design");
   const [answered, setAnswered] = useState<StepId[]>([]);
   const [skipped, setSkipped] = useState<StepId[]>([]);
   const [res, setRes] = useState<PriceResponse | null>(null);
@@ -82,11 +53,19 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [resume, setResume] = useState<ReturnType<typeof loadSaved>>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [backToReview, setBackToReview] = useState(false);
   const ready = useRef(false);
   const seq = useRef(0);
+  const timer = useRef(0);
+
+  const steps = useMemo(() => activeSteps(cfg), [cfg]);
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+  const def = (steps.find((s) => s.id === stepId) ?? steps[0]) as StepDef;
+  const idx = steps.indexOf(def);
+  const last = def.answer.kind === "review";
   const set = <K extends keyof BagConfig>(k: K, v: BagConfig[K]): void => setCfg((c) => ({ ...c, [k]: v }));
 
-  // start: a shared link wins, then a saved build (offered, not forced), else a fresh build from the chosen design
   useEffect(() => {
     const h = window.location.hash.match(/^#c=(.+)$/)?.[1];
     const shared = h ? decodeShare(h) : null;
@@ -98,20 +77,19 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
       if (saved && (saved.answered.length || saved.skipped.length)) setResume(saved);
     }
     ready.current = true;
+    return () => window.clearTimeout(timer.current);
   }, []);
 
-  // save as you go
   useEffect(() => {
     if (!ready.current || resume) return;
     const id = window.setTimeout(() => {
       const at = new Date().toISOString();
-      store({ cfg, currency, step, answered, skipped, savedAt: at });
+      store({ cfg, currency, step: STEPS.findIndex((s) => s.id === stepId), answered, skipped, savedAt: at });
       setSavedAt(at);
     }, 400);
     return () => window.clearTimeout(id);
-  }, [cfg, currency, step, answered, skipped, resume]);
+  }, [cfg, currency, stepId, answered, skipped, resume]);
 
-  // the server's price for this exact config
   useEffect(() => {
     const my = ++seq.current;
     const id = window.setTimeout(() => void (async () => {
@@ -122,8 +100,6 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     return () => window.clearTimeout(id);
   }, [cfg, currency]);
 
-  const def = (STEPS[step] ?? STEPS[0]) as StepDef;
-  const last = step === STEPS.length - 1;
   const errors = useMemo(() => res?.validation.issues.filter((i) => i.severity === "error") ?? [], [res]);
   const price = res?.price;
   const canPay = Boolean(res?.validation.ok && !res.validation.quote && price?.status === "priced");
@@ -132,10 +108,56 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     setAnswered((a) => (how === "answered" ? [...new Set([...a, id])] : a.filter((x) => x !== id)));
     setSkipped((s) => (how === "skipped" ? [...new Set([...s, id])] : s.filter((x) => x !== id)));
   };
-  const go = (i: number): void => setStep(Math.max(0, Math.min(STEPS.length - 1, i)));
-  const confirm = (): void => { mark(def.id, "answered"); go(step + 1); };
-  const skip = (): void => { if (!answered.includes(def.id)) mark(def.id, "skipped"); go(step + 1); };
-  const skippedLeft = STEPS.filter((s) => s.id !== "review" && stateOf(s.id) === "skipped");
+
+  /** Move to the next question that applies (or back to the review if you came from it). */
+  const advance = (from: StepId): void => {
+    window.clearTimeout(timer.current);
+    const list = stepsRef.current;
+    const i = list.findIndex((s) => s.id === from);
+    if (backToReview) {
+      setBackToReview(false);
+      setStepId("review");
+      return;
+    }
+    const nxt = list[Math.min(list.length - 1, i + 1)];
+    if (nxt) setStepId(nxt.id);
+  };
+  const jump = (id: StepId, fromReview = false): void => {
+    window.clearTimeout(timer.current);
+    setBackToReview(fromReview);
+    setStepId(id);
+  };
+  const back = (): void => {
+    window.clearTimeout(timer.current);
+    const prev = steps[Math.max(0, idx - 1)];
+    if (prev) setStepId(prev.id);
+  };
+  const skip = (): void => {
+    if (!answered.includes(def.id)) mark(def.id, "skipped");
+    advance(def.id);
+  };
+  const pick = (value: string | number): void => {
+    const a = def.answer;
+    if (a.kind !== "pills") return;
+    if (a.key === "makersMark") set("makersMark", value === "yes");
+    else if (a.key === "sizeFt") set("sizeFt", Number(value) as 3 | 4 | 5);
+    else setCfg((c) => ({ ...c, [a.key]: value }));
+    mark(def.id, "answered");
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => advance(def.id), 420); // a beat to see the change, then on to the next question
+  };
+  const pickColour = (id: BagConfig["bodyColour"]): void => {
+    const a = def.answer;
+    if (a.kind !== "swatches") return;
+    set(a.key, id);
+    mark(def.id, "answered");
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => advance(def.id), 420);
+  };
+  const done = (): void => {
+    mark(def.id, "answered");
+    advance(def.id);
+  };
 
   async function startCheckout(): Promise<void> {
     setBusy(true);
@@ -154,147 +176,106 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     try { await navigator.clipboard.writeText(url); setCopied(true); window.setTimeout(() => setCopied(false), 2000); } catch { window.prompt("Copy your link", url); }
   }
 
-  const controls: Record<Exclude<StepId, "review">, ReactNode> = {
-    design: <Chips label="Design" value={cfg.preset} options={PRESETS.map((p) => ({ id: p, name: PRESET_LABEL[p] }))} onChange={(v) => set("preset", v)} />,
-    size: <Chips label="Length" value={cfg.sizeFt} options={([3, 4, 5] as const).map((n) => ({ id: n, name: `${n} ft` }))} onChange={(v) => set("sizeFt", v)} />,
-    delivery: (
-      <>
-        <Chips label="Delivering to" value={cfg.country} options={COUNTRIES.map(([id, name]) => ({ id, name }))} onChange={(v) => set("country", v)} />
-        <Chips label="Fill" value={cfg.fill} options={[{ id: "unfilled", name: "Unfilled, filled on site" }, { id: "filled", name: "Filled (local)" }]} onChange={(v) => set("fill", v)} />
-      </>
-    ),
-    material: <Chips label="Material" value={cfg.material} options={[{ id: "vinyl", name: "Premium vinyl" }, { id: "leather", name: "Genuine leather" }, { id: "canvas", name: "Heavy canvas" }]} onChange={(v) => set("material", v)} />,
-    body: <Swatches label="Body colour" value={cfg.bodyColour} onChange={(v) => set("bodyColour", v)} />,
-    layout: (
-      <>
-        <Chips label="Layout" value={cfg.panelLayout} options={[{ id: "single", name: "Single colour" }, { id: "split-vertical", name: "Vertical split" }, { id: "bands", name: "Bands" }, { id: "three-panel", name: "Three panel" }]} onChange={(v) => set("panelLayout", v)} />
-        <Swatches label="Accent colour" value={cfg.accentColour} onChange={(v) => set("accentColour", v)} />
-        <Chips label="Stitching" value={cfg.stitching} options={[{ id: "tonal", name: "Tonal" }, { id: "contrast", name: "Contrast" }, { id: "accent", name: "Accent" }]} onChange={(v) => set("stitching", v)} />
-      </>
-    ),
-    caps: <Swatches label="Band colour" value={cfg.capColour} onChange={(v) => set("capColour", v)} />,
-    branding: (
-      <>
-        <Chips label="Branding method" value={cfg.brandingMethod} options={[{ id: "screen-print", name: "Screen print" }, { id: "embroidered-patch", name: "Embroidered patch" }, { id: "leather-patch", name: "Leather patch" }, { id: "debossed", name: "Debossed (leather)" }]} onChange={(v) => set("brandingMethod", v)} />
-        <Chips label="Placement" value={cfg.placement} options={[{ id: "front", name: "Front" }, { id: "front-back", name: "Front + back" }, { id: "wrap", name: "Wrap" }, { id: "top-band", name: "Top band" }, { id: "bottom-band", name: "Bottom band" }]} onChange={(v) => set("placement", v)} />
-      </>
-    ),
-    logo: (
-      <>
-        <Chips label="Logo size" value={cfg.logoSize} options={[{ id: "S", name: "S" }, { id: "M", name: "M" }, { id: "L", name: "L" }, { id: "full", name: "Full height" }]} onChange={(v) => set("logoSize", v)} />
-        <input className="ck__input" type="text" maxLength={30} value={cfg.extraText} placeholder="Your words (up to 30)" aria-label="Extra text" onChange={(e) => set("extraText", e.target.value)} />
-        <label className="ck__check"><input type="checkbox" checked={cfg.makersMark} onChange={(e) => set("makersMark", e.target.checked)} /> Sanchez maker&rsquo;s mark</label>
-      </>
-    ),
-    hardware: (
-      <>
-        <Chips label="Hanging" value={cfg.hanging} options={[{ id: "chain-4pt", name: "4-point chain" }, { id: "heavy-swivel", name: "Heavy swivel" }, { id: "strap", name: "Strap" }]} onChange={(v) => set("hanging", v)} />
-        <Chips label="Hardware finish" value={cfg.hardware} options={[{ id: "black", name: "Black" }, { id: "silver", name: "Silver" }]} onChange={(v) => set("hardware", v)} />
-      </>
-    ),
-    extras: (
-      <div className="ck__checks">
-        {(["qr-tag", "cover", "spare-chain"] as const).map((x) => (
-          <label key={x} className="ck__check">
-            <input type="checkbox" checked={cfg.extras.includes(x)} onChange={(e) => set("extras", e.target.checked ? [...cfg.extras, x] : cfg.extras.filter((y) => y !== x))} /> {x === "qr-tag" ? "QR authenticity tag" : x === "cover" ? "Protective cover" : "Spare chain set"}
-          </label>
-        ))}
-      </div>
-    ),
-    quantity: (
-      <div className="ck__stepper" role="group" aria-label="Quantity">
-        <button type="button" aria-label="One fewer" onClick={() => set("quantity", Math.max(1, cfg.quantity - 1))}>−</button>
-        <output>{cfg.quantity}</output>
-        <button type="button" aria-label="One more" onClick={() => set("quantity", Math.min(500, cfg.quantity + 1))}>+</button>
-      </div>
-    ),
-  };
-
+  const a = def.answer;
   const priceText = !price ? "…" : price.status === "priced" ? formatMoney(price.totalMinor, price.currency) : "Price to come";
+  const skippedLeft = steps.filter((s) => s.answer.kind !== "review" && stateOf(s.id) === "skipped");
+  const sheet = Boolean(resume) || Boolean(checkout) || last;
 
   return (
     <div className="ck">
       <h1 className="visually-hidden">Build your bag</h1>
       <div className="ck__stage">
         <BagPreview cfg={cfg} focus={def.part} />
-        <p className="ck__focus" aria-hidden="true">◎ Focus · {def.part === "whole" ? "the whole bag" : def.part === "top" ? "bands and crown" : def.part}</p>
       </div>
 
       <header className="ck__top">
         <Link href="/product" className="ck__brand" aria-label="Back to the bag"><img src={LOGO_SRC} alt="" width={44} height={38} /></Link>
-        <ol className="ck__track" aria-label="Build progress">
-          {STEPS.map((s, i) => (
-            <li key={s.id} data-state={stateOf(s.id)} aria-current={i === step ? "step" : undefined}>
-              <button type="button" aria-label={`${s.label}: ${stateOf(s.id)}`} disabled={Boolean(checkout)} onClick={() => go(i)} />
-            </li>
-          ))}
-        </ol>
-        <button type="button" className="ck__save" onClick={() => void share()} aria-label="Copy a link to this build">{copied ? "Link copied" : savedAt ? "Saved · Share" : "Share"}</button>
+        <div className="ck__mid">
+          <ol className="ck__track" aria-label="Build progress">
+            {steps.map((s) => (
+              <li key={s.id} data-state={stateOf(s.id)} aria-current={s.id === def.id ? "step" : undefined}>
+                <button type="button" aria-label={`${s.label}: ${stateOf(s.id)}`} disabled={Boolean(checkout)} onClick={() => jump(s.id)} />
+              </li>
+            ))}
+          </ol>
+          <p className="ck__price"><strong>{priceText}</strong>{res?.depositMinor && price?.status === "priced" ? <> · deposit {formatMoney(res.depositMinor, price.currency)}</> : null}{price?.status === "priced" && price.book === "test" ? " · test price" : ""}</p>
+        </div>
+        <button type="button" className="ck__save" onClick={() => void share()} aria-label="Copy a link to this build">{copied ? "Copied" : savedAt ? "Saved" : "Share"}</button>
       </header>
 
-      <section className="ck__dock" aria-label="Build controls">
-        {resume ? (
-          <div className="ck__panel">
-            <p className="ck__tele">Saved build found</p>
-            <h2 className="ck__q">Pick up where you left off?</h2>
-            <p className="ck__hint">{resume.answered.length} answered, {resume.skipped.length} skipped.</p>
-            <div className="ck__actions">
-              <button type="button" className="ck__btn ck__btn--ghost" onClick={() => { clearSaved(); setResume(null); }}>Start over</button>
-              <button type="button" className="ck__btn" onClick={() => { setCfg(resume.cfg); setCurrency(resume.currency); setAnswered(resume.answered); setSkipped(resume.skipped); setStep(Math.min(resume.step, STEPS.length - 1)); setResume(null); }}>Resume</button>
-            </div>
-          </div>
-        ) : checkout ? (
-          <div className="ck__panel">
-            <p className="ck__tele">Deposit</p>
-            <h2 className="ck__q">Deposit due now: {formatMoney(checkout.depositMinor, checkout.currency as Currency)}</h2>
-            <p className="ck__hint">of {formatMoney(checkout.totalMinor, checkout.currency as Currency)}{checkout.book === "test" ? " (test prices: synthetic, not real)" : ""}</p>
-            <PaymentStep checkout={checkout} />
-          </div>
-        ) : (
-          <div className="ck__panel">
-            <p className="ck__tele"><span>Step {pad(step + 1)}/{pad(STEPS.length)}</span><span>{def.label}</span><span className="ck__tele-price">{priceText}</span></p>
-            <h2 className={`ck__q${last ? " ck__q--yours" : ""}`}>{def.question}</h2>
-            <p className="ck__hint">{def.hint}</p>
-
-            {!last && <div className="ck__controls">{controls[def.id as Exclude<StepId, "review">]}</div>}
-
-            {last && (
-              <div className="ck__review">
-                <ul>
-                  {STEPS.filter((s) => s.id !== "review").map((s) => (
-                    <li key={s.id} data-state={stateOf(s.id)}>
-                      <span>{s.label}</span>
-                      <span>{summary(s.id, cfg)}</span>
-                      <button type="button" onClick={() => go(STEPS.indexOf(s))}>{stateOf(s.id) === "skipped" ? "Revisit" : "Edit"}</button>
-                    </li>
-                  ))}
-                </ul>
-                {skippedLeft.length > 0 && <p className="ck__note">You skipped {skippedLeft.map((s) => s.label).join(", ")}. The defaults are in your bag; revisit any time.</p>}
-                {errors.map((i) => (
-                  <p key={i.code} className="ck__note ck__note--err" role="alert">{i.message} <button type="button" onClick={() => go(STEPS.findIndex((s) => s.id === stepForKey(i.path)))}>Fix</button></p>
+      {sheet && (
+        <section className="ck__sheet" aria-label="Build summary">
+          {resume ? (
+            <>
+              <p className="ck__tele">Saved build found</p>
+              <h2 className="ck__sq">Pick up where you left off?</h2>
+              <p className="ck__note">{resume.answered.length} answered, {resume.skipped.length} skipped.</p>
+              <div className="ck__sheetrow">
+                <button type="button" className="ck__btn ck__btn--ghost" onClick={() => { clearSaved(); setResume(null); }}>Start over</button>
+                <button type="button" className="ck__btn" onClick={() => { setCfg(resume.cfg); setCurrency(resume.currency); setAnswered(resume.answered); setSkipped(resume.skipped); setStepId(STEPS[Math.min(resume.step, STEPS.length - 1)]?.id ?? "design"); setResume(null); }}>Resume</button>
+              </div>
+            </>
+          ) : checkout ? (
+            <>
+              <p className="ck__tele">Deposit</p>
+              <h2 className="ck__sq">Due now: {formatMoney(checkout.depositMinor, checkout.currency as Currency)}</h2>
+              <p className="ck__note">of {formatMoney(checkout.totalMinor, checkout.currency as Currency)}{checkout.book === "test" ? " (test prices: synthetic, not real)" : ""}</p>
+              <PaymentStep checkout={checkout} />
+            </>
+          ) : (
+            <>
+              <h2 className="ck__sq ck__sq--yours">Yours.</h2>
+              <ul className="ck__list">
+                {steps.filter((s) => s.answer.kind !== "review").map((s) => (
+                  <li key={s.id} data-state={stateOf(s.id)}>
+                    <span>{s.label}{stateOf(s.id) === "skipped" ? " · skipped" : ""}</span>
+                    <span>{summary(s, cfg)}</span>
+                    <button type="button" onClick={() => jump(s.id, true)}>{stateOf(s.id) === "skipped" ? "Revisit" : "Edit"}</button>
+                  </li>
                 ))}
-                {price?.status === "unpriced" && <p className="ck__note">{price.reason} Ordering opens once prices are set.</p>}
-                {error && <p className="ck__note ck__note--err" role="alert">{error}</p>}
+              </ul>
+              {skippedLeft.length > 0 && <p className="ck__note">Skipped: {skippedLeft.map((s) => s.label).join(", ")}. The defaults are in your bag.</p>}
+              {errors.map((i) => <p key={i.code} className="ck__note ck__note--err" role="alert">{i.message} <button type="button" onClick={() => jump(stepForKey(i.path), true)}>Fix</button></p>)}
+              {price?.status === "unpriced" && <p className="ck__note">{price.reason} Ordering opens once prices are set.</p>}
+              {error && <p className="ck__note ck__note--err" role="alert">{error}</p>}
+              <div className="ck__sheetrow">
+                <select aria-label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
+                <button type="button" className="ck__btn ck__btn--pay" disabled={!canPay || busy} onClick={() => void startCheckout()}>{busy ? "One moment…" : `Make it mine · ${priceText}`}</button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      <section className="ck__dock" aria-label="Build controls" hidden={sheet && !last ? true : false}>
+        <p className="ck__ask"><span>{pad(idx + 1)}/{pad(steps.length)}</span> {def.question}</p>
+        <div className="ck__row">
+          <button type="button" className="ck__icon" onClick={back} disabled={idx === 0} aria-label="Previous question">‹</button>
+          <div className="ck__scroll" role="radiogroup" aria-label={def.question}>
+            {a.kind === "pills" && a.options.map((o) => {
+              const cur = a.key === "makersMark" ? (cfg.makersMark ? "yes" : "no") : String(cfg[a.key]);
+              return <button key={String(o.id)} type="button" role="radio" aria-checked={String(o.id) === cur} onClick={() => pick(o.id)}>{o.name}</button>;
+            })}
+            {a.kind === "swatches" && COLOURS.map((c) => (
+              <button key={c.id} type="button" role="radio" className="ck__sw" aria-checked={cfg[a.key] === c.id} aria-label={c.name} title={c.name} style={{ background: c.hex }} onClick={() => pickColour(c.id)} />
+            ))}
+            {a.kind === "multi" && a.options.map((o) => {
+              const on = cfg.extras.includes(o.id as BagConfig["extras"][number]);
+              return <button key={o.id} type="button" role="checkbox" aria-checked={on} onClick={() => set("extras", on ? cfg.extras.filter((x) => x !== o.id) : [...cfg.extras, o.id as BagConfig["extras"][number]])}>{o.name}</button>;
+            })}
+            {a.kind === "text" && <input className="ck__input" type="text" maxLength={30} value={cfg.extraText} placeholder="Up to 30 characters" aria-label="Your words" onChange={(e) => set("extraText", e.target.value)} />}
+            {a.kind === "stepper" && (
+              <div className="ck__stepper" role="group" aria-label="Quantity">
+                <button type="button" aria-label="One fewer" onClick={() => set("quantity", Math.max(1, cfg.quantity - 1))}>−</button>
+                <output>{cfg.quantity}</output>
+                <button type="button" aria-label="One more" onClick={() => set("quantity", Math.min(500, cfg.quantity + 1))}>+</button>
               </div>
             )}
-
-            {!last && errors.filter((i) => stepForKey(i.path) === def.id).map((i) => <p key={i.code} className="ck__note ck__note--err" role="alert">{i.message}</p>)}
-
-            <div className="ck__actions">
-              <button type="button" className="ck__btn ck__btn--ghost" disabled={step === 0} onClick={() => go(step - 1)}>Back</button>
-              {!last && <button type="button" className="ck__skip" onClick={skip}>Skip for now ›</button>}
-              {!last ? (
-                <button type="button" className="ck__btn" onClick={confirm}>Confirm</button>
-              ) : (
-                <button type="button" className="ck__btn ck__btn--pay" disabled={!canPay || busy} onClick={() => void startCheckout()}>{busy ? "One moment…" : "Make it mine"}</button>
-              )}
-            </div>
-            <div className="ck__meta">
-              <span>{price?.status === "priced" && price.book === "test" ? "Test price" : "Your bag"} · <strong>{priceText}</strong>{res?.depositMinor && price?.status === "priced" ? ` · deposit ${formatMoney(res.depositMinor, price.currency)}` : ""}</span>
-              <select aria-label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
-            </div>
           </div>
-        )}
+          {(a.kind === "multi" || a.kind === "text" || a.kind === "stepper") && <button type="button" className="ck__icon ck__icon--go" onClick={done} aria-label="Next question">✓</button>}
+          <button type="button" className="ck__icon" onClick={skip} aria-label="Skip for now">›</button>
+        </div>
+        {errors.filter((i) => stepForKey(i.path) === def.id).map((i) => <p key={i.code} className="ck__err" role="alert">{i.message}</p>)}
       </section>
     </div>
   );

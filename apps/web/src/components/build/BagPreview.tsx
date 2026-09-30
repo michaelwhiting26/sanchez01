@@ -25,7 +25,7 @@ export function BagPreview({ cfg, focus = "whole" }: { cfg: BagConfig; focus?: F
     if (!root.current || !host.current) return undefined;
     try {
       const e = new BagEngine({ root: root.current, host: host.current, onProduct: () => undefined });
-      e.setFraming(0.82);
+      e.setFraming(0.7);
       e.start();
       engine.current = e;
       return () => {
