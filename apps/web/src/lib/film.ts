@@ -188,7 +188,7 @@ export class FilmHelix {
     const r = this.o.track.getBoundingClientRect();
     const vh = window.innerHeight;
     const overlap = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / vh;
-    const k = Math.min(1, Math.max(0, (overlap - 0.55) / 0.35));
+    const k = Math.min(1, Math.max(0, (overlap - 0.1) / 0.3)); // fades in as soon as the gallery starts to enter, so the film carries on down into the space below instead of stopping at a hard edge
     this.visible = k > 0.01;
     this.spot.style.opacity = k.toFixed(3);
     if (!this.visible) return;
