@@ -430,3 +430,12 @@ body[data-page="home"] .site-header, body[data-page="wip"] .site-header { displa
 .rise .footer-top--min { display: block; }
 .rise .footer-logo-row { display: flex; align-items: center; gap: clamp(14px, 2vw, 24px); }
 .rise .footer-logo-row .footer-globe { inline-size: 96px; block-size: 96px; margin: 0; flex: none; }   /* same width as the logo (96px) */
+
+/* no dead space at the bottom: when the card is taller than its content (big screens) the spare height goes between the button and the footer, so the footer sits on the bottom edge */
+.rise.is-pinned .rise__card { display: flex; flex-direction: column; }
+.rise.is-pinned .rise__panel { flex: 1 0 auto; min-block-size: 0; display: flex; flex-direction: column; }
+.rise.is-pinned .rise__hero { flex: 1 0 auto; }
+.rise.is-pinned .rise__stage { background: #0a0b0d; }
+
+.rise__panel { padding-block-end: 0; }
+.rise .site-footer { padding-block-end: clamp(16px, 2.5vh, 28px); }
