@@ -528,3 +528,7 @@ html.rise-pinned .rise .rise__card { pointer-events: auto; }
 .waitlist__method input:focus-visible + span { outline: 2px solid #c9a45c; outline-offset: 2px; }
 .waitlist__priv { justify-self: center; font: 400 .7rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: #6f665b; text-decoration: none; }
 .waitlist__priv:hover, .waitlist__priv:focus-visible { color: #a99f92; text-decoration: underline; }
+
+/* workshop gallery: fills the pinned screen (was capped at 760px with a 32px margin) and is a touch brighter */
+.lgc { block-size: min(94svh, 1100px); }
+.lgc-track .lgc { block-size: min(calc(100svh - var(--header-h) - 12px), 1100px); filter: brightness(1.2) saturate(1.04); }
