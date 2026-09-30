@@ -6,7 +6,7 @@
 (function () {
   var track = document.querySelector("[data-lgc-track]"); if (!track) return;
   var host = track.querySelector("[data-lgc]"), pin = track.querySelector(".lgc-section"); if (!host || !pin) return;
-  var GAP = 140;                                       /* ms between key presses while catching up (pressing again mid-move is harmless) */
+  var GAP = matchMedia("(pointer: coarse)").matches ? 70 : 140;                                       /* ms between key presses while catching up (pressing again mid-move is harmless) */
   var REACH = 0.85;                                    /* the last slide is reached at 85% of the track; the rest is a short hold before the page carries on */
   var hold = false, lastPress = 0, live = false;
 
@@ -26,7 +26,15 @@
     if (!live) return;
     var n = total(), cur = current();
     if (n > 1 && track.__steps !== n) { track.__steps = n; track.style.setProperty("--lgc-steps", n - 1); }   /* track length follows the slide count */
-    if (n > 1 && cur >= 0 && !hold) {
+    /* the gate: the page cannot leave the pinned gallery until the carousel has run all the way to the last slide (a phone flick can carry
+       straight past the end). If the scroll has gone beyond the point where the last slide is due, put it back there and let the carousel catch up. */
+    if (n > 1 && cur >= 0 && cur < n - 1 && progress() > REACH + 0.01) {
+      var headG = parseFloat(getComputedStyle(track).getPropertyValue("--header-h")) || 0;
+      var travelG = track.offsetHeight - pin.offsetHeight;
+      var docTop = track.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, docTop - headG + REACH * travelG);
+    }
+    if (n > 1 && cur >= 0 && (!hold || cur < n - 1 && progress() >= REACH)) {
       var want = Math.min(n - 1, Math.round(Math.min(1, progress() / REACH) * (n - 1)));
       if (want !== cur && now - lastPress > GAP) { press(want > cur ? 1 : -1); lastPress = now; }
     }

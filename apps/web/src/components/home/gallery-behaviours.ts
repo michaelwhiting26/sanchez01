@@ -18,7 +18,7 @@ function counterText(host: Element): string {
 export const FILM_TRAVEL = 2600;
 
 export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: HTMLElement): () => void {
-  const GAP_MS = 140; // between key presses while catching up
+  const GAP_MS = window.matchMedia("(pointer: coarse)").matches ? 70 : 140; // between key presses while catching up
   const REACH = 0.85; // the last slide is reached at 85% of the track; the rest is a short hold before the page carries on
   let hold = false;
   let lastPress = 0;
@@ -64,7 +64,13 @@ export function attachGalleryScroll(track: HTMLElement, host: HTMLElement, pin: 
       steps = n;
       track.style.setProperty("--lgc-steps", String(n - 1)); // track length follows the slide count
     }
-    if (n > 1 && cur >= 0 && !hold) {
+    // the gate: the page cannot leave the pinned gallery until the carousel has run to the last slide (a phone flick can carry straight past the end)
+    if (n > 1 && cur >= 0 && cur < n - 1 && progress() > REACH + 0.01) {
+      const headG = parseFloat(getComputedStyle(track).getPropertyValue("--header-h")) || 0;
+      const docTop = track.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, docTop - headG + REACH * (track.offsetHeight - pin.offsetHeight));
+    }
+    if (n > 1 && cur >= 0 && (!hold || (cur < n - 1 && progress() >= REACH))) {
       const want = Math.min(n - 1, Math.round(Math.min(1, progress() / REACH) * (n - 1)));
       if (want !== cur && now - lastPress > GAP_MS) {
         press(want > cur ? 1 : -1);
