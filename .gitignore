@@ -20,3 +20,6 @@ apps/web/.data/
 # generated on every dev/build/typegen run (paths differ between dev and build); never commit
 apps/web/next-env.d.ts
 *.tsbuildinfo
+
+# generated Jesse character build artifacts (checkpoints, QA renders, vendored MPFB2 clone)
+/build/

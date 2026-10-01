@@ -10,7 +10,7 @@
  *     during jabs and guard (x constant); he advances only during steps, by the sheet's own `travelAt` (stepPx x scale per step). Feet on the ribbon curve, tilted to it.
  * Missing sheets degrade: no roll sheet = a 250 ms fade from the hide spot to the landing; no jab/stepin sheet = the old teep gait, then the tiptoe (sneak) sheet.
  */
-import { getHeroHideSpot, onJesseOwner, setJesseStatus, type HeroHideSpot } from "./hero/handoff";
+import { getHeroHideSpot, onJesseOwner, setJesseSize, setJesseStatus, type HeroHideSpot } from "./hero/handoff";
 
 const FRAME = 320;
 const FOOT_Y = 293.4;
@@ -513,6 +513,7 @@ export class RibbonSneak {
     }
     // sprite size: ~2.2 x the lettering height for the figure itself (the figure is ~0.84 of the frame)
     this.size = Math.round(clamp((2.2 * CAP_HEIGHT * this.scale) / 0.84, 132, 300));
+    setJesseSize(this.size);
     const s = this.size;
     this.actor.style.width = this.actor.style.height = `${s}px`;
     for (const l of Object.values(this.layers)) {

@@ -50,18 +50,20 @@ export function onHeroRunnerHidden(cb: (hidden: boolean) => void): () => void {
 // ---------------------------------------------------------------- who owns Jesse
 
 /** Which single figure is drawn now: the hero's canvas runner, the ribbon figure, the gallery figure, or nobody (he is between scenes, off screen). */
-export type JesseOwner = "hero" | "ribbon" | "gallery" | "none";
+export type JesseOwner = "hero" | "ribbon" | "gallery" | "transit" | "none";
 /** What one scene says about itself: `idle` = not reached yet (scrolled above it), `active` = its figure is on screen, `spent` = he has left it (scrolled past). */
 export type JesseStatus = "idle" | "active" | "spent";
 
-const status: Record<"ribbon" | "gallery", JesseStatus> = { ribbon: "idle", gallery: "idle" };
+export type JesseScene = "ribbon" | "gallery" | "transit";
+const status: Record<JesseScene, JesseStatus> = { ribbon: "idle", gallery: "idle", transit: "idle" };
 let owner: JesseOwner = "hero";
 const ownerListeners = new Set<(o: JesseOwner) => void>();
 
 function deriveOwner(): JesseOwner {
+  if (status.transit === "active") return "transit";
   if (status.gallery === "active") return "gallery";
   if (status.ribbon === "active") return "ribbon";
-  if (status.gallery === "spent" || status.ribbon === "spent") return "none";
+  if (status.transit === "spent" || status.gallery === "spent" || status.ribbon === "spent") return "none";
   return "hero";
 }
 
@@ -69,7 +71,7 @@ function deriveOwner(): JesseOwner {
  * A scene reports its status; returns the resulting owner. The hero's canvas runner is hidden exactly while the owner is not "hero".
  * Priority gallery > ribbon, so even a transient overlap never draws two: a scene draws only while `owner === itself`.
  */
-export function setJesseStatus(who: "ribbon" | "gallery", s: JesseStatus): JesseOwner {
+export function setJesseStatus(who: JesseScene, s: JesseStatus): JesseOwner {
   status[who] = s;
   const next = deriveOwner();
   if (next !== owner) {
@@ -95,6 +97,14 @@ export function resetHandoff(): void {
   listeners.clear();
   status.ribbon = "idle";
   status.gallery = "idle";
+  status.transit = "idle";
   owner = "hero";
   ownerListeners.clear();
 }
+
+/** One man, one size: the ribbon figure (the size Michael signed off) publishes its sprite frame size and every other scene draws Jesse at it. 0 until measured. */
+let jesseSize = 0;
+export const setJesseSize = (px: number): void => {
+  jesseSize = px;
+};
+export const getJesseSize = (): number => jesseSize;

@@ -8,7 +8,7 @@
  * The hand-off state (lib/hero/handoff.ts) guarantees one figure at a time: this actor draws only while it is the owner.
  * Sheets: abseil.json (facing the wall on its RIGHT in-sheet, so it is mirrored to put the wall on the left), walk.json (faces right, unmirrored).
  */
-import { onJesseOwner, setJesseStatus } from "./hero/handoff";
+import { getJesseSize, onJesseOwner, setJesseStatus } from "./hero/handoff";
 import { parseSheet, type RibbonSheet } from "./ribbon-sneak";
 
 const FRAME = 320;
@@ -267,7 +267,7 @@ export class GalleryAbseil {
   measure(): void {
     this.width = this.stage.clientWidth;
     const vh = this.stage.clientHeight;
-    this.sz = Math.round(clamp(vh * GALLERY_ABSEIL.sizeShare, GALLERY_ABSEIL.sizeMin, GALLERY_ABSEIL.sizeMax));
+    this.sz = getJesseSize() || Math.round(clamp(vh * GALLERY_ABSEIL.sizeShare, GALLERY_ABSEIL.sizeMin, GALLERY_ABSEIL.sizeMax));
     // the strip's offsetParent is the gallery viewport, which fills the stage: offsetTop + height is the strip's bottom edge in stage coordinates
     this.yBottom = this.strip.offsetTop + this.strip.offsetHeight;
     this.layout();
@@ -299,6 +299,11 @@ export class GalleryAbseil {
   /** `t`: the gallery's raw pin progress (< 0 before the pin, > 1 after). */
   update(t: number): void {
     this.lastT = t;
+    const shared = getJesseSize();
+    if (shared && shared !== this.sz) {
+      this.sz = shared; // the ribbon measured after us (or resized): keep one size
+      this.layout();
+    }
     const ab = this.ab;
     const walk = this.walk;
     if (!ab || !walk || !this.abImg || !this.walkImg || !this.sz) return;

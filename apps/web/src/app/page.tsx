@@ -1,12 +1,14 @@
 import { BagPunch } from "@/components/home/BagPunch";
 import { CurvedLoop } from "@/components/home/CurvedLoop";
 import { DnaCore } from "@/components/home/DnaCore";
+import { DnaDive } from "@/components/home/DnaDive";
 import { BagHit } from "@/components/home/BagHit";
 import { FooterMin } from "@/components/home/FooterMin";
 import { Hero } from "@/components/home/Hero";
 import { Marquee } from "@/components/home/Marquee";
 import { OrbitSubmit } from "@/components/home/OrbitSubmit";
 import { RisePanel } from "@/components/home/RisePanel";
+import { TransitJesse } from "@/components/home/TransitJesse";
 import { Waitlist } from "@/components/home/Waitlist";
 import { WorkshopGallery } from "@/components/home/WorkshopGallery";
 
@@ -26,11 +28,10 @@ export default function HomePage() {
         <CurvedLoop text="SANCHEZ • CUSTOM ✦ " />
         <WorkshopGallery />
         <div className="sz-transit" aria-hidden="true" data-transit="" />
+        <TransitJesse />
         <Marquee />
+        <DnaDive />
         <BagPunch />
-        <section className="jesse-2d" aria-label="Jesse Sanchez">
-          <img src="/assets/jesse/jesse-pads.webp" alt="Jesse Sanchez holding Sanchez focus pads" width={676} height={1118} loading="lazy" decoding="async" />
-        </section>
         <RisePanel>
           <Waitlist />
           <div className="globe-slot" data-globe-slot="">
