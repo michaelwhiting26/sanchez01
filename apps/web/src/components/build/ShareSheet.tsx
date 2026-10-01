@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SHARE_ICONS } from "./share-icons";
+import { start as startScroll, stop as stopScroll } from "@/lib/scroll";
 
 interface Target {
   readonly id: keyof typeof SHARE_ICONS;
@@ -39,6 +40,8 @@ export function ShareSheet({ url, open, onClose }: { url: string; open: boolean;
 
   useEffect(() => {
     if (!open) return undefined;
+    stopScroll("share-sheet"); // lib/scroll.ts: the page behind the sheet does not move; keyed, so it never releases another modal's lock
+    const releaseScroll = (): void => startScroll("share-sheet");
     setCopied(false);
     const prev = document.activeElement as HTMLElement | null;
     panel.current?.focus();
@@ -47,6 +50,7 @@ export function ShareSheet({ url, open, onClose }: { url: string; open: boolean;
     };
     window.addEventListener("keydown", onKey);
     return () => {
+      releaseScroll();
       window.removeEventListener("keydown", onKey);
       prev?.focus();
     };

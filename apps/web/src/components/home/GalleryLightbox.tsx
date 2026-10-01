@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
 import { GALLERY_SLIDES } from "./gallery-slides";
+import { scrollTo, start as startScroll, stop as stopScroll } from "@/lib/scroll";
 
 interface Props {
   readonly index: number;
@@ -33,10 +34,9 @@ export default function GalleryLightbox({ index, origin, onIndex, onClose }: Pro
     if (!dlg) return;
     const root = document.documentElement;
     const y = window.scrollY;
-    const prevOverflow = root.style.overflow;
     const prevPad = root.style.paddingRight;
     const bar = window.innerWidth - root.clientWidth; // keep the layout width identical so nothing reflows behind
-    root.style.overflow = "hidden";
+    stopScroll("lightbox"); // lib/scroll.ts: Lenis stops and <html> is locked; keyed, so another modal's lock is never released by this one
     if (bar > 0) root.style.paddingRight = `${bar}px`;
     if (!dlg.open) dlg.showModal();
     const m = mediaRef.current;
@@ -51,9 +51,9 @@ export default function GalleryLightbox({ index, origin, onIndex, onClose }: Pro
       }
     }
     return () => {
-      root.style.overflow = prevOverflow;
+      startScroll("lightbox");
       root.style.paddingRight = prevPad;
-      if (Math.abs(window.scrollY - y) > 0.5) window.scrollTo({ top: y, behavior: "instant" });
+      if (Math.abs(window.scrollY - y) > 0.5) scrollTo(y, { immediate: true, offset: 0 });
       if (dlg.open) dlg.close();
     };
   }, []);
@@ -123,7 +123,7 @@ export default function GalleryLightbox({ index, origin, onIndex, onClose }: Pro
               <img key={slide.src} src={slide.src} alt={slide.title} decoding="async" />
             )}
           </div>
-          <div className="pgl-text">
+          <div className="pgl-text" data-lenis-prevent="">
             <h2 className="pgl-title">{slide.title}</h2>
             {slide.caption ? <p className="pgl-caption">{slide.caption}</p> : <p className="pgl-caption pgl-caption--todo">Caption to come</p>}
             {slide.details && slide.details.length > 0 ? (
