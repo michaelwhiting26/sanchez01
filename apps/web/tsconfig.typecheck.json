@@ -1,0 +1,6 @@
+{
+  // Type-checks EVERYTHING, tests included (npm run typecheck, CI, pre-push). tsconfig.json leaves the tests out because `next build`
+  // type-checks with it, and on Vercel the web app's install does not include the root's test tooling (vitest).
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules"]
+}
