@@ -1,0 +1,40 @@
+/* Hero: the black wordmark hero, its fixed field canvas, the "Custom" signature, the clear glass.
+   Components: Hero.tsx, HeroField.tsx. Engine: lib/hero/. */
+
+/* The fingerprint field: one fixed canvas BEHIND the page (flows through the hero, the strip, the gallery, the marquee and the bag) */
+.wm-field { position: fixed; inset: 0; inline-size: 100%; block-size: 100%; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 1.4s ease; transform-origin: 50% 50%; /* the DNA dive zooms it about the centre */ }
+.wm-field.is-ready { opacity: 1; }
+
+/* The hero is transparent so the field shows through. No isolation on it: that would lift the hero's fixed field canvas above the DNA spiral and hide the spiral on the whole page (owner bug, 30 Sep 19:05). */
+.wm-hero { position: relative; display: grid; place-items: center; min-block-size: calc(100svh - var(--header-h, 72px)); block-size: 100svh; padding: 0; background: transparent; overflow: visible; }
+/* Hero cursor (hero-cursor.js): stitched ring + red centre dot. Mouse/trackpad only. */
+@media (hover: hover) and (pointer: fine) { .wm-hero--rings, .wm-hero--rings * { cursor: none; } }
+
+/* A soft dark pool clears space for "Custom" */
+.wm-hero__pool { position: absolute; left: 50%; top: 50%; inline-size: min(60vw, 900px); aspect-ratio: 2.2 / 1; transform: translate(-22%, 2%) rotate(-7deg); background: radial-gradient(closest-side, rgb(0 0 0 / .88), rgb(0 0 0 / .6) 55%, transparent); pointer-events: none; z-index: 1; }
+@media (max-width: 767px) { .wm-hero__pool { inline-size: 80vw; transform: translate(-30%, 6%) rotate(-7deg); } }
+
+/* "Custom" signature over the dithered SANCHEZ */
+.wm-hero__sig { position: absolute; left: 50%; top: 50%; inline-size: min(46vw, 720px); transform: translate(-30%, 6%) rotate(-7deg); pointer-events: none; z-index: 2; }
+@media (max-width: 767px) { .wm-hero__sig { inline-size: 56vw; transform: translate(-24%, 32%) rotate(-7deg); } }   /* phones: Custom nudged down and right */
+.wm-hero__sig .sig { display: block; inline-size: 100%; block-size: auto; overflow: visible; filter: drop-shadow(0 4px 18px rgb(0 0 0 / .85)); }
+.sig__p { fill: #a83e26; fill-opacity: 0; stroke: #c4553a; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: sig-draw 1.1s cubic-bezier(.65,.05,.36,1) forwards, sig-fill .6s ease forwards;
+  animation-delay: calc(1.2s + var(--i) * .28s), calc(1.9s + var(--i) * .28s); }
+@keyframes sig-draw { to { stroke-dashoffset: 0; } }
+@keyframes sig-fill { to { fill-opacity: 1; stroke-opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; } }
+/* load sequence: "Custom" is drawn in by the returning runner (the engine sets clip-path), so its own draw-in animation is off */
+[data-hero-rings].is-intro .sig__p { animation: none; } /* the engine lays the ink down stroke by stroke as the runner sprays */
+
+/* no canvas (or it failed): a plain wordmark stands in for the field; "Custom" is already a static SVG */
+.wm-hero__static { display: none; position: absolute; inset: 0; place-items: center; font: 800 clamp(64px, 16vw, 220px)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .04em; color: transparent; -webkit-text-stroke: 2px #d6b588; z-index: 0; }
+.wm-hero.is-static .wm-hero__static { display: grid; }
+[data-hero-rings].is-static .sig__p { animation: none; stroke-dashoffset: 0; fill-opacity: 1; }
+[data-hero-rings].is-static .sig { clip-path: none; }
+
+/* Clear glass over the hero: invisible as an object (no edges, no facets, no sheen). It only lifts what is behind it, a touch more contrast,
+   colour and light, so the screen simply reads sharper and more vivid. Never blocks touch or the cursor field. */
+.wm-hero__glass { position: absolute; inset: 0; z-index: 30; pointer-events: none; background: transparent;
+  -webkit-backdrop-filter: contrast(1.12) saturate(1.18) brightness(1.04); backdrop-filter: contrast(1.12) saturate(1.18) brightness(1.04); }

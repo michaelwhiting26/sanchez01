@@ -100,6 +100,16 @@ export class DnaCore {
     this.raf = requestAnimationFrame(this.loop);
     if (!this.visible || (this.coarse && now - this.last < 33)) return;
     this.last = now;
+    this.tick(now);
+  };
+
+  /** Render synchronously at the current scroll (the rAF loop is otherwise the only caller). Used by the e2e hooks (lib/e2e-hooks.ts) and screenshots. */
+  drawAt(now = performance.now()): void {
+    this.dirty = true;
+    this.tick(now);
+  }
+
+  private tick(now: number): void {
     this.measureEnd();
     if (window.scrollY > this.fieldEnd) {
       if (!this.cleared) {
@@ -112,7 +122,7 @@ export class DnaCore {
     if (this.reduce && !this.dirty) return;
     this.dirty = false;
     this.draw(now);
-  };
+  }
 
   private draw(now: number): void {
     const { ctx, w, h, pitch } = this;

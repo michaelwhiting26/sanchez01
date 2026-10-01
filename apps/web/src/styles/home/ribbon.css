@@ -1,0 +1,13 @@
+/* Ribbon: the curved SANCHEZ • CUSTOM text loop under the hero, and the sneaking runner that crosses it.
+   Components: CurvedLoop.tsx. Engines: lib/curved-loop.ts, lib/ribbon-sneak.ts. */
+
+/* clipped sideways, free to rise above the ribbon's top edge (the runner's jabs) */
+.curved-loop { position: relative; z-index: 1; background: transparent; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: pan-y; padding-block: 0 clamp(6px, 1.5vh, 18px); overflow-x: clip; overflow-y: visible; }
+.curved-loop:active { cursor: grabbing; }
+.curved-loop__svg { display: block; inline-size: 100%; block-size: auto; overflow: visible; }
+.curved-loop__text { font: 800 64px/1 var(--font-display, "Barlow Condensed", "Arial Narrow", sans-serif); letter-spacing: .02em; text-transform: uppercase; fill: #f3eadc; }
+
+/* Ribbon figure = the hero runner (ribbon-sneak.ts): the same amber edge light the canvas runner has, so the hand-off does not change his look */
+.ribbon-sneak { position: absolute; inset-block-start: 0; inset-inline-start: 0; inline-size: 0; block-size: 0; visibility: hidden; pointer-events: none; z-index: 2; will-change: transform; contain: layout style; filter: drop-shadow(0 0 4px rgb(232 168 90 / .5)); }
+.ribbon-sneak__sheet { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 100% 100%; transform-origin: 0 0; }
+@media (prefers-reduced-motion: reduce) { .ribbon-sneak { display: none; } }

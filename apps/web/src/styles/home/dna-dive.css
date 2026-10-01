@@ -1,0 +1,8 @@
+/* The dive into the DNA (DnaDive.tsx), between the SANCHEZ rows and the bag: a tall scroll section with a sticky stage holding the ride iframe
+   (public/dna-dive). Everything inside moves by transform/opacity only. The fixed spiral and field canvases it zooms are styled in their own files. */
+.dna-dive { position: relative; block-size: 700svh; }
+.dna-dive__stage { position: sticky; inset-block-start: 0; block-size: 100svh; overflow: hidden; pointer-events: none; }
+.dna-dive__hole { position: absolute; inset-block-start: 50%; inset-inline-start: 50%; inline-size: 100vmax; block-size: 100vmax; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, transparent 0 46%, rgb(0 0 0 / .6) 58%, #000 70%); box-shadow: 0 0 0 300vmax #000; will-change: transform, opacity; }
+.dna-dive__ride { position: absolute; inset: 0; visibility: hidden; opacity: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
+.dna-dive__ride iframe { inline-size: 100%; block-size: 100%; border: 0; display: block; background: #0e0b09; pointer-events: none; }

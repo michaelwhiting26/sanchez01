@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { DnaCore as Engine } from "@/lib/dna";
+import { registerSz } from "@/lib/e2e-hooks";
 
 /** The fixed double helix behind the page. Purely decorative. */
 export function DnaCore() {
@@ -14,7 +15,11 @@ export function DnaCore() {
       coarsePointer: window.matchMedia("(pointer: coarse)").matches,
     });
     dna.start();
-    return () => dna.destroy();
+    const off = registerSz("spiral", { drawAt: () => dna.drawAt() });
+    return () => {
+      off();
+      dna.destroy();
+    };
   }, []);
   return <canvas ref={ref} className="dna-core" aria-hidden="true" />;
 }

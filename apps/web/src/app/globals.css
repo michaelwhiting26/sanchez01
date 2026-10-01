@@ -1,6 +1,11 @@
-/* Global styles: the prototype's design tokens and home-page styles, carried over verbatim (styles/base.css, styles/home.css).
+/* Global styles: the prototype's design tokens (styles/base.css); the homepage sections are styles/home/*.css.
    next/font supplies Barlow and Barlow Condensed; the tokens below point the design system at them. */
 :root {
   --font-display: var(--nf-display), "Arial Narrow", "Roboto Condensed", sans-serif;
   --font-text: var(--nf-text), "Helvetica Neue", Arial, sans-serif;
 }
+
+/* Sitewide page shell. The fingerprint field sits behind the page, so the root paints the dark base and no route may scroll sideways:
+   decorative layers (the hero pool etc.) may bleed past the edge, the page must not. clip, not hidden, so sticky sections keep working. */
+html { background: #0e0b09; overflow-x: clip; }
+body { overflow-x: clip; }

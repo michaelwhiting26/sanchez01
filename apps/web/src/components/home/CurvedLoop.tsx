@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { CurvedLoop as Engine } from "@/lib/curved-loop";
+import { registerSz } from "@/lib/e2e-hooks";
 import { RibbonSneak } from "@/lib/ribbon-sneak";
 
 interface Props {
@@ -34,7 +35,11 @@ export function CurvedLoop({ text, curve = 140, speed = 1.6, starSrc = "/assets/
     sneak.start();
     // dev only: lets a test drive `update({ rootTop, vh })` with faked scroll positions
     if (process.env.NODE_ENV !== "production") (window as unknown as { __ribbonSneak?: RibbonSneak }).__ribbonSneak = sneak;
-    return () => sneak.destroy();
+    const off = registerSz("ribbon", { update: () => sneak.update() });
+    return () => {
+      off();
+      sneak.destroy();
+    };
   }, []);
 
   return (

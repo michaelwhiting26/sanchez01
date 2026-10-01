@@ -1,0 +1,16 @@
+/* Rolling-letter CTA (components/ui/RollingButton.tsx), ported from the mr-2 site: each character rolls up and is replaced by an identical one from below
+   on hover, with a two-arrow "send". Used by the footer CTA (.rollBtn, footer-rise.css places it) and the Submit bag (.orbit-submit, globe-waitlist.css tunes it).
+   The .rollBtn LOOK (the red punch bag: border-image, background, padding, colour, hover/focus) belongs to styles/bag-buttons.css, loaded later with !important. */
+.rollBtn { gap: .625rem; inline-size: fit-content; margin: 0; text-decoration: none; cursor: pointer; }
+.enq__clip { display: inline-flex; overflow: clip; line-height: 1; }
+.enq__text { display: inline-flex; flex-wrap: nowrap; white-space: nowrap; font: 800 1rem/1 "Mona Sans", var(--font-display), Arial, sans-serif; font-variation-settings: "wdth" 86; letter-spacing: 0; text-transform: uppercase; }
+.enq__char { position: relative; display: inline-block; transition: transform .6s cubic-bezier(.215,.61,.355,1); transition-delay: calc(var(--i) * .02s); will-change: transform; }
+.enq__char .enq__a { display: block; }
+.enq__char .enq__b { position: absolute; left: 0; top: 100%; display: block; }
+.rollBtn:hover .enq__char, .rollBtn:focus-visible .enq__char { transform: translateY(-100%); }
+.enq__icon { position: relative; display: inline-flex; align-items: center; justify-content: center; inline-size: 1.2rem; block-size: 1.2rem; overflow: clip; }
+.enq__icon svg { position: absolute; inline-size: .82rem; block-size: .82rem; transition: transform .5s cubic-bezier(.215,.61,.355,1); }
+.enq__arrowB { transform: translate(-150%, 150%); }
+.rollBtn:hover .enq__arrowA, .rollBtn:focus-visible .enq__arrowA { transform: translate(150%, -150%); }
+.rollBtn:hover .enq__arrowB, .rollBtn:focus-visible .enq__arrowB { transform: translate(0, 0); }
+@media (prefers-reduced-motion: reduce) { .enq__char, .enq__icon svg { transition: none; } .rollBtn:hover .enq__char, .rollBtn:focus-visible .enq__char { transform: none; } .enq__arrowB { opacity: 0; } }

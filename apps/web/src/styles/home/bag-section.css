@@ -1,0 +1,68 @@
+/* Bag section: "Hit it", the live 3D punch bag on its stage, the product name / price / dots / order buttons below it, and the still render for
+   gloves and mitts. Component: BagPunch.tsx; engine lib/bag/engine.ts (adds is-ready / is-revealed / was-hit; BagPunch keeps the className constant so they survive).
+   The product pill and the options band are transit-wordmark-options.css. The Order buttons' look (the red punch bag) is styles/bag-buttons.css (loaded last, !important on the look).
+
+   Layout: the stage is [bag area | --cta-zone]; the name, price, dots and the three order buttons get a clear zone of their own below the bag (nothing overlaps the bag). */
+.bag-punch { --cta-zone: 500px; position: relative; block-size: calc(min(100svh, 980px) + var(--cta-zone)); min-block-size: 560px; background: radial-gradient(50% 55% at 50% 45%, rgb(26 21 17 / .5) 0%, transparent 72%); overflow: hidden; }
+@media (max-width: 600px) { .bag-punch { --cta-zone: 560px; } }
+
+/* every stage child stays invisible (not just transparent) until the section is ~40% in view (.is-revealed, set by BagPunch.tsx) */
+.bag-punch > * { transition: opacity 1s ease .1s, visibility 0s linear 0s; }
+.bag-punch:not(.is-revealed) > * { opacity: 0; visibility: hidden; pointer-events: none; }
+/* nothing chosen yet: the bag area stays empty */
+.bag-punch[data-unchosen] .bag-punch__view, .bag-punch[data-unchosen] .bag-punch__label, .bag-punch[data-unchosen] .bag-punch__switch { visibility: hidden; opacity: 0; pointer-events: none; }
+
+/* the 3D canvas host */
+.bag-punch__view { position: absolute; inset-block: 0 var(--cta-zone); inset-inline: 0; opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity .9s ease, visibility 0s; }
+.bag-punch.is-ready .bag-punch__view { opacity: 1; }
+.bag-punch.is-revealed .bag-punch__view { transform: none; }
+.bag-punch:not(.is-revealed) .bag-punch__view { transition: none; }
+@media (prefers-reduced-motion: reduce) { .bag-punch__view { transform: none; } }
+
+.bag-punch__pick { position: absolute; inset-inline-start: 50%; inset-block-start: 38%; transform: translateX(-50%); z-index: 4; padding: 14px 26px; border: 1px dashed rgb(201 164 92 / .55); border-radius: 999px; background: transparent; color: #c9a45c; cursor: pointer; font: 500 .78rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; text-indent: .3em; text-transform: uppercase; }
+.bag-punch__pick::before { content: "↓ "; }
+.bag-punch__pick:hover, .bag-punch__pick:focus-visible { border-style: solid; color: #f3eadc; outline: none; }
+
+/* still renders (mitts, gloves): shown in place of the 3D bag */
+.bag-punch[data-still] .bag-punch__view { visibility: hidden; pointer-events: none; }
+.bag-punch__still { position: absolute; inset-inline: 0; inset-block: 16px calc(var(--cta-zone) + 10px); display: grid; place-items: center; z-index: 2; pointer-events: none; animation: bp-still-in .6s cubic-bezier(.2, .9, .3, 1) both; }
+.bag-punch__still img { max-inline-size: min(86vw, 900px); max-block-size: 100%; inline-size: auto; block-size: auto; object-fit: contain; filter: drop-shadow(0 26px 34px rgb(0 0 0 / .55)); }
+.bag-punch__still p { margin: 0; padding: 26px 34px; border: 1px dashed rgb(201 164 92 / .5); color: #c9a45c; font: 500 .8rem/1.4 var(--font-text, Barlow, sans-serif); letter-spacing: .22em; text-transform: uppercase; text-align: center; }
+@keyframes bp-still-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bag-punch__still { transition: none; animation: none; } .bag-punch__switch, .bag-punch__pick { transition: none; } }
+
+/* product switcher (bags only). Quiet on purpose: hairlines, small tracked capitals. */
+.bag-punch__switch { position: absolute; inset-inline: clamp(14px, 4vw, 56px); inset-block-start: calc((100% - var(--cta-zone)) * .46); display: flex; justify-content: space-between; pointer-events: none; transform: translateY(-50%); z-index: 3; }
+.bag-punch__arrow { pointer-events: auto; inline-size: 44px; block-size: 44px; padding: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; color: rgb(243 234 220 / .7);
+  background: transparent; border: 1px solid rgb(243 234 220 / .22); transition: color .35s ease, border-color .35s ease; }
+@media (max-width: 600px) { .bag-punch__arrow { inline-size: 38px; block-size: 38px; } }
+.bag-punch__arrow svg { inline-size: 18px; block-size: 18px; fill: none; stroke: currentColor; stroke-width: 1; stroke-linecap: square; stroke-linejoin: miter; transition: transform .35s cubic-bezier(.2, .7, .2, 1); }
+.bag-punch__arrow:hover { color: #f3eadc; border-color: rgb(243 234 220 / .7); }
+.bag-punch__arrow:focus-visible { color: #f3eadc; border-color: rgb(243 234 220 / .7); outline: 1px solid #c9a45c; outline-offset: 4px; }
+.bag-punch__arrow:active { border-color: #c9a45c; }
+.bag-punch__arrow--prev:hover svg { transform: translateX(-3px); } .bag-punch__arrow--next:hover svg { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) { .bag-punch__arrow, .bag-punch__arrow svg { transition: none; } }
+
+/* name, sub, price, dots, order buttons: lifted up off the bottom edge with room to breathe between every line and button */
+.bag-punch__label { position: absolute; inset-inline: 0; inset-block-end: clamp(120px, 18vh, 190px); text-align: center; pointer-events: none; z-index: 3; transition: opacity .9s ease, visibility 0s; }
+.bag-punch__name { margin: 0 0 10px; font: 500 clamp(1.05rem, .9rem + .8vw, 1.45rem)/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .34em; text-indent: .34em; text-transform: uppercase; color: #f3eadc; }
+.bag-punch__sub { margin: .9em 0 0; font: 400 .66rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; text-indent: .3em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
+.bag-punch__price { margin: 16px 0 0; font: 600 15px/1.2 var(--font-text, Barlow, sans-serif); letter-spacing: .14em; color: #f3eadc; }
+.bag-punch__price.is-placeholder { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
+.bag-punch__dots { display: flex; justify-content: center; align-items: center; gap: 12px; margin-block-start: 24px; pointer-events: auto; }
+.bag-punch__dots button { position: relative; inline-size: 5px; block-size: 5px; padding: 0; border: 0; border-radius: 50%; background: rgb(243 234 220 / .28); cursor: pointer; transition: background .35s ease, inline-size .35s cubic-bezier(.2, .7, .2, 1), border-radius .35s ease; }
+.bag-punch__dots button::after { content: ""; position: absolute; inset: -12px; }
+.bag-punch__dots button:hover { background: rgb(243 234 220 / .6); }
+.bag-punch__dots button[aria-current="true"] { inline-size: 22px; border-radius: 3px; background: #c9a45c; }
+@media (prefers-reduced-motion: reduce) { .bag-punch__dots button { transition: none; } }
+.bag-punch__cta { display: flex; justify-content: center; gap: 22px; margin-block-start: 38px; pointer-events: auto; flex-wrap: wrap; }
+.bag-punch__cta--again { margin-block-start: 26px; }   /* the second, centred order button on its own row */
+
+/* Order buttons. The look (the red bag render, border-image, background, padding, colour, hover/focus/disabled) belongs to styles/bag-buttons.css, which is
+   loaded later with !important, so only what it does not set is here. */
+.bag-punch__btn { text-decoration: none; cursor: pointer; font: 500 .95rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .3em; text-indent: .26em; text-transform: uppercase; }
+@media (max-width: 600px) { .bag-punch__btn { font-size: .82rem; } }
+.bag-punch__btn:not(.bag-punch__btn--ghost) { position: relative; z-index: 0; overflow: hidden; font-weight: 600; text-shadow: none; transition: transform .6s cubic-bezier(.2, .7, .2, 1); }
+.bag-punch__btn:not(.bag-punch__btn--ghost):hover, .bag-punch__btn:not(.bag-punch__btn--ghost):focus-visible { transform: translateY(-1px); }
+/* "Build yourself" floats and backs away from the cursor (BagPunch.tsx); the transform is set by script */
+.bag-punch__btn--runs { will-change: transform; position: relative; z-index: 4; }

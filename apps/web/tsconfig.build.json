@@ -1,0 +1,6 @@
+{
+  // Used only by `next build` (next.config.ts typescript.tsconfigPath). It leaves the tests out: on Vercel the web app's install does not include
+  // the root's test tooling (vitest, Playwright). Everything else (tsconfig.json) still type-checks and lints the tests: npm run typecheck, CI, pre-push.
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.test.tsx", "e2e/**", "playwright.config.ts"]
+}
