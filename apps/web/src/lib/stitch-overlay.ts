@@ -5,6 +5,7 @@
  * One WebGL quad and one fragment shader per card. The loop runs only while the overlay is visible. Reduced motion: no wave, no drift.
  */
 import { STITCH_FRAGMENT, STITCH_VERTEX } from "./stitch-shader";
+import { cancelFrame, requestFrame } from "@/lib/frame";
 
 export const STITCH_CONFIG = {
   spacing: 5.4, // css px between lines
@@ -113,7 +114,7 @@ export class StitchOverlay {
 
   destroy(): void {
     this.abort.abort();
-    cancelAnimationFrame(this.raf);
+    cancelFrame(this.raf);
   }
 
   private uni(name: UniformName): WebGLUniformLocation | null {
@@ -124,7 +125,7 @@ export class StitchOverlay {
     const w = this.card.offsetWidth;
     const h = this.card.offsetHeight;
     if (!w || !h) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); // the site's cap (CLAUDE.md, scroll and frame rules)
     this.w = w;
     this.h = h;
     this.canvas.width = Math.round(w * dpr);
@@ -181,7 +182,7 @@ export class StitchOverlay {
   private kick(): void {
     if (!this.raf) {
       this.lastNow = performance.now();
-      this.raf = requestAnimationFrame(this.loop);
+      this.raf = requestFrame("render", this.loop);
     }
   }
 
@@ -270,7 +271,7 @@ export class StitchOverlay {
     this.step(now);
     this.render((now - this.t0) / 1000);
     this.lastNow = now;
-    if (this.power > 0 || this.target > 0) this.raf = requestAnimationFrame(this.loop); // stops when the thread has gone out
+    if (this.power > 0 || this.target > 0) this.raf = requestFrame("render", this.loop); // stops when the thread has gone out
     else this.render(0); // clear the last frame
   };
 }

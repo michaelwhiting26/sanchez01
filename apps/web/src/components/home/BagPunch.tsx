@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { BagEngine } from "@/lib/bag/engine";
+import { cancelFrame, requestFrame } from "@/lib/frame";
+import { scrollTo } from "@/lib/scroll";
+
 import { BAG_PRODUCTS, priceLabel } from "@/lib/bag/products";
 
 type CategoryId = "bags" | "gloves" | "mitts";
@@ -138,8 +141,13 @@ export function BagPunch() {
     };
     const io = new IntersectionObserver((en) => (onScreen = en[0]?.isIntersecting ?? true));
     io.observe(el);
+    // one clock (lib/frame.ts): read the button's box and step the drift in "read", apply the transform in that frame's "write"
+    let nextTf = "";
+    const apply = (): void => {
+      el.style.transform = nextTf;
+    };
     const frame = (now: number): void => {
-      raf = requestAnimationFrame(frame);
+      raf = requestFrame("read", frame);
       if (!onScreen) return;
       const r = el.getBoundingClientRect();
       const bx = r.left + r.width / 2 - x; // where the button would sit with no offset
@@ -164,14 +172,15 @@ export function BagPunch() {
       ty += Math.cos(t * 0.7) * 7;
       x += (tx - x) * 0.13;
       y += (ty - y) * 0.13;
-      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      nextTf = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      requestFrame("write", apply);
     };
     window.addEventListener("pointermove", move, { passive: true });
     document.addEventListener("pointerleave", leave);
     el.addEventListener("pointerdown", press);
-    raf = requestAnimationFrame(frame);
+    raf = requestFrame("read", frame);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelFrame(raf);
       io.disconnect();
       window.removeEventListener("pointermove", move);
       document.removeEventListener("pointerleave", leave);
@@ -219,7 +228,7 @@ export function BagPunch() {
     >
       <div className="bag-punch__view" data-bag-view="" ref={hostRef} />
       {!chosen && (
-        <button type="button" className="bag-punch__pick" onClick={() => document.querySelector(".sz-options")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
+        <button type="button" className="bag-punch__pick" onClick={() => scrollTo(".sz-options", { align: "center" })}>
           Choose a product below
         </button>
       )}

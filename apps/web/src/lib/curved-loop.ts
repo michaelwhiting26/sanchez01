@@ -6,6 +6,7 @@
  * because iOS Safari answers them differently from how it draws them. The star sprite is finished in SVG: oxblood colour matrix, a thin champagne rim,
  * a soft warm shadow, and a glint clipped to the sprite's own alpha that sweeps across it as it travels.
  */
+import { cancelFrame, requestFrame } from "@/lib/frame";
 const NS = "http://www.w3.org/2000/svg";
 const FONT_SIZE = 64;
 const STAR_SIZE = 60;
@@ -153,7 +154,7 @@ export class CurvedLoop {
 
   destroy(): void {
     this.abort.abort();
-    cancelAnimationFrame(this.raf);
+    cancelFrame(this.raf);
     this.svg.remove();
   }
 
@@ -288,7 +289,7 @@ export class CurvedLoop {
   private setup = (): void => {
     this.spacing = this.layout();
     if (!this.spacing || !this.items.some((it) => it.kind === "word" && it.width)) {
-      this.raf = requestAnimationFrame(this.setup);
+      this.raf = requestFrame("read", this.setup); // one-off layout pass (lib/frame.ts)
       return;
     }
     const len = this.path.getTotalLength();
@@ -296,11 +297,11 @@ export class CurvedLoop {
     this.offset = -this.spacing;
     this.moveWords();
     this.place();
-    if (!this.reduce) this.raf = requestAnimationFrame(this.step);
+    if (!this.reduce) this.raf = requestFrame("write", this.step);
   };
 
   private step = (now: number): void => {
-    this.raf = requestAnimationFrame(this.step);
+    this.raf = requestFrame("write", this.step);
     if (!this.visible) {
       this.last = now;
       return; // off screen: idle

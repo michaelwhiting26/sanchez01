@@ -1,5 +1,6 @@
 "use client";
 
+import { cancelFrame, requestFrame, type ScrollState } from "@/lib/frame";
 import { useEffect, useRef } from "react";
 
 const WORD = "SANCHEZ";
@@ -24,16 +25,17 @@ export function Marquee() {
     const first = tracks[0];
     if (!first) return;
     io.observe(first.parentElement ?? first);
-    const frame = (now: number): void => {
-      raf = requestAnimationFrame(frame);
+    // one clock (lib/frame.ts), "write" phase, at the frame's scroll snapshot (no layout reads here)
+    const frame = (now: number, _dt: number, sc: Readonly<ScrollState>): void => {
+      raf = requestFrame("write", frame);
       if (!visible) {
         last = now;
-        lastY = window.scrollY;
+        lastY = sc.y;
         return;
       }
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      const y = window.scrollY;
+      const y = sc.y;
       const sv = (y - lastY) / Math.max(dt, 0.001);
       lastY = y;
       v += (sv * 0.004 - v) * Math.min(1, dt * 6); // smoothed scroll velocity
@@ -47,9 +49,9 @@ export function Marquee() {
         t.style.transform = `translate3d(${rx}%,0,0)`;
       });
     };
-    raf = requestAnimationFrame(frame);
+    raf = requestFrame("write", frame);
     return () => {
-      cancelAnimationFrame(raf);
+      cancelFrame(raf);
       io.disconnect();
     };
   }, []);

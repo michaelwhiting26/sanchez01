@@ -1,5 +1,6 @@
 "use client";
 
+import { cancelFrame, requestFrame } from "@/lib/frame";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { RollingContent } from "@/components/ui/RollingButton";
 
@@ -94,19 +95,25 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
       const cx = restX + ox + sway;
       const cy = restY + oy + bob;
       const lean = TILT_DEG + Math.sin(t * 0.9) * 2 + ox * 0.08;
-      el.style.transform = `translate3d(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px, 0) rotate(${lean.toFixed(2)}deg)`;
+      nextTf = `translate3d(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px, 0) rotate(${lean.toFixed(2)}deg)`;
     };
 
+    // one clock (lib/frame.ts): measure and simulate in "read", apply the transform in that same frame's "write" (no layout read after a write)
+    let nextTf = "";
+    const apply = (): void => {
+      el.style.transform = nextTf;
+    };
     let last = performance.now();
     const frame = (now: number): void => {
       raf = 0;
       const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
       place(now, dt);
-      if (visible && !reduce.matches) raf = requestAnimationFrame(frame);
+      requestFrame("write", apply);
+      if (visible && !reduce.matches) raf = requestFrame("read", frame);
     };
     const kick = (): void => {
-      if (!raf) raf = requestAnimationFrame(frame);
+      if (!raf) raf = requestFrame("read", frame);
     };
     const onMove = (e: PointerEvent): void => {
       if (e.pointerType !== "mouse") return; // touch: no chasing, it just floats
@@ -130,7 +137,7 @@ export function OrbitSubmit({ label = "Submit" }: { label?: string }) {
     reduce.addEventListener("change", kick);
     kick();
     return () => {
-      if (raf) cancelAnimationFrame(raf);
+      cancelFrame(raf);
       ro.disconnect();
       io.disconnect();
       window.removeEventListener("pointermove", onMove);

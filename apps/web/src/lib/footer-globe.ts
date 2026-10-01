@@ -4,6 +4,7 @@
  * is near the screen. Draws only while visible; reduced motion gets one still frame.
  */
 import type * as ThreeNs from "three";
+import { cancelFrame, requestFrame } from "@/lib/frame";
 
 export async function mountFooterGlobe(host: HTMLElement): Promise<() => void> {
   const THREE: typeof ThreeNs = await import("three");
@@ -14,7 +15,7 @@ export async function mountFooterGlobe(host: HTMLElement): Promise<() => void> {
   } catch {
     return () => {};
   }
-  renderer.setPixelRatio(Math.min(Math.max(window.devicePixelRatio || 1, 2), 3)); // a small canvas can afford supersampling: crisp coastlines
+  renderer.setPixelRatio(2); // a small canvas can afford supersampling on 1x screens; 2 is also the site's cap, so 3x phones render at 2
   renderer.setClearColor(0x000000, 0);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -134,7 +135,7 @@ export async function mountFooterGlobe(host: HTMLElement): Promise<() => void> {
   io.observe(host);
   const frame = (now: number): void => {
     if (!running) return;
-    raf = requestAnimationFrame(frame);
+    raf = requestFrame("render", frame);
     if (!visible || document.hidden) {
       last = now;
       return;
@@ -150,11 +151,11 @@ export async function mountFooterGlobe(host: HTMLElement): Promise<() => void> {
     draw();
   };
   fit();
-  if (running) raf = requestAnimationFrame(frame);
+  if (running) raf = requestFrame("render", frame);
 
   return () => {
     running = false;
-    cancelAnimationFrame(raf);
+    cancelFrame(raf);
     ro.disconnect();
     io.disconnect();
     el.removeEventListener("pointerdown", onDown);

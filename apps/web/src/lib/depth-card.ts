@@ -2,6 +2,7 @@
  * Depth cards: tilt toward the cursor, layers parallax at their own depth, and a spotlight follows the pointer. Off for reduced motion and touch,
  * where the card gets `is-static` (captions visible, no tilt).
  */
+import { cancelFrame, requestFrame } from "./frame";
 const MAX_ROT = 14;
 const MAX_T = 18;
 
@@ -27,10 +28,10 @@ export function attachDepthTilt(card: HTMLElement): () => void {
       const d = Number(l.dataset["depth"]);
       l.style.transform = `translate3d(${cx * MAX_T * d}px,${cy * MAX_T * d}px,0) scale(${1 + 0.06 * Math.abs(d)})`;
     }
-    raf = on || Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001 ? requestAnimationFrame(frame) : 0;
+    raf = on || Math.abs(tx - cx) > 0.001 || Math.abs(ty - cy) > 0.001 ? requestFrame("write", frame) : 0; // one clock (lib/frame.ts); writes only
   };
   const kick = (): void => {
-    if (!raf) raf = requestAnimationFrame(frame);
+    if (!raf) raf = requestFrame("write", frame);
   };
   const move = (e: PointerEvent): void => {
     const r = card.getBoundingClientRect();
@@ -52,7 +53,7 @@ export function attachDepthTilt(card: HTMLElement): () => void {
   card.addEventListener("pointermove", move);
   card.addEventListener("pointerleave", leave);
   return () => {
-    cancelAnimationFrame(raf);
+    cancelFrame(raf);
     card.removeEventListener("pointermove", move);
     card.removeEventListener("pointerleave", leave);
   };

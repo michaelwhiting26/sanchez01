@@ -32,6 +32,7 @@ import { IntroSprites, segmentLetters, type IntroGeom } from "./intro";
 import { SigPen, tabulate } from "./sigpen";
 import { createSeededNoise, fbm3, hashSeed, type Noise3 } from "./noise";
 import { createWaveTables, fillWaveTables, hash1 } from "./waves";
+import { cancelFrame, requestFrame } from "@/lib/frame";
 
 /** Typed-array reads return `number | undefined` under noUncheckedIndexedAccess; in the hot loops every index is bounds-checked by construction, so 0 is a safe default. */
 const at = (a: ArrayLike<number>, i: number): number => a[i] ?? 0;
@@ -243,7 +244,7 @@ export class HeroEngine {
         for (const ms of [200, 800, 2000]) window.setTimeout(() => !this.abort.signal.aborted && this.draw(0), ms); // the return sheets load in the background
       });
       this.draw(0);
-    } else this.raf = requestAnimationFrame(this.loop);
+    } else this.raf = requestFrame("render", this.loop);
     if (!this.reduce) {
       // the ribbon figure is the same man: when it hides / shows the canvas runner, repaint in the same frame so the two never overlap
       const off = onHeroRunnerHidden(() => {
@@ -280,7 +281,7 @@ export class HeroEngine {
     const plan = (): ReturnType<IntroSprites["returnPlan"]> => (this.introGeom ? (this.intro?.returnPlan(this.introGeom) ?? null) : null);
     const api = {
       seek: (ms: number): void => {
-        cancelAnimationFrame(this.raf);
+        cancelFrame(this.raf);
         this.renderAt(ms);
       },
       timeline: (): unknown => {
@@ -290,7 +291,7 @@ export class HeroEngine {
       play: (): void => {
         this.overrides.introMs = undefined;
         this.sprayStart = performance.now();
-        this.raf = requestAnimationFrame(this.loop);
+        this.raf = requestFrame("render", this.loop);
       },
     };
     Object.defineProperty(api, "duration", { get: () => plan()?.tEnd ?? 0 });
@@ -302,7 +303,7 @@ export class HeroEngine {
 
   destroy(): void {
     this.abort.abort();
-    cancelAnimationFrame(this.raf);
+    cancelFrame(this.raf);
     window.clearTimeout(this.resizeTimer);
     this.canvas.classList.remove("is-ready");
     this.hero.classList.remove("is-intro");
@@ -726,7 +727,7 @@ export class HeroEngine {
   }
 
   private readonly loop = (t: number): void => {
-    this.raf = requestAnimationFrame(this.loop);
+    this.raf = requestFrame("render", this.loop);
     if (document.hidden || (this.coarse && t - this.lastFrame < 32)) return;
     this.lastFrame = t;
     if (window.scrollY > this.fieldEnd) {

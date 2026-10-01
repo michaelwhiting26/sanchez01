@@ -10,6 +10,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { BAG_ART } from "./art";
 import { BAG_PRODUCTS, type BagArtKey, type BagProduct } from "./products";
+import { cancelFrame, requestFrame, subscribe } from "@/lib/frame";
 
 const HOOK = 1.824;
 const DNA_RATE = (2 * Math.PI * 0.55) / 210; // radians per pixel of scroll: exactly how fast the DNA helix turns
@@ -145,6 +146,8 @@ export class BagEngine {
   private hover = false;
   private resumeAt = 0;
   private onScreen = true;
+  /** The section's box, read in the frame's "read" phase (lib/frame.ts) and used by the render loop: no layout read while drawing. */
+  private rootRect: DOMRect | null = null;
   private raf = 0;
   private timers: number[] = [];
   /** When set (by the builder), this look is applied instead of the current product's, so any colours or artwork can be previewed. */
@@ -244,19 +247,23 @@ export class BagEngine {
     });
     const ro = new ResizeObserver(() => this.fit());
     ro.observe(this.host);
-    const io = new IntersectionObserver((e) => (this.onScreen = e[0]?.isIntersecting ?? true), { rootMargin: "150px" });
-    io.observe(this.root);
+    // on screen (with a 150 px margin) is decided from the same box the frame reads, in the same frame: no observer callback arriving in between
+    const offRead = subscribe("read", () => {
+      const r = this.root.getBoundingClientRect();
+      this.rootRect = r;
+      this.onScreen = r.bottom > -150 && r.top < (window.innerHeight || 1) + 150;
+    });
     signal.addEventListener("abort", () => {
       ro.disconnect();
-      io.disconnect();
+      offRead();
     });
     this.bindInput();
-    this.raf = requestAnimationFrame(this.loop);
+    this.raf = requestFrame("render", this.loop);
   }
 
   destroy(): void {
     this.abort.abort();
-    cancelAnimationFrame(this.raf);
+    cancelFrame(this.raf);
     this.timers.forEach((t) => window.clearTimeout(t));
     this.textures.forEach((t) => t.dispose());
     this.sceneTex.forEach((t) => t.dispose());
@@ -1153,7 +1160,7 @@ export class BagEngine {
   }
 
   private readonly loop = (): void => {
-    this.raf = requestAnimationFrame(this.loop);
+    this.raf = requestFrame("render", this.loop);
     if (!this.onScreen) return;
     if (!this.pointer) {
       this.spin += this.spinVel;
@@ -1164,7 +1171,7 @@ export class BagEngine {
     // entry spin: as the bag scrolls up from the bottom it turns at the DNA's own rate, and that rate tapers smoothly to zero as it settles into place
     let entry = 0;
     if (!this.reduce) {
-      const r = this.root.getBoundingClientRect();
+      const r = this.rootRect ?? this.root.getBoundingClientRect();
       const vh = window.innerHeight || 1;
       const k = Math.max(0, (r.top + r.height / 2 - vh / 2) / vh);
       entry = -((DNA_RATE * vh) / 2) * k * k;

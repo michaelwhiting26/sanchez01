@@ -1,5 +1,6 @@
 "use client";
 
+import { cancelFrame, requestFrame } from "@/lib/frame";
 import { useCallback, useEffect, useRef } from "react";
 import type { MouseEvent } from "react";
 
@@ -43,12 +44,12 @@ export function BagHit() {
       return;
     }
     img.style.transform = `rotate(${s.a}rad) scale(${1 + 0.03 * sq}, ${1 - 0.02 * sq})`;
-    s.raf = requestAnimationFrame(draw);
+    s.raf = requestFrame("write", draw); // one clock (lib/frame.ts); draw only writes
   }, []);
 
   useEffect(() => {
     const s = sim.current;
-    return () => cancelAnimationFrame(s.raf);
+    return () => cancelFrame(s.raf);
   }, []);
 
   const hit = (e: MouseEvent<HTMLButtonElement>): void => {
@@ -67,7 +68,7 @@ export function BagHit() {
     if (typeof navigator.vibrate === "function") navigator.vibrate(10);
     if (!s.raf) {
       s.last = performance.now();
-      s.raf = requestAnimationFrame(draw);
+      s.raf = requestFrame("write", draw);
     }
   };
 
