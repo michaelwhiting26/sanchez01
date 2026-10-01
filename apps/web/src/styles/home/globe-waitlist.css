@@ -1,0 +1,86 @@
+/* Waitlist teaser + the globe slot: WAITLIST, Bag + two blanks, a way in (Email / Gmail / Other), one field, and the Submit bag tethered above the globe
+   with the footer bag hanging under it. Components: Waitlist.tsx, GoogleButton.tsx, OrbitSubmit.tsx, BagHit.tsx. They sit inside the rise panel (footer-rise.css),
+   so the waitlist takes the panel's dark surface instead of having its own block. */
+
+/* ---- Waitlist: a quiet, mysterious teaser. Hairline gold stitching, one redacted list. ---- */
+.waitlist { position: relative; background: transparent; padding: clamp(36px, 7vh, 72px) var(--gutter, 1.25rem) clamp(28px, 5vh, 56px); overflow: visible; }
+.waitlist::before { content: ""; position: absolute; inset-block-start: 0; inset-inline: 0; block-size: 0; border-block-start: 1px dashed rgb(201 164 92 / .3); }
+.waitlist__inner { position: relative; max-inline-size: 640px; margin-inline: auto; text-align: center; display: grid; justify-items: center; gap: clamp(16px, 2.6vh, 26px); }
+/* the same heavy, slightly condensed Mona Sans in red as the mr-2 "Killer Kelly" button text (red = the site's accent) */
+.waitlist__title { margin: 0; font: 800 clamp(2.4rem, 8vw, 4rem)/.95 "Mona Sans", var(--font-display), Arial, sans-serif; font-variation-settings: "wdth" 86; letter-spacing: 0; text-transform: uppercase; color: var(--color-accent-text, #c4553a); }
+.waitlist__reveal { list-style: none; margin: 4px 0 8px; padding: 0; inline-size: min(100%, 320px); display: grid; gap: 10px; text-align: start; }
+.waitlist__reveal li { display: flex; align-items: center; gap: 16px; padding-block-end: 10px; border-block-end: 1px dashed rgb(201 164 92 / .22); }
+.waitlist__t { font: 700 1.05rem/1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .18em; text-transform: uppercase; color: #f3eadc; }
+.waitlist__bar { block-size: .9rem; inline-size: 9rem; border-radius: 2px; background: repeating-linear-gradient(90deg, #1b1a18 0 6px, #24221f 6px 9px); position: relative; overflow: hidden; }
+.waitlist__bar--long { inline-size: 13rem; }
+.waitlist__bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgb(201 164 92 / .22), transparent); transform: translateX(-100%); animation: waitlist-sweep 5.5s ease-in-out infinite; }
+.waitlist__reveal li:nth-child(3) .waitlist__bar::after { animation-delay: 1.8s; }
+@keyframes waitlist-sweep { 0%, 55% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .waitlist__bar::after { animation: none; } }
+.waitlist__method { display: inline-flex; gap: 0; border: 1px solid rgb(255 255 255 / .16); border-radius: 999px; padding: 3px; justify-self: center; }
+.waitlist__method label { position: relative; cursor: pointer; }
+.waitlist__method input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.waitlist__method span { display: block; padding: 8px 18px; border-radius: 999px; font: 500 .74rem/1 var(--font-text, Barlow, sans-serif); letter-spacing: .2em; text-transform: uppercase; color: #8d8375; transition: background .25s ease, color .25s ease; }
+.waitlist__method input:checked + span { background: #f3eadc; color: #0b0b0b; }
+.waitlist__method input:focus-visible + span { outline: 2px solid #c9a45c; outline-offset: 2px; }
+.waitlist__form { inline-size: min(100%, 520px); display: grid; gap: 12px; margin-block-start: clamp(4px, 1vh, 10px); }
+.waitlist__label { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+.waitlist__row { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.waitlist__input { min-inline-size: 0; block-size: 3rem; padding: 0 1rem; border: 1px solid rgb(255 255 255 / .18); border-radius: .54rem; background: #0d0d0c; color: #f3eadc; font: 400 1rem/1 var(--font-text, Barlow, sans-serif); }
+.waitlist__input::placeholder { color: #6f665b; }
+.waitlist__input:focus-visible { outline: 2px solid #c9a45c; outline-offset: 2px; border-color: transparent; }
+.waitlist__input[aria-invalid="true"] { border-color: #c4553a; }
+.waitlist__hp { position: absolute; inset-inline-start: -9999px; inline-size: 1px; block-size: 1px; opacity: 0; }
+.waitlist__msg { margin: 0; min-block-size: 1.4em; font: 500 .95rem/1.4 var(--font-text, Barlow, sans-serif); color: #c9a45c; }
+.waitlist__msg.is-error { color: #e07a5f; }
+.waitlist.is-done .waitlist__row { display: none; }
+.waitlist.is-done .waitlist__msg { font: 800 clamp(1.4rem, 5vw, 2rem)/1.1 var(--font-display, "Barlow Condensed", sans-serif); letter-spacing: .08em; text-transform: uppercase; color: #f3eadc; }
+/* the Google sign-in button on the Gmail tab */
+.waitlist__google { display: grid; justify-items: center; gap: 8px; margin-block: 4px 12px; min-block-size: 44px; }
+.waitlist__gnote { margin: 0; font-size: 12px; letter-spacing: .08em; color: rgb(243 234 220 / .55); text-align: center; }
+
+/* ---- Globe slot: the globe sits directly under the Submit bag, centred, with the punch bag hanging from it on a short chain (a third of its full length).
+   FooterMin.tsx moves the .footer-globe element (styled by base.css) into this slot on mount. ---- */
+.globe-slot { --bag-h: 300px; --globe-d: min(98vw, 480px); position: relative; display: flex; flex-direction: column; align-items: center; margin-block: 28px 8px; padding-block-start: 150px; }
+@media (min-width: 761px) { .globe-slot { --bag-h: 400px; --globe-d: 400px; margin-block: 40px 8px; } }
+.globe-slot .footer-globe { position: relative; z-index: 2; margin-inline: auto; inline-size: var(--globe-d); block-size: var(--globe-d); }
+
+/* The footer bag under the globe (BagHit.tsx): no background or box, swings when tapped */
+.globe-bag-btn { display: block; margin: calc(var(--bag-h) * -0.173) 0 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; -webkit-appearance: none; appearance: none; color: inherit; position: relative; z-index: 1; cursor: pointer; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+.globe-bag-btn:focus { outline: none; }
+.globe-bag-btn:focus-visible { outline: 2px solid #c9a45c; outline-offset: 4px; border-radius: 12px; }
+.globe-bag { display: block; block-size: var(--bag-h); inline-size: auto; transform-origin: 50% 17.3%; pointer-events: none; user-select: none; background: none; box-shadow: none; filter: none; }
+
+/* ---- Submit: the Sanchez punch bag (the site's red bag render, straps on, no chain, /assets/brand/bag-button.webp) laid on its side, SUBMIT on the body.
+   Tethered to the globe (OrbitSubmit.tsx): a wide bar floating above the globe, no visible tether (owner, 30 Sep 19:25); the script sets only its transform.
+   The bag picture is its own layer (::before) so the WHOLE bag can tumble on hover independently of that transform (owner, 30 Sep 20:18).
+   Hover is built the way landonorris.com does its buttons: every move is a reversible TRANSITION on one curve (power3.out), so leaving mid-way unwinds from
+   where it is instead of snapping. Letters roll up to their twin below with a 0.02s stagger over 0.6s; the bag does one full barrel roll with a slight lift and swell. ---- */
+.orbit-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.orbit-submit { --ease-lando: cubic-bezier(.165, .84, .44, 1);
+  position: absolute; inset: 0 auto auto 0; z-index: 3; isolation: isolate; perspective: 900px; transform-origin: 50% 50%; will-change: transform; pointer-events: auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: .3em;
+  inline-size: min(84vw, 390px); block-size: auto; aspect-ratio: 879 / 259; padding: 0 5% 0 25%;
+  border: 0; border-radius: 0; background: none; box-shadow: none; color: #fff; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  font: 800 clamp(2.1rem, 9.2vw, 2.9rem)/1 "Mona Sans", var(--font-display), Arial, sans-serif; font-variation-settings: "wdth" 86; letter-spacing: .02em; text-transform: uppercase;
+  text-shadow: 0 2px 3px rgb(60 0 0 / .6); filter: drop-shadow(0 14px 22px rgb(0 0 0 / .55)); }
+.orbit-submit::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url("/assets/brand/bag-button.webp") center / 100% 100% no-repeat; transform-origin: 50% 50%; backface-visibility: visible;
+  transform: rotateX(0deg) translate3d(0, 0, 0) scale(1); will-change: transform; transition: transform .95s var(--ease-lando); }
+.orbit-submit svg { inline-size: 26px; block-size: 26px; }
+.orbit-submit:hover:not(:disabled) { filter: drop-shadow(0 16px 24px rgb(0 0 0 / .6)) brightness(1.08); }
+.orbit-submit:hover:not(:disabled)::before, .orbit-submit:focus-visible::before { transform: rotateX(360deg) translate3d(0, -6px, 0) scale(1.05); }
+.orbit-submit:focus-visible { outline: 2px solid #f3eadc; outline-offset: 4px; border-radius: 40px; }
+.orbit-submit:disabled { cursor: default; }
+.orbit-submit:disabled:not(.is-done) { filter: drop-shadow(0 14px 22px rgb(0 0 0 / .55)) saturate(.6) brightness(.85); }
+.orbit-submit.is-done { filter: drop-shadow(0 14px 22px rgb(0 0 0 / .55)) hue-rotate(95deg) saturate(.8); }
+/* the rolling letters inside it (markup and base rules: rolling-button.css). No glow inside the rolling-letter window (it clips the blur into a visible box): a tight shadow only. */
+.orbit-submit .enq__text { font-size: inherit; letter-spacing: .02em; text-shadow: 0 2px 3px rgb(60 0 0 / .6); }
+.orbit-submit .enq__icon { inline-size: .9em; block-size: .9em; }
+.orbit-submit .enq__icon svg { inline-size: .62em; block-size: .62em; transition: transform .6s var(--ease-lando) .08s; }
+.orbit-submit .enq__char { transition: transform .6s var(--ease-lando); transition-delay: calc(var(--i) * .02s); }
+.orbit-submit .enq__clip { transition: transform .95s var(--ease-lando); }
+.orbit-submit:hover .enq__char, .orbit-submit:focus-visible .enq__char { transform: translateY(-100%); }
+.orbit-submit:hover .enq__arrowA, .orbit-submit:focus-visible .enq__arrowA { transform: translate(150%, -150%); }
+.orbit-submit:hover .enq__arrowB, .orbit-submit:focus-visible .enq__arrowB { transform: translate(0, 0); }
+.orbit-submit:hover:not(:disabled) .enq__clip, .orbit-submit:focus-visible .enq__clip { transform: translate3d(0, -6px, 0) scale(1.05); }
+@media (prefers-reduced-motion: reduce) { .orbit-submit::before, .orbit-submit .enq__char, .orbit-submit .enq__clip, .orbit-submit .enq__icon svg { transition: none; } }

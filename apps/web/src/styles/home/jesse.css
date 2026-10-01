@@ -1,0 +1,13 @@
+/* Jesse. One man only: he is the hero runner, the ribbon sneaker (ribbon.css), the gallery abseiler below, and the 2D pad-work figure under the bag. */
+
+/* Jesse, 2D (from his own Instagram training footage), placed under the bag for now; the owner will reposition it.
+   RisePanel.tsx tags this section .rise-under on desktop; there is no CSS for that class (the footer card is position: fixed, so this section needs no sticky pin). */
+.jesse-2d { position: relative; z-index: 1; display: grid; place-items: center; padding-block: clamp(32px, 8svh, 96px); }
+.jesse-2d img { display: block; block-size: min(72svh, 620px); inline-size: auto; max-inline-size: 92vw; object-fit: contain; }
+
+/* Jesse at the workshop gallery (lib/gallery-abseil.ts): clipped to the pinned stage so the rope and his walk off the right edge never widen the page. Above the film band (z 2) and the HUD (z 4). */
+.pg-abseil { position: absolute; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; contain: layout paint style; }
+@media (prefers-reduced-motion: reduce) { .pg-abseil { display: none; } }
+.pg-abseil__rope { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; }
+.pg-abseil__actor { position: absolute; inset-block-start: 0; inset-inline-start: 0; visibility: hidden; will-change: transform; filter: drop-shadow(0 0 4px rgb(232 168 90 / .5)); }
+.pg-abseil__sheet { position: absolute; inset-block-start: 0; inset-inline-start: 0; background-repeat: no-repeat; transform-origin: 0 0; }

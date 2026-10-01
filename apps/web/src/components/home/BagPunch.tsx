@@ -267,11 +267,6 @@ export function BagPunch() {
           </a>
         </div>
       </div>
-      {isBags && (
-        <p className="bag-punch__hint" aria-hidden="true">
-          Drag to spin · click to hit
-        </p>
-      )}
     </section>
       <section className="sz-options" aria-label="Choose a product" ref={optionsRef}>
         <p className="sz-options__label">Choose a product</p>

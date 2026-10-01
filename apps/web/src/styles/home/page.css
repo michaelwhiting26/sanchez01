@@ -1,0 +1,9 @@
+/* Home page shell: what the home route changes about the page itself. Loaded first (styles/home/index.css).
+   Sitewide html/body rules (background, overflow clip) are in app/globals.css, not here. */
+
+/* The fingerprint field (hero.css, .wm-field) is one fixed canvas BEHIND the page, so the body must not paint over it.
+   No navbar on the home page: everything that would sit below one (the pinned gallery, sticky bits) starts at the very top. */
+body:has([data-page-home]) { background: transparent; --header-h: 0px; }
+
+/* Mona Sans (GitHub, SIL OFL), as on mr-2: heavy, slightly condensed. Used by the Waitlist title, the rolling buttons and Submit. */
+@font-face { font-family: "Mona Sans"; src: url("/assets/fonts/MonaSans-Variable.woff2") format("woff2"); font-weight: 200 900; font-stretch: 75% 125%; font-style: normal; font-display: swap; }

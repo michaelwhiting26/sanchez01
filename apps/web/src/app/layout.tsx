@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import "../styles/base.css";
-import "../styles/home.css";
+import "../styles/home/index.css";
+import "../styles/share-sheet.css";
 import "../styles/bag-buttons.css";
 import "./globals.css";
 

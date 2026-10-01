@@ -1,0 +1,15 @@
+/* Homepage stylesheet set: one file per section, imported in this order (imported once, from app/layout.tsx).
+   Ownership: one component/section -> one file -> the one place to change its design. Do not add an override file or a later rule for a selector a file already defines:
+   change the rule in its owner. `npm run check` runs scripts/css-audit.mjs --check on this folder (duplicated selectors, !important, per-file rule budget). */
+@import "./page.css";
+@import "./hero.css";
+@import "./ribbon.css";
+@import "./gallery.css";
+@import "./lightbox.css";
+@import "./transit-wordmark-options.css";
+@import "./bag-section.css";
+@import "./jesse.css";
+@import "./rolling-button.css";
+@import "./footer-rise.css";
+@import "./globe-waitlist.css";
+@import "./feature-cards.css";
