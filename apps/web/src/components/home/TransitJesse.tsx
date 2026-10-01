@@ -8,9 +8,9 @@ import { getJesseOwner, getJesseSize, onJesseOwner, setJesseStatus, type JesseSt
  * hanging as if held up by his head, inside a tractor beam from above (an abduction, not a climb). Scrubbed by the scroll (reverses on scroll up): he enters
  * above the top of the screen as the stretch arrives and leaves below the bottom as it ends, with a slow sway and drift that are also functions of scroll.
  * One man only: this scene draws only while the hand-off names it the owner (lib/hero/handoff.ts gives "transit" the top priority).
- * Pose: Jesse.glb rendered front-on (assets/home/jesse-float.webp, 480 px square, figure centred).
+ * Pose: the full-colour character (build/jesse/final.blend) rendered front-on, arms spread 40° below the shoulders (assets/home/jesse-float.webp, 600 px square).
  */
-const IMG = "/assets/home/jesse-float.webp";
+const IMG = "/assets/home/jesse-float.webp?v=3"; // v3: the full-colour character (build/jesse/final.blend), front-on
 
 export function TransitJesse() {
   const root = useRef<HTMLDivElement>(null);

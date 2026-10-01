@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sanchez DNA dive</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@900&display=swap" rel="stylesheet">
 <style>
   :root { --gold: #c9a45c; --bg: #0e0b09; }
   html, body { margin: 0; overflow: hidden; background: var(--bg); color: #f3ead8; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; }
@@ -17,16 +19,18 @@
 </style>
 </head>
 <body>
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
 <script type="module">
-import * as THREE from "./three.module.js";
+import * as THREE from "three";
+import { GLTFLoader } from "./jsm/loaders/GLTFLoader.js";
 const GOLD = 0xc9a45c, R = 2.4, PITCH = 1.5;            // helix radius, vertical drop per radian
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 document.body.prepend(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0e0b09);
-scene.fog = new THREE.Fog(0x0e0b09, 6, 22);
-const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+scene.fog = new THREE.Fog(0x2a1608, 8, 34);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1500);
 
 // ---- the sections, each pinned to strand A at its own angle
 const S = [
@@ -42,48 +46,167 @@ const strand = (t, phase = 0) => new THREE.Vector3(R * Math.cos(t + phase), -t *
 
 // ---- two strands + rungs (the structure the whole site hangs on)
 const pts = (ph) => Array.from({ length: 400 }, (_, i) => strand((TMAX + 2) * i / 399, ph));
-const tube = (ph, op) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts(ph)), 800, 0.05, 8),
-  new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, opacity: op }));
-scene.add(tube(0, 1), tube(Math.PI, 0.45));
+// polished gold with a lacquer coat; it reflects the sun around it (scene.environment, built from the sun shader below)
+const gold = new THREE.MeshPhysicalMaterial({ color: 0xfff0c8, metalness: 0.65, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.04, envMapIntensity: 0.85, emissive: 0x6a4e22, emissiveIntensity: 0.55 });
+const goldDim = new THREE.MeshPhysicalMaterial({ color: 0xe8cf9a, metalness: 0.65, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.1, envMapIntensity: 0.6, emissive: 0x3a2a12, emissiveIntensity: 0.5 });
+const tube = (ph, mat, r) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts(ph)), 1600, r, 24), mat);
+scene.add(tube(0, gold, 0.046), tube(Math.PI, goldDim, 0.034));          // strand A is the camera's track, strand B a step back
 const rung = [];
 for (let t = 0; t < TMAX + 2; t += DOT) rung.push(strand(t), strand(t, Math.PI));
-scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(rung),
-  new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.22 })));
-const nodes = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 10, 10), new THREE.MeshBasicMaterial({ color: 0xf0d08a }), rung.length);
+scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(rung),     // rungs: fine glowing threads
+  new THREE.LineBasicMaterial({ color: 0xfff3d6, transparent: true, opacity: 0.2, depthWrite: false })));
+const pearl = new THREE.MeshPhysicalMaterial({ color: 0xfff6e6, metalness: 0.2, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 0.8, emissive: 0x7a6440, emissiveIntensity: 0.6 });
+const nodes = new THREE.InstancedMesh(new THREE.SphereGeometry(0.058, 24, 16), pearl, rung.length);
 rung.forEach((p, i) => nodes.setMatrixAt(i, new THREE.Matrix4().makeTranslation(p.x, p.y, p.z)));
 scene.add(nodes);
-const first = new THREE.Mesh(new THREE.SphereGeometry(0.28, 32, 32), new THREE.MeshBasicMaterial({ color: 0xf0d08a, transparent: true, side: THREE.DoubleSide }));
+const first = new THREE.Mesh(new THREE.SphereGeometry(0.28, 48, 32), new THREE.MeshPhysicalMaterial({ color: 0xffd58a, metalness: 1, roughness: 0.12, clearcoat: 1, transparent: true, side: THREE.DoubleSide }));
 first.position.copy(strand(0)); scene.add(first);
+// ---- Sanchez bags hanging off both strands on gold chains, in random custom colourways (seeded, so every visit is the same),
+//      plus the one at the very end of the track. The site's own 4 ft model is loaded once and cloned; body colour + band tint vary per bag.
+const rnd = (() => { let a = 0x5a7c1e; return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; })();
+const COLOURWAYS = [ // [body, band tint]
+  [0xa3141a, 0xffffff], [0x151313, 0xd9b45a], [0xeeeae2, 0x1a1a1a], [0xc9a24a, 0x151313], [0x1d3f9c, 0xffffff], [0x1f6b3a, 0xf0e6c8],
+  [0xd04a8a, 0xffffff], [0xd8641e, 0x151313], [0x15203a, 0xc9a24a], [0x6b1020, 0xd9b45a], [0x8a8f96, 0x151313], [0x3b2a1f, 0xe8d9b8],
+];
+const PAGE_TS = S.map((_, i) => T0 + i * STEP);
+const spots = [{ t: TMAX + 0.9, ph: 0, cw: COLOURWAYS[0], size: 1, chain: 0.55 }];   // the end bag: Sanchez red
+for (let tries = 0; spots.length < 15 && tries < 200; tries++) {
+  const t = 0.8 + rnd() * (TMAX - 0.4), ph = rnd() < 0.5 ? 0 : Math.PI;
+  if (PAGE_TS.some((pt) => Math.abs(pt - t) < 1.4) || spots.some((q) => q.ph === ph && Math.abs(q.t - t) < 0.9)) continue;   // keep pages clear, no crowding
+  spots.push({ t, ph, cw: COLOURWAYS[Math.floor(rnd() * COLOURWAYS.length)], size: 0.72 + rnd() * 0.38, chain: 0.35 + rnd() * 0.6 });
+}
+const BAG_H = 2.6, B = "/assets/bag3d/";
+const tx = (f) => { const t = new THREE.TextureLoader().load(B + f); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; return t; };
+const TEX = { top: tx("band_top_plain.png"), bottom: tx("band_bottom_plain.png"), patch: tx("patch.png") };
+const SHARED = {
+  patch: new THREE.MeshPhysicalMaterial({ map: TEX.patch, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+  web: new THREE.MeshStandardMaterial({ color: 0x1a1412, roughness: 0.7 }),
+  thread: new THREE.MeshStandardMaterial({ color: 0xe4e0d8, roughness: 0.8 }),
+  metal: new THREE.MeshStandardMaterial({ color: 0xd8c08a, metalness: 1, roughness: 0.25 }),
+};
+const hangers = spots.map((sp) => {
+  const top = strand(sp.t, sp.ph);
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, sp.chain, 10), gold);
+  chain.position.set(top.x, top.y - sp.chain / 2, top.z); scene.add(chain);
+  const g = new THREE.Group(); g.position.set(top.x, top.y - sp.chain, top.z); scene.add(g);
+  return { g, sp, swing: rnd() * Math.PI * 2 };
+});
+new GLTFLoader().load(B + "bag_4ft.glb", (gl) => {
+  const box = new THREE.Box3().setFromObject(gl.scene), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+  for (const h of hangers) {
+    const [bodyCol, bandCol] = h.sp.cw;
+    const M = {
+      body: new THREE.MeshPhysicalMaterial({ color: bodyCol, roughness: 0.36, clearcoat: 0.5, clearcoatRoughness: 0.2 }),
+      top: new THREE.MeshPhysicalMaterial({ map: TEX.top, color: bandCol, roughness: 0.5, sheen: 0.3 }),
+      bottom: new THREE.MeshPhysicalMaterial({ map: TEX.bottom, color: bandCol, roughness: 0.5, sheen: 0.3 }),
+    };
+    const m = gl.scene.clone(true);
+    m.traverse((o) => {
+      if (!o.isMesh) return;
+      const n = o.name;
+      o.material = /^(body|crown)_/.test(n) ? M.body : n.startsWith("band_top") ? M.top : n.startsWith("band_bottom") ? M.bottom
+        : n === "patch" ? SHARED.patch : n === "stitching" ? SHARED.thread : n.startsWith("strap") ? SHARED.web : SHARED.metal;
+    });
+    const k = (BAG_H * h.sp.size) / size.y;
+    m.scale.setScalar(k); m.position.set(-c.x * k, -box.max.y * k, -c.z * k);   // hook at the chain's end, bag hanging below
+    h.g.add(m);
+  }
+});
+
 // dust for depth
 const dust = []; for (let i = 0; i < 900; i++) dust.push(new THREE.Vector3((Math.random() - .5) * 30, 3 - Math.random() * (TMAX * PITCH + 10), (Math.random() - .5) * 30));
 scene.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(dust), new THREE.PointsMaterial({ color: 0x8a7350, size: 0.04 })));
 
-// ---- a perfect cylinder around the helix, its inside papered with the gallery
-const CYL_R = 7, CYL_H = TMAX * PITCH + 14;
-const wall = document.createElement("canvas"); wall.width = 4096; wall.height = 1024;
-const wg = wall.getContext("2d"); wg.fillStyle = "#1a140e"; wg.fillRect(0, 0, 4096, 1024);
-const wallTex = new THREE.CanvasTexture(wall); wallTex.colorSpace = THREE.SRGBColorSpace;
-wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
-const AROUND = 3, tileH = (2 * Math.PI * CYL_R / AROUND) / 4;               // the 4:1 strip repeats 3 times around the wall
-wallTex.repeat.set(-AROUND, CYL_H / tileH);                                   // negative x: un-mirror it, we see the inside face
-const GALLERY = ["carousel/clip1.jpg", "carousel/clip2.jpg", "depth/workshop.jpg", "carousel/clip3.jpg", "bag3d/tiger-hd.jpg",
-  "carousel/clip4.jpg", "depth/scene-machine.jpg", "carousel/clip5.jpg"];
-GALLERY.forEach((src, i) => {
-  const im = new Image(), w = 4096 / 4, x = (i % 4) * w, y = Math.floor(i / 4) * 512;
-  im.onload = () => {
-    const k = Math.max(w / im.width, 512 / im.height);
-    wg.save(); wg.beginPath(); wg.rect(x, y, w, 512); wg.clip();
-    wg.drawImage(im, x + (w - im.width * k) / 2, y + (512 - im.height * k) / 2, im.width * k, im.height * k);
-    wg.restore(); wg.strokeStyle = "#c9a45c"; wg.lineWidth = 8; wg.strokeRect(x + 4, y + 4, w - 8, 504);
-    wallTex.needsUpdate = true;
-  };
-  im.src = "/assets/" + src;
+// ---- the sun: a procedural photosphere shader. Not drawn (owner removed it); it only lights the gold reflections
+const tl = new THREE.TextureLoader();
+// Procedural photosphere, seen from inside: big domain-warped flame tongues + fine granulation cells, on a heat ramp (deep red -> orange -> yellow -> white).
+// No flicker: motion is a slow drift (no pulsing), and every noise octave fades out before it gets finer than a pixel (fwidth), so nothing shimmers.
+const sunMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false, transparent: true,
+  uniforms: { uTime: { value: 0 }, uAlpha: { value: 0.75 } },   // the sun at 25% transparency
+  vertexShader: `varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    varying vec3 vDir; uniform float uTime; uniform float uAlpha;
+    float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    float noise(vec3 x) {
+      vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                 mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+    // band-limited fbm: an octave fades out as its cells approach the pixel size (fw = this pixel's footprint in noise space)
+    float fbm(vec3 p, float fw) {
+      float s = 0.0, a = 0.5;
+      for (int i = 0; i < 7; i++) { s += a * noise(p) * clamp(1.6 - fw * 1.8, 0.0, 1.0); p = p * 2.02 + vec3(1.7, 9.2, 3.4); fw *= 2.02; a *= 0.5; }
+      return s;
+    }
+    void main() {
+      float t = uTime * 0.012;
+      vec3 p = vDir * 7.0;
+      float fw = length(fwidth(p));
+      vec3 q = vec3(fbm(p + vec3(0.0, t, 0.0), fw), fbm(p + vec3(5.2, 1.3 - t, 2.8), fw), fbm(p + vec3(1.7, 9.2, 3.1 + t), fw));
+      float flames = fbm(p + 3.5 * q, fw);                                   // large flame tongues and filaments
+      float ridge = 1.0 - abs(2.0 * fbm(p * 3.0 + 2.0 * q, fw * 3.0) - 1.0); // bright filament edges
+      vec3 g = vDir * 60.0 + q * 3.0;                                         // granulation: fine convection cells
+      float gran = fbm(g, length(fwidth(g)));
+      float heat = clamp((flames - 0.32) * 1.9 + ridge * ridge * 0.42 + (gran - 0.5) * 0.55, 0.0, 1.0);
+      vec3 col = mix(vec3(0.20, 0.02, 0.0), vec3(0.85, 0.18, 0.01), smoothstep(0.15, 0.45, heat));
+      col = mix(col, vec3(1.0, 0.52, 0.06), smoothstep(0.40, 0.65, heat));
+      col = mix(col, vec3(1.0, 0.84, 0.42), smoothstep(0.62, 0.82, heat));
+      col = mix(col, vec3(1.0, 0.97, 0.86), smoothstep(0.82, 0.97, heat));
+      gl_FragColor = vec4(min(col * 1.2, vec3(1.0)), uAlpha);   // +20% brightness
+    }`,
 });
-const cyl = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 128, 1, true),
-  new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, fog: false, color: 0xd8cdb8 }));
-cyl.position.y = 4 - CYL_H / 2; scene.add(cyl);
+const sun = new THREE.Mesh(new THREE.SphereGeometry(500, 128, 96), sunMat);   // not shown (owner: no sun around the cylinder); kept only to light the gold's reflections below
+// reflections: the sun as the environment the gold strands and pearls mirror (built once from the same shader)
+{ const envScene = new THREE.Scene(); envScene.add(new THREE.Mesh(new THREE.SphereGeometry(50, 64, 32), sunMat));
+  sunMat.uniforms.uAlpha.value = 1; const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(envScene, 0.06).texture; pm.dispose(); sunMat.uniforms.uAlpha.value = 0.75; }
 
-// ---- section cards: image + caption drawn on one canvas texture
+// ---- a perfect cylinder around the helix: borderless, translucent, so the sun's light comes through it
+const CYL_R = 7, CYL_H = TMAX * PITCH + 14, CYL_TOP = 4;
+const cyl = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 160, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0x140c06, side: THREE.BackSide, fog: false, transparent: true, opacity: 0.34, depthWrite: false }));
+cyl.position.y = CYL_TOP - CYL_H / 2; scene.add(cyl);
+// a curved panel on the inside of the wall (same radius, so it reads as pasted onto the cylinder)
+const panel = (thetaStart, thetaLen, height, y, mat) => {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R - 0.03, CYL_R - 0.03, height, 64, 1, true, thetaStart, thetaLen), mat);
+  m.position.y = y; m.renderOrder = 2; scene.add(m); return m;
+};
+const decal = (src, thetaStart, thetaLen, height, y) => {
+  const t = tl.load(src); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1; // un-mirror: seen from inside
+  return panel(thetaStart, thetaLen, height, y, new THREE.MeshBasicMaterial({ map: t, side: THREE.BackSide, transparent: true, fog: false }));
+};
+// placeholders only (eye markers so the cylinder reads while it is being designed): one punch bag and two photos, no borders
+decal("/assets/brand/bag-footer.webp", 0.6, 0.55, 3.0, -6);
+decal("/assets/carousel/clip1.jpg", 2.7, 0.75, 2.2, -13);
+decal("/assets/carousel/workshop.jpg", 4.6, 0.75, 2.2, -20);
+
+// ---- WELCOME, in the SANCHEZ strip's type (Barlow Condensed 900, filled #2b2622 alternating with a light outline), wrapped round the top and turning
+const band = document.createElement("canvas"); band.width = 4096; band.height = 300;
+const bandTex = new THREE.CanvasTexture(band); bandTex.colorSpace = THREE.SRGBColorSpace; bandTex.wrapS = THREE.RepeatWrapping; bandTex.repeat.x = -2;
+const drawBand = () => {
+  const g = band.getContext("2d"); g.clearRect(0, 0, 4096, 300);
+  g.font = '900 290px "Barlow Condensed", "Arial Narrow", sans-serif'; g.textBaseline = "alphabetic";
+  let x = 0, i = 0;
+  while (x < 4096) {
+    const w = g.measureText("WELCOME").width;
+    if (i % 2 === 0) { g.fillStyle = "#2b2622"; g.fillText("WELCOME", x, 262); }
+    else { g.strokeStyle = "rgba(243,234,220,.42)"; g.lineWidth = 3; g.strokeText("WELCOME", x, 262); }
+    x += w + 80; i++;
+  }
+  bandTex.needsUpdate = true;
+};
+drawBand(); document.fonts?.load('900 290px "Barlow Condensed"').then(drawBand).catch(() => {});
+const welcome = panel(0, Math.PI * 2, 1.7, CYL_TOP - 2.6, new THREE.MeshBasicMaterial({ map: bandTex, side: THREE.BackSide, transparent: true, fog: false }));
+
+// ---- the camera rides strand A (chase camera); the DNA is only its track
+function camPose(t, k) {
+  const back = 0.55 * k, out = (innerWidth < 700 ? 3.2 : 2.4) * k, up = 0.7 * k;
+  const C0 = strand(t - back), rad = new THREE.Vector3(C0.x, 0, C0.z).normalize();
+  const C = new THREE.Vector3(C0.x + rad.x * out, C0.y + up, C0.z + rad.z * out);
+  const L0 = strand(t + 0.5), L = new THREE.Vector3(L0.x * 0.8, L0.y - 0.3 * k, L0.z * 0.8);
+  return { C, L };
+}
+// ---- section pages: image + caption drawn on one canvas texture
 const loader = new THREE.TextureLoader();
 const cards = S.map((s, i) => {
   const c = document.createElement("canvas"); c.width = 1024; c.height = 720;
@@ -93,15 +216,22 @@ const cards = S.map((s, i) => {
     g.fillStyle = "#c9a45c"; g.font = "800 64px 'Arial Narrow', sans-serif"; g.fillText(s.title, 40, 632);
     g.fillStyle = "#e8dcc4"; g.font = "28px sans-serif"; g.fillText(s.sub, 42, 686); tex.needsUpdate = true;
   };
-  g.fillStyle = "#16120e"; g.fillRect(0, 0, 1024, 720); g.strokeStyle = "#c9a45c"; g.lineWidth = 6; g.strokeRect(3, 3, 1018, 714);
+  g.fillStyle = "#16120e"; g.fillRect(0, 0, 1024, 720);
   if (s.img) { const im = new Image(); im.onload = () => { const k = Math.max(1024 / im.width, 560 / im.height);
-      g.drawImage(im, (1024 - im.width * k) / 2, (560 - im.height * k) / 2, im.width * k, im.height * k); g.strokeRect(3, 3, 1018, 714); caption(); }; im.src = s.img; }
+      g.drawImage(im, (1024 - im.width * k) / 2, (560 - im.height * k) / 2, im.width * k, im.height * k); caption(); }; im.src = s.img; }
   else { g.fillStyle = "#c9a45c"; g.font = "800 120px 'Arial Narrow', sans-serif"; g.textAlign = "center"; g.fillText("SANCHEZ", 512, 330); g.textAlign = "left"; }
   caption();
   const t = T0 + i * STEP;
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.4), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
-  const p = strand(t); m.position.set(p.x * 1.25, p.y - 0.2, p.z * 1.25);       // just outside strand A; turned to face the camera every frame
-  m.userData.t = t; m.userData.home = m.position.clone(); scene.add(m); return m;
+  // where the camera's view meets the wall when it arrives at this page: the page is pasted there, curved to the cylinder
+  const { C, L } = camPose(t, 1), dir = L.clone().sub(C).normalize();
+  const a2 = dir.x * dir.x + dir.z * dir.z, b2 = 2 * (C.x * dir.x + C.z * dir.z), c2 = C.x * C.x + C.z * C.z - (CYL_R - 0.06) ** 2;
+  const sHit = (-b2 + Math.sqrt(b2 * b2 - 4 * a2 * c2)) / (2 * a2), W = C.clone().addScaledVector(dir, sHit);
+  const PW = 6.2, PH = PW * 720 / 1024, th = Math.atan2(W.x, W.z), wTh = PW / CYL_R;
+  tex.wrapS = THREE.RepeatWrapping; tex.repeat.x = -1;                         // seen from inside the cylinder: un-mirror
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R - 0.06, CYL_R - 0.06, PH, 48, 1, true, th - wTh / 2, wTh),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+  m.position.y = W.y; m.renderOrder = 3;
+  m.userData.t = t; scene.add(m); return m;
 });
 
 // ---- scroll = position along strand A
@@ -119,25 +249,15 @@ function frame(ms) {
   const P = strand(t);
   // chase camera: it rides strand A and turns as the strand turns (heading = the strand's tangent), so the view curves at the strand's rate
   const k = Math.min(1, cur * 14);                                             // 0 inside the first dot -> 1 once you have left it
-  const back = 0.55 * k, out = (innerWidth < 700 ? 3.2 : 2.4) * k, up = 0.7 * k;
-  const C = strand(t - back), rad = new THREE.Vector3(C.x, 0, C.z).normalize();
-  camera.position.set(C.x + rad.x * out, C.y + up, C.z + rad.z * out);
-  const L = strand(t + 0.5);
-  camera.lookAt(L.x * 0.8, L.y - 0.3 * k, L.z * 0.8);
-  for (const m of cards) m.quaternion.copy(camera.quaternion);
+  const pose = camPose(t, k);
+  camera.position.copy(pose.C); camera.lookAt(pose.L);
   first.material.opacity = 1 - Math.min(1, cur * 6) * 0.4;
-  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
-  const D = 1.2, visH = 2 * D * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), visW = visH * camera.aspect;
-  const cover = Math.max(visH / 2.4, visW / 3.4) * 1.02;                    // scale at which the 3.4 x 2.4 card covers the screen
-  for (const m of cards) {
-    const d = Math.abs(t - m.userData.t);
-    const seen = Math.max(0, 1 - d / 1.6), a = seen * seen * (3 - 2 * seen);
-    const f0 = Math.min(1, Math.max(0, 1 - (d - 0.2) / 0.55)), full = f0 * f0 * (3 - 2 * f0);   // 1 = the page fills the screen
-    m.material.opacity = a;
-    m.position.copy(m.userData.home).lerp(camera.position.clone().addScaledVector(fwd, D), full);
-    m.scale.setScalar(THREE.MathUtils.lerp(0.9, cover, full));
-    m.material.depthTest = full < 0.5; m.renderOrder = full > 0 ? 10 : 0;
+  for (const m of cards) {                                                   // a page on the wall fades up as the track carries you to it
+    const d = Math.abs(t - m.userData.t), seen = Math.max(0, 1 - d / 1.8);
+    m.material.opacity = seen * seen * (3 - 2 * seen);
   }
+  for (const h of hangers) { h.g.rotation.z = Math.sin(ms * 0.0009 + h.swing) * 0.035; h.g.rotation.y = ms * 0.00015 + h.swing; }   // slow swings, out of step
+  welcome.rotation.y = ms * 0.00007; sunMat.uniforms.uTime.value = ms / 1000; sun.rotation.y = ms * 0.000006;
   renderer.render(scene, camera);
 }
 frame(0);
