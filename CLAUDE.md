@@ -122,5 +122,18 @@ Rules:
 - **A visual or behaviour change needs evidence from a browser**, not code inspection: `npm run e2e -w @sanchez/web` (Playwright, 390×844 and 1440×900). Do not update screenshot baselines to make a failure disappear; update them only for a change the owner approved.
 - Do not encode a session ID or a person's name as an owner. Use the area names above.
 
+## Scroll and animation: one engine, one clock (adopted 1 Oct 2026)
+`components/SmoothScroll.tsx` (Lenis 1.3, mounted once in `app/layout.tsx`), `lib/frame.ts` (the clock) and `lib/scroll.ts` (the API).
+1. Everything that moves on the homepage runs from `lib/frame.ts`: `subscribe(phase, fn)` for every-frame work, `requestFrame(phase, fn)` / `cancelFrame(id)` for self-scheduling loops. Phases run in order: `scroll` → `read` (layout reads only) → `write` (DOM: transform, opacity, custom properties, classes) → `render` (canvas/WebGL).
+2. No new `requestAnimationFrame` loops and no `scroll` listeners for animation in homepage code.
+3. Scroll-linked visuals are pure functions of the frame's scroll snapshot (`ScrollState.y` / `progress`), so scrolling back reverses them exactly. Never add a second smoothing on top of Lenis.
+4. Animate `transform` and `opacity`. Never transform the scrolling content to fake scrolling (Lenis moves the real scroll position: sticky, anchors, find-in-page and the scrollbar keep working).
+5. Cache layout that only changes on resize (ResizeObserver, `document.fonts.ready`); read what moves per frame in `read`, never in `write`/`render`.
+6. Programmatic scrolling and modal page locks go through `lib/scroll.ts` (`scrollTo`, keyed `stop(key)` / `start(key)`). Only `SmoothScroll.tsx` and `lib/scroll.ts` import Lenis.
+7. A new element that scrolls on its own gets `data-lenis-prevent` (or is added to `INNER_SCROLLERS` in `SmoothScroll.tsx` when it belongs to another owner's component).
+8. Reduced motion: no Lenis, native scrolling, scenes at their static or final states.
+9. Canvas/WebGL pixel ratio is capped at 2 (1.5 on coarse pointers where a scene already distinguishes them). `will-change` only on elements that animate continuously or while live.
+Tests: `apps/web/e2e/scroll.spec.ts` (wheel easing, lightbox lock, inner scrollers, programmatic scroll, reduced motion); `apps/web/src/lib/frame.test.ts` (the clock).
+
 ## Locked decisions
 Read `docs/LOCKED-DECISIONS.md` before changing any home, build-flow or product-page behaviour. Do not undo a line there without the owner saying so; update the line when the owner changes their mind.

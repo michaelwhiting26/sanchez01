@@ -13,6 +13,10 @@ The owner's current word on how each part of the site behaves. Anyone changing t
 7b. **2D Jesse**: removed from the homepage and parked (owner, 1 Oct 2026; see `docs/BRAINSTORM-PARKED.md`).
 8. **Footer**: globe large (`min(98vw, 480px)`; 400px desktop). Bag hangs under it on a chain, no background/box behind it, swings when tapped. **Waitlist Submit is tethered to the globe** (owner, 30 Sep 18:10, replacing the orbit): a wide Submit bar floats just above the globe, held by the globe's pull with NO visible tether line (owner, 19:25); it bobs and leans, is drawn a little towards the mouse, and springs back (`OrbitSubmit.tsx`). The Submit button is the site's red punch bag render (straps on, no chain) laid on its side, SUBMIT on the body (`/assets/brand/bag-button.webp`, owner 30 Sep 20:10).
 
+9. **Scroll feel** (owner, 1 Oct 2026): smooth wheel/trackpad scrolling (Lenis, native touch), one animation clock for every scene; a 3 px gold
+   scroll-progress bar along the top (hidden while the DNA dive fills the screen); a gold cursor ring for mouse/trackpad users that follows the
+   pointer and grows over buttons and pills (the native cursor stays). Reduced-motion visitors get native scrolling and no ring.
+
 ## Build flow (/configure)
 - One question at a time, top-to-bottom order, every answer pre-selected. Tapping an answer only selects it (outlined); **Next** moves on.
 - Every visual option changes the 3D bag. Size change must be visible (camera fixed to the 5 ft bag) plus the ft/cm label.
@@ -45,6 +49,7 @@ Paths are under `apps/web/src/`. One section, one stylesheet in `styles/home/` (
 | - | The DNA dive after the SANCHEZ rows (owner, 1 Oct) | `DnaDive.tsx`, `public/dna-dive/` | `dna-dive.css` | not yet covered |
 | 8 | Globe above the bag, bag on a chain | `FooterMin.tsx` (globe, slot), `BagHit.tsx` (the bag: `.globe-bag`, `.globe-bag-btn`) | `globe-waitlist.css`, `footer-rise.css` | `home.spec` footer; regression h (bag centred under the globe, hanging below it) |
 | 8 | Submit floats above the globe, no tether line | `OrbitSubmit.tsx`, `Waitlist.tsx` | `globe-waitlist.css`, `rolling-button.css` | regression g (`.orbit-tether` absent, one Submit); `home.spec` waitlist |
+| 9 | Smooth scroll, one clock, progress bar, cursor ring | `components/SmoothScroll.tsx`, `lib/frame.ts`, `lib/scroll.ts`, `components/home/ScrollChrome.tsx` | `chrome.css` | `e2e/scroll.spec.ts`; `lib/frame.test.ts` |
 | - | Buttons are punch bags | other owner: build flow and product area | `styles/bag-buttons.css` | not covered here |
 
 `RisePanel.tsx` (the footer card) is styled by `footer-rise.css`. The share sheet (`.shs`) belongs to the build flow: `styles/share-sheet.css`.

@@ -35,6 +35,17 @@ const T0 = new Date("2026-01-01T00:00:00Z");
 export async function boot(page: Page): Promise<void> {
   await page.clock.install({ time: T0 });
   await page.clock.pauseAt(new Date(T0.getTime() + 1000));
+  // CSS transitions run on REAL time, which the fake clock cannot stop: scenes that measure layout mid-transition read a machine-speed-dependent position.
+  // End states only, everywhere (screenshots already capture end states). Keyframe animations stay: the gallery strip IS a scroll-driven CSS animation.
+  await page.addInitScript(() => {
+    const freeze = (): void => {
+      const s = document.createElement("style");
+      s.textContent = "*, *::before, *::after { transition-duration: 0s !important; transition-delay: 0s !important; }";
+      document.head.append(s);
+    };
+    if (document.head) freeze();
+    else document.addEventListener("DOMContentLoaded", freeze, { once: true });
+  });
   await page.addInitScript(() => {
     let a = 0x5a4c3e21;
     Math.random = (): number => {
@@ -76,10 +87,12 @@ export async function settle(page: Page, opts: { heroMs?: number | "end"; ms?: n
       sz.ribbon?.update();
       sz.gallery?.update();
     }, opts.heroMs);
+  await flushIntersections(page);
   await update();
   const total = opts.ms ?? 400;
   for (let t = 0; t < total; t += 200) {
     await page.clock.runFor(Math.min(200, total - t));
+    await flushIntersections(page); // let the real-time callbacks (scroll events, resize and intersection observers) land before the next step, not during it
     await update();
   }
 }
@@ -102,9 +115,28 @@ export async function settleLayout(page: Page, opts: { heroMs?: number | "end"; 
   expect(stable, "layout never settled").toBeGreaterThanOrEqual(2);
 }
 
-/** Scroll instantly (the site sets smooth scrolling on html) and settle. */
+/**
+ * Wait until the browser has run a rendering update: its scroll events, ResizeObserver and IntersectionObserver callbacks (one step, in that order). Scenes pause their idle loops off screen with IntersectionObserver,
+ * and those callbacks arrive in REAL time while page time is the fake clock: stepping frames before they land made idle animations (globe spin, Submit
+ * bob, bag idle) depend on how fast this machine ran. A fresh observer's first callback comes in the same rendering update as all the others' pending ones.
+ */
+export async function flushIntersections(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const io = new IntersectionObserver(() => {
+          io.disconnect();
+          resolve();
+        });
+        io.observe(document.documentElement);
+      }),
+  );
+}
+
+/** Scroll instantly (Lenis is in step with native jumps) and settle once the page's IntersectionObservers have caught up. */
 export async function scrollToY(page: Page, y: number, opts: { heroMs?: number | "end"; ms?: number } = {}): Promise<void> {
   await page.evaluate((top) => window.scrollTo({ top, left: 0, behavior: "instant" }), y);
+  await flushIntersections(page);
   await settle(page, opts);
   await waitForViewportImages(page);
 }
