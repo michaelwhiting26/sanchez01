@@ -288,6 +288,8 @@ test("e. no horizontal overflow at any scroll position or state", async ({ page 
 
 // ---------------------------------------------------------------------------------------------------------------------------------- f. bag
 test("f. the bag stays visible: it is ready, revealed and fully opaque, before and after switching products", async ({ page }) => {
+  // The 3D bag renders on the CPU (software WebGL) on a CI runner: this test takes ~37 s locally but 84-90+ s there, right at the 90 s limit. Same assertions, more time, CI only.
+  test.slow(!!process.env.CI, "software WebGL on the CI runner is about 2.5x slower than a laptop GPU");
   const state = () =>
     page.evaluate(() => {
       const root = document.querySelector<HTMLElement>(".bag-punch");
