@@ -4,6 +4,7 @@
  * gallery's pinned scroll progress. Drawn with Canvas 2D: one detailed texture strip is sliced into small quads and projected with perspective.
  * Two canvases share the section: the back half sits under the carousel, the front half over it.
  */
+import { subscribe } from "./frame";
 const TEX_H = 220;
 const TEX_W = 1560; // 13 frames of 120px: the frame numbers 1..9 then 1..4, so the pattern only repeats once round
 
@@ -124,7 +125,9 @@ export class FilmHelix {
   private readonly spot = document.createElement("div");
   private readonly ctx: CanvasRenderingContext2D | null;
   private readonly tex = makeTapeTexture();
-  private raf = 0;
+  private pending = true; // draw on the next frame even if the page did not move
+  private rect: DOMRect | null = null;
+  private readonly offs: (() => void)[];
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -140,17 +143,26 @@ export class FilmHelix {
     this.spot.setAttribute("aria-hidden", "true");
     this.ctx = this.canvas.getContext("2d");
     document.body.append(this.spot, this.canvas);
-    window.addEventListener("scroll", this.onScroll, { passive: true });
     window.addEventListener("resize", this.onScroll);
     this.ro = new ResizeObserver(this.onScroll);
     this.ro.observe(document.body);
     this.resize();
-    this.kick();
+    // one clock (lib/frame.ts): the track's box in "read", the film in "render". It draws when the page moved or was asked to, and keeps drifting every
+    // frame while the gallery is on screen.
+    this.offs = [
+      subscribe("read", (_t, _dt, sc) => {
+        this.rect = sc.changed || this.pending || (this.visible && !this.o.reduced) ? this.o.track.getBoundingClientRect() : null;
+      }),
+      subscribe("render", (t, _dt, sc) => {
+        if (!this.rect) return;
+        this.pending = false;
+        this.draw(t, sc.y, this.rect);
+      }),
+    ];
   }
 
   destroy(): void {
-    cancelAnimationFrame(this.raf);
-    window.removeEventListener("scroll", this.onScroll);
+    for (const off of this.offs) off();
     window.removeEventListener("resize", this.onScroll);
     this.ro.disconnect();
     this.canvas.remove();
@@ -158,12 +170,7 @@ export class FilmHelix {
   }
 
   private kick(): void {
-    if (this.raf) return;
-    this.raf = requestAnimationFrame((t) => {
-      this.raf = 0;
-      this.draw(t);
-      if (this.visible && !this.o.reduced) this.kick(); // the film keeps drifting while the gallery is on screen
-    });
+    this.pending = true;
   }
 
   private resize(): void {
@@ -177,7 +184,8 @@ export class FilmHelix {
     this.canvas.height = h;
   }
 
-  draw(now = performance.now()): void {
+  /** `scroll` and `r` (the track's box) come from the frame (lib/frame.ts); a direct call reads them now. */
+  draw(now = performance.now(), scroll: number = window.scrollY, r: DOMRect = this.o.track.getBoundingClientRect()): void {
     const ctx = this.ctx;
     if (!ctx) return;
     this.resize();
@@ -185,7 +193,6 @@ export class FilmHelix {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
     // how much of the screen the gallery's track fills decides how strongly the spotlight and film show
-    const r = this.o.track.getBoundingClientRect();
     const vh = window.innerHeight;
     const overlap = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / vh;
     const k = Math.min(1, Math.max(0, (overlap - 0.1) / 0.3)); // fades in as soon as the gallery starts to enter, so the film carries on down into the space below instead of stopping at a hard edge
@@ -193,7 +200,6 @@ export class FilmHelix {
     this.spot.style.opacity = k.toFixed(3);
     if (!this.visible) return;
     const t = this.o.reduced ? 0 : now / 1000;
-    const scroll = window.scrollY;
     const W = w;
     const H = h;
     const unit = Math.min(W, H);

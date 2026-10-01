@@ -237,8 +237,11 @@ const cards = S.map((s, i) => {
 // ---- scroll = position along strand A
 let target = 0, cur = 0;
 window.__dive = (p) => { target = Math.min(1, Math.max(0, p)); };
-let loop = null;
-window.__diveActive = (on) => { if (on && !loop) { loop = frame; renderer.setAnimationLoop(loop); } else if (!on && loop) { loop = null; renderer.setAnimationLoop(null); } };
+// Driven by the page (components/home/DnaDive.tsx) from the site's one animation clock: it calls __diveFrame(t) in its render phase while the ride is
+// shown, so the ride and the page draw in the same frame. Opened on its own (no parent driving it), it runs its own loop.
+let active = false, driven = false, own = false;
+window.__diveActive = (on) => { active = on; if (!driven && on && !own) { own = true; renderer.setAnimationLoop(frame); } else if (!on && own) { own = false; renderer.setAnimationLoop(null); } };
+window.__diveFrame = (ms) => { driven = true; if (own) { own = false; renderer.setAnimationLoop(null); } if (active) frame(ms); };
 const resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
 addEventListener("resize", resize); resize();
 

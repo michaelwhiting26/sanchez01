@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { subscribe, type ScrollState } from "@/lib/frame";
 import { getJesseOwner, getJesseSize, onJesseOwner, setJesseStatus, type JesseStatus } from "@/lib/hero/handoff";
 
 /**
@@ -22,13 +23,18 @@ export function TransitJesse() {
     const box = root.current, el = fig.current, light = beam.current;
     if (!transit || !box || !el || !light || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ac = new AbortController();
-    let raf = 0;
     let last: JesseStatus = "idle";
+    let pending = true;
+    let r: DOMRect | null = null;
 
-    const draw = () => {
-      raf = 0;
+    // one clock (lib/frame.ts): the stretch's box in "read", the figure in "write", whenever the page moved or the hand-off changed
+    const read = (sc: Readonly<ScrollState>): void => {
+      r = sc.changed || pending ? transit.getBoundingClientRect() : null;
+      pending = false;
+    };
+    const draw = (): void => {
+      if (!r) return;
       const vh = window.innerHeight, vw = window.innerWidth;
-      const r = transit.getBoundingClientRect();
       const p = (vh - r.top) / (r.height + vh); // 0: the stretch's top reaches the screen bottom; 1: its bottom leaves the screen top
       const s: JesseStatus = p <= 0 ? "idle" : p >= 1 ? "spent" : "active";
       if (s !== last) { last = s; setJesseStatus("transit", s); }
@@ -46,13 +52,14 @@ export function TransitJesse() {
       light.style.transform = `translate3d(${(vw / 2 + drift).toFixed(1)}px, 0, 0) translateX(-50%)`;
       light.style.width = `${(sz * 1.6).toFixed(0)}px`;
     };
-    const queue = () => { if (!raf) raf = requestAnimationFrame(draw); };
-
-    window.addEventListener("scroll", queue, { passive: true, signal: ac.signal });
+    const queue = (): void => {
+      pending = true;
+    };
+    const offRead = subscribe("read", (_t, _dt, sc) => read(sc));
+    const offWrite = subscribe("write", draw);
     window.addEventListener("resize", queue, { signal: ac.signal });
     onJesseOwner(queue, ac.signal);
-    queue();
-    return () => { ac.abort(); if (raf) cancelAnimationFrame(raf); setJesseStatus("transit", "idle"); };
+    return () => { ac.abort(); offRead(); offWrite(); setJesseStatus("transit", "idle"); };
   }, []);
 
   return (

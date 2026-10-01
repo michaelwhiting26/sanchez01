@@ -1,5 +1,6 @@
 "use client";
 
+import { subscribe } from "@/lib/frame";
 import { useEffect, useRef, type ReactNode } from "react";
 import { LOGO_SRC } from "@/lib/site";
 import { teaseRise } from "@/lib/rise";
@@ -25,14 +26,13 @@ export function RisePanel({ children }: { children: ReactNode }) {
     let reveal = 0;
     let delay = 0;
     let over = 0;
-    let ticking = false;
-    let raf = 0;
+    let pending = true;
 
     // MR-2's structure: the panel is a fixed layer whose translate is a pure function of scroll; this section is only the scroll length under it.
-    const update = (): void => {
-      ticking = false;
+    // y: the frame's scroll snapshot (lib/frame.ts); measure() passes the page's current position
+    const update = (y: number = window.scrollY): void => {
       if (!mq.matches) return;
-      const x = window.scrollY + vh - rootTop - delay; // 0 a little after the section's top edge reaches the bottom of the screen: the panel waits, so the buttons above stay readable
+      const x = y + vh - rootTop - delay; // 0 a little after the section's top edge reaches the bottom of the screen: the panel waits, so the buttons above stay readable
       const raw = Math.min(1, Math.max(0, x / reveal));
       const rise = teaseRise(raw);
       root.style.setProperty("--rise", rise.toFixed(4));
@@ -70,14 +70,12 @@ export function RisePanel({ children }: { children: ReactNode }) {
       rootTop = root.getBoundingClientRect().top + window.scrollY;
       update();
     };
-    const onScroll = (): void => {
-      if (!ticking) {
-        ticking = true;
-        raf = requestAnimationFrame(update);
-      }
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // one clock: update in the frame's "write" phase whenever the page moved (rootTop, vh, reveal are cached by measure, so no layout read per frame)
+    const offFrame = subscribe("write", (_t, _dt, sc) => {
+      if (!sc.changed && !pending) return;
+      pending = false;
+      update(sc.y);
+    });
     window.addEventListener("resize", measure);
     window.addEventListener("load", measure);
     mq.addEventListener("change", measure);
@@ -88,8 +86,7 @@ export function RisePanel({ children }: { children: ReactNode }) {
     });
     ro.observe(card);
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
+      offFrame();
       window.removeEventListener("resize", measure);
       window.removeEventListener("load", measure);
       mq.removeEventListener("change", measure);

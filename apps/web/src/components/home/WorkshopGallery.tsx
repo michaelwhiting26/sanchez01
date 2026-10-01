@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { registerSz } from "@/lib/e2e-hooks";
+import { subscribe } from "@/lib/frame";
 import { FilmHelix } from "@/lib/film";
 import { GalleryAbseil } from "@/lib/gallery-abseil";
 import { GALLERY_SLIDES } from "./gallery-slides";
@@ -82,11 +83,10 @@ export function WorkshopGallery() {
     let lastLeave = -1;
     let lastBar = -1;
     let best = -1;
-    let raf = 0;
+    let pending = true;
 
-    const frame = (): void => {
-      raf = 0;
-      const y = window.scrollY; // the one read of the frame
+    // y: the frame's scroll snapshot (lib/frame.ts); direct callers (measure, the e2e hook) pass the page's current position
+    const frame = (y: number = window.scrollY): void => {
       const d = travel > 0 ? clamp01((y - start) / travel) : 0;
       // the counter, bar and title are gone (faded, not just scrolled) before the section releases, so nothing of the gallery is left on screen for the next section
       const leave = smooth(clamp01((start + trackH - y - vh * 0.55) / (vh * 0.45)));
@@ -145,10 +145,16 @@ export function WorkshopGallery() {
       }
     };
     const kick = (): void => {
-      if (!raf) raf = requestAnimationFrame(frame);
+      pending = true;
     };
     kickRef.current = kick;
-    const offSz = registerSz("gallery", { update: frame });
+    const offSz = registerSz("gallery", { update: () => frame() });
+    // one clock: update in the frame's "write" phase whenever the page moved (or something asked), at that frame's scroll snapshot
+    const offFrame = subscribe("write", (_t, _dt, sc) => {
+      if (!sc.changed && !pending) return;
+      pending = false;
+      frame(sc.y);
+    });
 
     const measure = (): void => {
       vw = window.innerWidth || 1;
@@ -202,15 +208,13 @@ export function WorkshopGallery() {
     const ro = new ResizeObserver(measureSoon);
     ro.observe(document.body);
 
-    window.addEventListener("scroll", kick, { passive: true });
     window.addEventListener("resize", onResize);
     window.addEventListener("load", measureSoon);
     void document.fonts?.ready.then(measureSoon);
     measure();
     return () => {
       window.clearTimeout(timer);
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", kick);
+      offFrame();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("load", measureSoon);
       io.disconnect();

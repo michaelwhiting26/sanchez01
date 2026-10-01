@@ -4,6 +4,8 @@
  * It steps back while the workshop gallery fills the screen, and narrows into a single thread at the bag's chain ring, where the chain takes over.
  * One fixed layer behind the page; the scroll position is the only input. Draws only while visible; reduced motion draws a still frame.
  */
+import { runNow, subscribe } from "./frame";
+
 type Rgb = readonly [number, number, number];
 // the film's colours (the developed-film brown and amber of the gallery tape): strand A the deep brown-orange base, strand B the warm amber, rungs the pale highlight
 const RUST: Rgb = [176, 96, 38];
@@ -38,7 +40,9 @@ export class DnaCore {
   private last = 0;
   private visible = true;
   private cleared = false;
-  private raf = 0;
+  private offs: (() => void)[] = [];
+  /** Layout read in the frame's "read" phase, used by "render" (no layout reads while drawing). */
+  private geo = { ringY: 1e9, holdTop: 1e9, wmTop: 1e9, wmBot: -1e9, lgcTop: 0, lgcBottom: 0, hasLgc: false };
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -56,7 +60,6 @@ export class DnaCore {
     this.size();
     window.addEventListener("resize", () => this.size(), { signal });
     window.addEventListener("load", () => this.size(), { signal });
-    window.addEventListener("scroll", () => (this.dirty = true), { passive: true, signal });
     document.addEventListener("visibilitychange", () => (this.visible = !document.hidden), { signal });
     if ("ResizeObserver" in window) {
       let timer = 0;
@@ -67,12 +70,26 @@ export class DnaCore {
       ro.observe(document.body);
       signal.addEventListener("abort", () => ro.disconnect());
     }
-    this.raf = requestAnimationFrame(this.loop);
+    // one clock (lib/frame.ts): measure in "read", draw in "render", both at the frame's scroll snapshot
+    this.offs.push(
+      subscribe("read", (_t, _dt, s) => {
+        if (s.changed) this.dirty = true;
+        if (!this.visible) return;
+        this.measureEnd();
+        this.readGeo();
+      }),
+      subscribe("render", (now, _dt, s) => {
+        if (!this.visible || (this.coarse && now - this.last < 33)) return;
+        this.last = now;
+        this.tick(now, s.y);
+      }),
+    );
   }
 
   destroy(): void {
     this.abort.abort();
-    cancelAnimationFrame(this.raf);
+    for (const off of this.offs) off();
+    this.offs = [];
   }
 
   private size(): void {
@@ -96,22 +113,48 @@ export class DnaCore {
     this.fieldEnd = end || 3000;
   }
 
-  private readonly loop = (now: number): void => {
-    this.raf = requestAnimationFrame(this.loop);
-    if (!this.visible || (this.coarse && now - this.last < 33)) return;
-    this.last = now;
-    this.tick(now);
-  };
-
-  /** Render synchronously at the current scroll (the rAF loop is otherwise the only caller). Used by the e2e hooks (lib/e2e-hooks.ts) and screenshots. */
+  /** Render synchronously at the page's current scroll (the frame clock is otherwise the only caller). Used by the e2e hooks (lib/e2e-hooks.ts) and screenshots. */
   drawAt(now = performance.now()): void {
     this.dirty = true;
-    this.tick(now);
+    runNow((t, _dt, s) => {
+      this.measureEnd();
+      this.readGeo();
+      this.tick(now || t, s.y);
+    });
   }
 
-  private tick(now: number): void {
-    this.measureEnd();
-    if (window.scrollY > this.fieldEnd) {
+  /** Where the bag's ring, the wordmark rows, the options band and the gallery are on screen this frame (they move with the scroll and with their own animation). */
+  private readGeo(): void {
+    const g = this.geo;
+    g.ringY = 1e9;
+    const bag = document.querySelector(".bag-punch");
+    if (bag) {
+      const r = (bag.querySelector("[data-bag-view]") ?? bag).getBoundingClientRect();
+      g.ringY = r.top + r.height * 0.118;
+    }
+    g.holdTop = 1e9;
+    g.wmTop = 1e9;
+    g.wmBot = -1e9;
+    const wm = document.querySelector(".sz-marquee");
+    if (wm) {
+      const wr = wm.getBoundingClientRect();
+      g.wmTop = wr.top;
+      g.wmBot = wr.bottom;
+      g.holdTop = wr.bottom;
+    }
+    const opt = document.querySelector(".sz-options");
+    if (opt) g.holdTop = opt.getBoundingClientRect().bottom;
+    const lgc = document.querySelector(".lgc-track");
+    g.hasLgc = !!lgc;
+    if (lgc) {
+      const lr = lgc.getBoundingClientRect();
+      g.lgcTop = lr.top;
+      g.lgcBottom = lr.bottom;
+    }
+  }
+
+  private tick(now: number, y: number): void {
+    if (y > this.fieldEnd) {
       if (!this.cleared) {
         this.ctx.clearRect(0, 0, this.w, this.h);
         this.cleared = true;
@@ -121,42 +164,21 @@ export class DnaCore {
     this.cleared = false;
     if (this.reduce && !this.dirty) return;
     this.dirty = false;
-    this.draw(now);
+    this.draw(now, y);
   }
 
-  private draw(now: number): void {
+  private draw(now: number, y: number): void {
     const { ctx, w, h, pitch } = this;
-    const y = window.scrollY;
     const vh = h;
     const grow = smooth(vh * 0.12, vh * 0.95, y); // 0 in the hero, 1 one screen down: single thread to two strands
     const fadeOut = 1 - smooth(this.fieldEnd - vh * 1.4, this.fieldEnd - vh * 0.4, y); // gone once the transparent sections are behind you
-    let ringY = 1e9; // where the bag's chain ring hangs: the helix narrows to a single thread there and stops
-    const bag = document.querySelector(".bag-punch");
-    if (bag) {
-      const view = bag.querySelector("[data-bag-view]") ?? bag;
-      const r = view.getBoundingClientRect();
-      ringY = r.top + r.height * 0.118;
-    }
-    let holdTop = 1e9; // where the wordmark rows AND the options band end: the thread stays full width above, and only starts to narrow (the hand-off) once it has cleared them
-    let wmTop = 1e9;
-    let wmBot = -1e9;
-    const wm = document.querySelector(".sz-marquee");
-    if (wm) {
-      const wr = wm.getBoundingClientRect();
-      wmTop = wr.top;
-      wmBot = wr.bottom;
-      holdTop = wr.bottom;
-    }
-    const opt = document.querySelector(".sz-options"); // the tab-pill band sits between the wordmark and the bag
-    if (opt) {
-      const or = opt.getBoundingClientRect();
-      holdTop = or.bottom; // the options band only holds the taper back: the spiral is NOT dimmed behind it (owner: it must keep pumping down to the bag)
-    }
+    // read this frame in the "read" phase (readGeo): where the bag's chain ring hangs (the helix narrows to a single thread there and stops); where the
+    // wordmark rows AND the options band end (the thread stays full width above, and only starts to narrow once it has cleared them; the spiral is NOT
+    // dimmed behind the options band, owner: it must keep pumping down to the bag)
+    const { ringY, holdTop, wmTop, wmBot } = this.geo;
     let lgcK = 1; // gone while the workshop gallery is being scrolled through
-    const lgc = document.querySelector(".lgc-track");
-    if (lgc) {
-      const lr = lgc.getBoundingClientRect();
-      const cover = Math.max(0, Math.min(lr.bottom, vh) - Math.max(lr.top, 0)) / vh;
+    if (this.geo.hasLgc) {
+      const cover = Math.max(0, Math.min(this.geo.lgcBottom, vh) - Math.max(this.geo.lgcTop, 0)) / vh;
       lgcK = 1 - smooth(0.12, 0.55, cover);
     }
     const alpha = grow * fadeOut * lgcK;

@@ -10,6 +10,7 @@
  *     during jabs and guard (x constant); he advances only during steps, by the sheet's own `travelAt` (stepPx x scale per step). Feet on the ribbon curve, tilted to it.
  * Missing sheets degrade: no roll sheet = a 250 ms fade from the hide spot to the landing; no jab/stepin sheet = the old teep gait, then the tiptoe (sneak) sheet.
  */
+import { subscribe } from "./frame";
 import { getHeroHideSpot, onJesseOwner, setJesseSize, setJesseStatus, type HeroHideSpot } from "./hero/handoff";
 
 const FRAME = 320;
@@ -394,7 +395,7 @@ export class RibbonSneak {
   private svgTop = 0;
   private width = 0;
   private measured = false;
-  private raf = 0;
+  private pending = true; // redraw on the next frame even if the page did not move
   private shown = false;
   private fade = 0;
   private fadeAt = 0;
@@ -417,11 +418,25 @@ export class RibbonSneak {
         this.actor.style.visibility = "hidden";
       }
     }, signal);
+    // one clock (lib/frame.ts): read the section's box in "read", update the figure in "write", at the frame's scroll snapshot, whenever the page
+    // moved or something asked for a redraw (resize, fonts, a sheet loaded, the hand-off)
     const queue = (): void => {
-      if (!this.raf) this.raf = requestAnimationFrame(() => ((this.raf = 0), this.update()));
+      this.pending = true;
     };
     this.queue = queue;
-    window.addEventListener("scroll", queue, { passive: true, signal });
+    let rect: DOMRect | null = null;
+    const offRead = subscribe("read", (_t, _dt, sc) => {
+      if (!sc.changed && !this.pending) return;
+      this.pending = false;
+      rect = this.root.getBoundingClientRect();
+    });
+    const offWrite = subscribe("write", () => {
+      if (!rect) return;
+      const r0 = rect;
+      rect = null;
+      this.update(undefined, r0);
+    });
+    signal.addEventListener("abort", () => (offRead(), offWrite()));
     window.addEventListener("resize", () => ((this.measured = false), queue()), { passive: true, signal });
     const ro = new ResizeObserver(() => ((this.measured = false), queue()));
     ro.observe(this.root);
@@ -437,7 +452,6 @@ export class RibbonSneak {
 
   destroy(): void {
     this.abort.abort();
-    cancelAnimationFrame(this.raf);
     setJesseStatus("ribbon", "idle"); // the ribbon figure is gone: the hero's man may be drawn again
   }
 
@@ -545,10 +559,10 @@ export class RibbonSneak {
   };
 
   /** Pure function of the section's position in the viewport. Public so it can be driven directly (`view` fakes the scroll position: the section's top and the viewport height). */
-  update(view?: { rootTop: number; vh: number }): void {
+  update(view?: { rootTop: number; vh: number }, frameRect?: DOMRect): void {
     if (!this.measured && !this.measure()) return;
     const hide = getHeroHideSpot();
-    const rect = this.root.getBoundingClientRect();
+    const rect = frameRect ?? this.root.getBoundingClientRect(); // the frame's "read" phase passes it in; direct callers (tests, e2e hooks) read it now
     const rootTop = view?.rootTop ?? rect.top;
     const vh = view?.vh ?? window.innerHeight;
     const gaitLayer = this.gaitLayer();
