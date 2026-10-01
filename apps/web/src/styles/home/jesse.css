@@ -16,6 +16,6 @@
 .transit-jesse { position: fixed; inset: 0; pointer-events: none; z-index: 3; visibility: hidden; }
 .transit-jesse__fig { position: absolute; inset: 0 auto auto 0; transform-origin: 50% 8%; will-change: transform; user-select: none;
   filter: drop-shadow(0 0 2px rgb(255 230 175 / .9)) drop-shadow(0 0 14px rgb(255 214 140 / .45)); }
-.transit-jesse__beam { position: absolute; inset: 0 auto auto 0; will-change: transform, height;
+.transit-jesse__beam { position: absolute; inset: 0 auto auto 0; will-change: transform;
   background: linear-gradient(180deg, rgb(255 236 190 / .26), rgb(255 226 160 / .10) 70%, rgb(255 226 160 / 0));
   clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); filter: blur(6px); mix-blend-mode: screen; }

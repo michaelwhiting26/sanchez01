@@ -8,6 +8,7 @@ import { Hero } from "@/components/home/Hero";
 import { Marquee } from "@/components/home/Marquee";
 import { OrbitSubmit } from "@/components/home/OrbitSubmit";
 import { RisePanel } from "@/components/home/RisePanel";
+import { ScrollChrome } from "@/components/home/ScrollChrome";
 import { TransitJesse } from "@/components/home/TransitJesse";
 import { Waitlist } from "@/components/home/Waitlist";
 import { WorkshopGallery } from "@/components/home/WorkshopGallery";
@@ -23,6 +24,7 @@ export default function HomePage() {
         Skip to content
       </a>
       <main id="main" tabIndex={-1}>
+        <ScrollChrome />
         <Hero />
         <DnaCore />
         <CurvedLoop text="SANCHEZ • CUSTOM ✦ " />

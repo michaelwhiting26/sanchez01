@@ -1,0 +1,8 @@
+/* Homepage chrome (ScrollChrome.tsx): the scroll-progress bar and the cursor ring. Fixed, pointer-events: none, transform/opacity only. */
+.scroll-progress { position: fixed; inset: 0 0 auto; z-index: 70; block-size: 3px; background: #c9a45c; transform: scaleX(0); transform-origin: 0 50%; pointer-events: none; transition: opacity .3s ease; }
+.scroll-progress.is-hidden { opacity: 0; }
+.cursor-ring { position: fixed; inset: 0 auto auto 0; z-index: 80; inline-size: 28px; block-size: 28px; margin: -14px 0 0 -14px; border: 1.5px solid rgb(201 164 92 / .7);
+  border-radius: 50%; pointer-events: none; opacity: 0; visibility: hidden; will-change: transform; transition: opacity .2s ease, scale .25s ease, border-color .2s ease, background-color .2s ease; }
+.cursor-ring.is-on { opacity: 1; visibility: visible; }
+.cursor-ring.is-hover { scale: 1.6; border-color: #c9a45c; background-color: rgb(201 164 92 / .08); }
+@media not ((pointer: fine) and (prefers-reduced-motion: no-preference)) { .cursor-ring { display: none; } }
