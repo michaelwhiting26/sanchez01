@@ -3,7 +3,7 @@ import { boot, centred, galleryY, readLayout, scrollToY, settle, settleLayout, v
 
 /**
  * State-machine regressions, asserted semantically (DOM, computed style, canvas pixels, hook state), never by comparing screenshots.
- * Every test names the bug it guards. Lettered a-g to match the WP4 brief.
+ * Every test names the bug it guards. Lettered a-h to match the WP4 brief.
  */
 
 let layout: Layout;
@@ -331,10 +331,39 @@ test("g. dead artefacts stay dead", async ({ page }) => {
   // no auto-tour, so no tour hint; no magnet on the waitlist
   await expect(page.locator(".tour-hint")).toHaveCount(0);
   await expect(page.locator(".waitlist__magnet")).toHaveCount(0);
+  // never visible in the approved page (display:none at every width and scroll position), so removed from the DOM: the unused second footer bag
+  // inside the rise panel, and the "Drag to spin" hint under the 3D bag
+  await expect(page.locator(".rise__bag")).toHaveCount(0);
+  await expect(page.locator(".bag-punch__hint")).toHaveCount(0);
   // one Submit: the tethered bag button. No second variant anywhere in the DOM.
   await expect(page.locator('button[type="submit"], input[type="submit"]')).toHaveCount(1);
   await expect(page.locator(".orbit-submit")).toHaveCount(1);
   const visibleSubmits = await page.locator('button[type="submit"]').evaluateAll((els) => els.filter((e) => getComputedStyle(e).visibility !== "hidden" && e.getBoundingClientRect().height > 0).length);
   expect(visibleSubmits).toBeLessThanOrEqual(1);
   await expect(page.locator("[class*='waitlist__submit'], .waitlist__btn")).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------------------- h. bag beneath the globe
+test("h. the footer bag hangs beneath the globe (locked decision 8)", async ({ page }) => {
+  await scrollToY(page, layout.scrollHeight, { heroMs: "end" });
+  const m = await page.evaluate(() => {
+    const bag = document.querySelector<HTMLElement>(".globe-bag");
+    const globe = document.querySelector<HTMLElement>(".footer-globe");
+    if (!bag || !globe) return null;
+    const cs = getComputedStyle(bag);
+    const b = bag.getBoundingClientRect();
+    const g = globe.getBoundingClientRect();
+    return { display: cs.display, visibility: cs.visibility, opacity: +cs.opacity, bag: { cx: b.x + b.width / 2, top: b.top, bottom: b.bottom, h: b.height }, globe: { cx: g.x + g.width / 2, top: g.top, bottom: g.bottom, h: g.height } };
+  });
+  expect(m, "the globe and the footer bag must both exist").not.toBeNull();
+  if (!m) return;
+  expect(m.display).not.toBe("none");
+  expect(m.visibility).toBe("visible");
+  expect(m.opacity).toBeGreaterThan(0);
+  // phone: the bag is centred on the viewport and the globe sits 20 px right of it (identical before the WP3 refactor), so allow 6% of the globe's width
+  expect(Math.abs(m.bag.cx - m.globe.cx), "the bag is centred under the globe").toBeLessThan(m.globe.h * 0.06);
+  // the chain hook sits just inside the globe's lower edge, and the bag body hangs well below it
+  expect(m.bag.top, "the bag starts inside the globe's lower half").toBeGreaterThan(m.globe.top + m.globe.h * 0.5);
+  expect(m.bag.top, "the bag starts above the globe's bottom edge").toBeLessThan(m.globe.bottom);
+  expect(m.bag.bottom, "the bag hangs below the globe").toBeGreaterThan(m.globe.bottom + m.bag.h * 0.5);
 });
