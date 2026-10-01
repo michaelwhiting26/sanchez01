@@ -105,5 +105,22 @@ Stop only for credentials or business decisions. In that case add them to `.env.
 - Node 24 is available.
 - Never commit secrets or the large media. Commit messages end with the co-author line from the session instructions.
 
+## Ownership and integration (adopted 1 Oct 2026, after the 30 Sep parallel-edit regressions)
+Several Claude sessions work in this repo. Ownership is by **area**, not by session. Whoever holds an area is its owner for as long as the work lasts, and says so in the commit trail.
+
+| Area | Files | Owner's job |
+|---|---|---|
+| **Homepage** (one integration owner) | `apps/web/src/components/home/**`, `apps/web/src/styles/home/**`, `apps/web/src/app/page.tsx`, the home-only code in `apps/web/src/lib/` (`hero/`, `dna.ts`, `ribbon-sneak.ts`, `gallery-abseil.ts`, `curved-loop.ts`, `footer-globe.ts`, `rise.ts`, `depth-card.ts`, `film.ts`, `e2e-hooks.ts`), and the homepage tests in `apps/web/e2e/` | Integrates every homepage change; keeps `docs/LOCKED-DECISIONS.md` true |
+| **Jesse and rally** | `tools/runner/**`, `apps/web/public/assets/runner/**`, `apps/web/public/assets/jesse/**` | The model, the sheets, the render scripts |
+| **Bag builder and product area** | `app/configure/**`, `app/product/**`, `app/order/**`, `components/build/**`, `components/pages/**`, `lib/bag/`, `lib/configurator/`, `lib/commerce/`, `lib/db/`, `lib/catalogue.ts`, `lib/bag-letters.ts`, `styles/bag-buttons.css`, `styles/share-sheet.css`, `packages/**` | The build flow, checkout, the share sheet |
+
+Rules:
+- **Work on a short-lived branch or in your own git worktree**, never in the shared checkout that serves the phone dev server. Never switch branches, clean or stash in a checkout you do not own.
+- **Nobody pushes homepage edits straight to `main`.** A change to another area's files arrives as a branch or diff for that area's owner to review and merge.
+- **`main` is protected by one gate**: `npm run check` (typecheck, lint, CSS audit, unit tests) and `npm run build`. The pre-push hook and CI both call these scripts, so there is no second copy of the commands. Do not bypass it, and do not weaken a rule to make it pass.
+- **Homepage CSS: one section, one file** in `styles/home/`. Change the rule where it is defined. Never append an override or an `!important` (the audit fails on same-context duplicates and on any uncommented `!important`). Details are in the header of `apps/web/scripts/css-audit.mjs`.
+- **A visual or behaviour change needs evidence from a browser**, not code inspection: `npm run e2e -w @sanchez/web` (Playwright, 390×844 and 1440×900). Do not update screenshot baselines to make a failure disappear; update them only for a change the owner approved.
+- Do not encode a session ID or a person's name as an owner. Use the area names above.
+
 ## Locked decisions
 Read `docs/LOCKED-DECISIONS.md` before changing any home, build-flow or product-page behaviour. Do not undo a line there without the owner saying so; update the line when the owner changes their mind.

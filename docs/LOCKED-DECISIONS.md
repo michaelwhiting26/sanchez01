@@ -26,3 +26,39 @@ The owner's current word on how each part of the site behaves. Anyone changing t
 - "Designed in Sydney. Handmade in Pattaya."
 - Push to `main`; owner views on the Mac dev server `http://192.168.1.115:3000`.
 - **Buttons are punch bags** (owner, 30 Sep 20:15): every labelled call-to-action (Order / Build yourself / Seriously, order, Build your identity, page buttons, builder buttons, share sheet) is the red bag render on its side, 3-slice so any label fits (`styles/bag-buttons.css`); secondary buttons are the same bag in black. Pills, arrows and icon toggles are not bags. The Submit bag keeps the rolling-letter tumble on hover.
+
+## Where each home decision is enforced
+Paths are under `apps/web/src/`. One section, one stylesheet in `styles/home/` (listed in `styles/home/index.css`, load order = page order). To change a decision, change the rule in its owning file; do not add a later rule or an override file (`npm run check` fails on that, see `apps/web/scripts/css-audit.mjs`). Tests are in `apps/web/e2e/` (`home.spec.ts` = screenshots, `regressions.spec.ts` = state assertions a-h).
+
+| # | Decision | Component / source | Stylesheet | Protected by |
+|---|---|---|---|---|
+| 1 | Hero, the runner, Custom pass, ribbon hand-off | `components/home/Hero.tsx`, `HeroField.tsx`, `CurvedLoop.tsx`; `lib/hero/*` (`engine`, `writer`, `intro`, `config`, `handoff`) | `hero.css`, `ribbon.css`, `jesse.css` | `home.spec` hero + ribbon shots; regression b (one Jesse), d (C not inked early) |
+| 1 | Hero glass is invisible | `Hero.tsx` (`.wm-hero__glass`) | `hero.css` | regression a (no `isolation` on `.wm-hero`) |
+| 2 | No auto-tour | none (the tour code is deleted) | none | regression g (`.tour-hint` absent) |
+| 3 | Workshop gallery, stops at slide 6 | `WorkshopGallery.tsx`, `GalleryLightbox.tsx`, `gallery-slides.ts` | `gallery.css`, `lightbox.css` | `home.spec` gallery start/mid/end; regression c |
+| 4 | Spiral stretch | `DnaCore.tsx`, `lib/dna.ts`; the `.sz-transit` field is markup in `app/page.tsx` | `transit-wordmark-options.css` | `home.spec` spiral transit; regression a (spiral pixels in the interval) |
+| 5 | SANCHEZ rows | `Marquee.tsx` | `transit-wordmark-options.css` | `home.spec` SANCHEZ rows |
+| 6 | Options band below the bag | `BagPunch.tsx` | `transit-wordmark-options.css`, `bag-section.css` | `home.spec` options shots; regression f (bag stays ready and visible) |
+| 7 | Hand-off to the bag | `BagPunch.tsx`, `lib/dna.ts` | `transit-wordmark-options.css` | `home.spec` hand-off |
+| 7b | 2D Jesse under the bag | markup in `app/page.tsx` | `jesse.css` | `home.spec` jesse-2d |
+| 8 | Globe above the bag, bag on a chain | `FooterMin.tsx` (globe, slot), `BagHit.tsx` (the bag: `.globe-bag`, `.globe-bag-btn`) | `globe-waitlist.css`, `footer-rise.css` | `home.spec` footer; regression h (bag centred under the globe, hanging below it) |
+| 8 | Submit floats above the globe, no tether line | `OrbitSubmit.tsx`, `Waitlist.tsx` | `globe-waitlist.css`, `rolling-button.css` | regression g (`.orbit-tether` absent, one Submit); `home.spec` waitlist |
+| - | Buttons are punch bags | other owner: build flow and product area | `styles/bag-buttons.css` | not covered here |
+
+`RisePanel.tsx` (the footer card) is styled by `footer-rise.css`. The share sheet (`.shs`) belongs to the build flow: `styles/share-sheet.css`.
+
+## Superseded (history, so nobody re-implements a reversed idea)
+Newest first within each thread. Commits are on `main`.
+
+- **Submit and the globe: orbit → magnet → orbit → tether → no tether.**
+  - Orbit on a 45-degree tilted ring: `394e94c` (30 Sep 17:15).
+  - Magnet: Submit back in its row, drawn towards the globe, orbit overlay removed: `46df5ae` (17:25).
+  - Orbit again: `24cd158` (17:40).
+  - Tether: Submit floats above the globe on a short tether with a magnetic pull: `fc0f54c` (18:08).
+  - No visible tether line (owner, 19:25): `442d0c5`, `474ba4f`. The `.orbit-tether` element was still in the DOM, hidden by CSS, until it was deleted in the WP3 cleanup. Today: a Submit bar floats above the globe with no line, and regression g fails if `.orbit-tether` returns.
+- **Ribbon crossing: teep → jab.** Left-leg Muay Thai teep steps (`f86c76f`, 20:55; the hider teeps across the ribbon, `83f6588`, 21:01) became random left-jab combinations with push-steps (owner, `7c213f3`, 21:03). Today: jabs only. Decision 1 still contains an older "tiptoes right-to-left along the ribbon" sentence from the first ribbon design; the jab crossing replaces it. Owner to confirm and remove that sentence.
+- **The runner's body: mannequin → Mixamo Vanguard silhouette → Jesse.** Real clothed human (`8f2408c`, 17:29), then Jesse's own 3D model, with every sheet re-rendered (`6f8a89d`, 21:13). Today the hero runner is Jesse (`CLAUDE.md` master rule). Decision 1's "Mixamo Vanguard render" and "black silhouette until a proper casual model exists" wording is the older state.
+- **Hero glass: permanent diamond-glass film → invisible clear pane.** `f953f29` (17:18) became `adeb160` (17:54).
+- **Auto-tour: removed.** `e0e0a58` (17:12). The leftover `AutoTour.tsx` and `lib/tour.ts` were deleted in the WP3 cleanup.
+- **Options band: above the bag, start with no product chosen → below the bag, Bags shown first.** `78203cf` (19:40) became `9cf00de` (20:17).
+- **Second footer bag (`.rise__bag`) and the "Drag to spin" hint (`.bag-punch__hint`): removed in the WP3 cleanup.** Both were in the DOM but `display: none` at every width and scroll position (checked in a browser against the pre-cleanup build), so removing them changed nothing visible. The bag under the globe is `BagHit.tsx`, unchanged.
