@@ -9,8 +9,8 @@
    1) the gallery's film, counter and bar fade out completely (film.ts, WorkshopGallery.tsx) before anything else arrives;
    2) .sz-transit is empty dark field: the fixed gold spiral keeps turning down it with the scroll, so the visitor feels the change of place;
    3) the SANCHEZ rows rise (the spiral steps behind them), then it narrows slowly into the bag's chain, with clear air around the pill and the bag. */
-.sz-transit { block-size: 160svh; pointer-events: none; }
-@media (min-width: 768px) { .sz-transit { block-size: 140svh; } }
+.sz-transit { block-size: 80svh; pointer-events: none; }
+@media (min-width: 768px) { .sz-transit { block-size: 70svh; } }
 
 /* ---- Big SANCHEZ rows: twice the former size, allowed to bleed off both edges (the section clips), with real air above and below ---- */
 .sz-marquee { display: grid; gap: clamp(28px, 7svh, 90px); overflow-x: clip; overflow-y: visible; min-block-size: 100svh; align-content: center; padding-block: clamp(3rem, 9svh, 8rem); background: transparent; }
