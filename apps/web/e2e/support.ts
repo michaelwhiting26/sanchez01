@@ -60,13 +60,29 @@ export async function boot(page: Page): Promise<void> {
   await expect
     .poll(
       async () => {
-        const ready = await page.evaluate(() => (window.__sz?.hero?.duration() ?? 0) > 0 && document.fonts.status === "loaded" && document.querySelector(".bag-punch.is-ready") !== null);
+        const ready = await page.evaluate(() => (window.__sz?.hero?.duration() ?? 0) > 0 && document.fonts.status === "loaded");
         if (!ready) await page.clock.runFor(16); // page time advances one frame per poll, so timers and rAF chains that the loading itself depends on can run
         return ready;
       },
       { timeout: 60_000, intervals: [50] },
     )
     .toBe(true);
+  // The 3D bag loads on approach (BagPunch: within ~2.5 screens), so bring it in once, wait until it is ready, and come back to the top: every test then
+  // starts with the bag loaded, exactly as before the bag was split out of the first load.
+  await page.evaluate(() => document.querySelector(".bag-punch")?.scrollIntoView({ block: "center", behavior: "instant" }));
+  await flushIntersections(page); // the scenes' on-screen observers must see this jump before page time moves (see flushIntersections)
+  await expect
+    .poll(
+      async () => {
+        const ready = await page.evaluate(() => document.querySelector(".bag-punch.is-ready") !== null);
+        if (!ready) await page.clock.runFor(16);
+        return ready;
+      },
+      { timeout: 60_000, intervals: [50] },
+    )
+    .toBe(true);
+  await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
+  await flushIntersections(page);
   // The bag turns a little every frame while nobody touches it (an idle spin that counts frames, not time, so no clock can pin it). A pointer held down on the
   // bag suspends exactly that, as it does for a visitor mid-drag, so its turn is the entry spin only: a function of scroll. Nothing else about the bag changes.
   await page.evaluate(() => {

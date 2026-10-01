@@ -1,0 +1,21 @@
+{
+  "_doc": "Network budget for the homepage at 390x844 (phone). Bytes are WIRE bytes: Chrome's encodedDataLength per request (compressed, as received over the network; a cache hit or 304 counts only its headers). 'initial' = from navigation to load + 4 s of idle; 'fullScroll' = after scrolling the whole page. 'ceilings' fail the test (set just above the measured state of 1 Oct 2026, so regressions fail CI); 'targets' are the spec's goals, reported, not enforced yet. Media (gallery clips) is reported separately: it only downloads when the gallery is on screen and a clip is in focus.",
+  "ceilingsKB": {
+    "initial": 2300,
+    "fullScrollExcludingMedia": 7000,
+    "initialScript": 330,
+    "initialFont": 320
+  },
+  "targetsKB": {
+    "initial": 500,
+    "fullScrollIncludingMedia": 4096,
+    "initialScript": 170
+  },
+  "forbiddenAtStart": [
+    "\\.mp4(\\?|$)",
+    "/dna-dive/",
+    "bag_4ft\\.glb",
+    "/assets/globe/earth-"
+  ],
+  "_forbiddenDoc": "Assets that must never load before the visitor scrolls. The hero's own ring maps (/assets/globe/rings-map-*) are hero assets, and the gallery's sheets load by distance (on a phone the gallery starts within 2.5 screens), so neither is listed. three.js is caught by the initialScript ceiling (chunk names are hashed)."
+}
