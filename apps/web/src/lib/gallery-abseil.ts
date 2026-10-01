@@ -8,6 +8,7 @@
  * The hand-off state (lib/hero/handoff.ts) guarantees one figure at a time: this actor draws only while it is the owner.
  * Sheets: abseil.json (facing the wall on its RIGHT in-sheet, so it is mirrored to put the wall on the left), walk.json (faces right, unmirrored).
  */
+import { subscribe } from "./frame";
 import { getJesseSize, onJesseOwner, setJesseStatus } from "./hero/handoff";
 import { parseSheet, type RibbonSheet } from "./ribbon-sneak";
 
@@ -227,7 +228,14 @@ export class GalleryAbseil {
     onJesseOwner((o) => {
       if (o !== "gallery" && this.shown) this.hide();
     }, this.abort.signal);
-    void this.load();
+    // the sheets load when the gallery is within ~2.5 screens (lib/frame.ts read phase), not with the page: Jesse is ready long before he is reached
+    const offNear = subscribe("read", () => {
+      const r = stage.getBoundingClientRect();
+      if (r.top > window.innerHeight * 2.5 || r.bottom < -window.innerHeight) return;
+      offNear();
+      void this.load();
+    });
+    this.abort.signal.addEventListener("abort", offNear);
   }
 
   destroy(): void {

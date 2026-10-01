@@ -3,4 +3,7 @@
 .dna-dive { position: relative; block-size: 700svh; }
 .dna-dive__stage { position: sticky; inset-block-start: 0; block-size: 100svh; overflow: hidden; pointer-events: none; }
 .dna-dive__ride { position: absolute; inset: 0; visibility: hidden; opacity: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
-.dna-dive__ride iframe { inline-size: 100%; block-size: 100%; border: 0; display: block; background: #0e0b09; pointer-events: none; }
+.dna-dive__ride iframe { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; border: 0; display: block; background: #0e0b09; pointer-events: none; opacity: 0; }
+.dna-dive__ride.is-ready iframe { opacity: 1; }
+/* the ride's own opening frame, shown only until the ride has loaded */
+.dna-dive__poster { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; }

@@ -123,7 +123,10 @@ export function WorkshopGallery() {
           c.el.style.zIndex = String(z);
         }
         const v = c.video;
-        if (v) {
+        // the clip itself is attached only once the gallery is on screen and this card is the one in focus (its poster, the same frame, shows until
+        // then): nothing downloads at page load, and clips load one at a time, as each card comes to the front
+        if (v && !v.hasAttribute("src") && focus > 0.5 && y > start - vh * 0.5 && y < start + trackH && v.dataset["src"]) v.src = v.dataset["src"];
+        if (v?.hasAttribute("src")) {
           if (lockedRef.current) {
             if (!v.paused) v.pause();
           } else if (focus > 0.55 && v.paused) void v.play().catch(() => undefined);
@@ -266,7 +269,7 @@ export function WorkshopGallery() {
                 onPointerEnter={() => void loadLightbox()}
                 onTouchStart={() => void loadLightbox()}
               >
-                {s.video ? <video src={s.video} poster={s.src} muted loop playsInline preload="metadata" /> : <img src={s.src} alt={s.title} loading="lazy" decoding="async" />}
+                {s.video ? <video data-src={s.video} poster={s.src} muted loop playsInline preload="none" /> : <img src={s.src} alt={s.title} loading="lazy" decoding="async" />}
                 <figcaption>
                   <span>{String(i + 1).padStart(2, "0")}</span> {s.title}
                 </figcaption>

@@ -67,6 +67,8 @@ export function DnaDive() {
       subscribe("write", () => {
         if (!rect) return;
         const vh = window.innerHeight;
+        // load the ride only when the dive is within two screens (it was fetched with the page: ~3 MB of 3D before anyone scrolled)
+        if (!ifr.src && rect.top < vh * 3 && rect.bottom > -vh * 2 && ifr.dataset["src"]) ifr.src = ifr.dataset["src"];
         if (rect.bottom < -vh || rect.top > vh * 2) { if (active || layers.some((el) => el.style.transform)) apply(rect.top > 0 ? 0 : 1); return; } // far away: settle once
         apply(clamp01(-rect.top / Math.max(1, rect.height - vh)));
       }),
@@ -77,7 +79,8 @@ export function DnaDive() {
       }),
     ];
     window.addEventListener("resize", kick);
-    ifr.addEventListener("load", () => { active = false; kick(); });
+    // until the ride has loaded, its poster (the ride's own opening frame) shows: the zoom never lands on an empty screen
+    ifr.addEventListener("load", () => { active = false; rideEl.classList.add("is-ready"); kick(); });
     return () => {
       for (const off of offs) off();
       window.removeEventListener("resize", kick);
@@ -89,7 +92,8 @@ export function DnaDive() {
     <section ref={section} className="dna-dive" aria-label="Inside the Sanchez DNA">
       <div className="dna-dive__stage">
         <div ref={ride} className="dna-dive__ride">
-          <iframe ref={frame} src="/dna-dive/index.html" title="Inside the Sanchez DNA" tabIndex={-1} loading="eager" />
+          <img className="dna-dive__poster" src="/dna-dive/poster.webp" alt="" aria-hidden="true" width={1600} height={1000} loading="lazy" decoding="async" />
+          <iframe ref={frame} data-src="/dna-dive/index.html" title="Inside the Sanchez DNA" tabIndex={-1} />
         </div>
       </div>
     </section>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { BagEngine } from "@/lib/bag/engine";
-import { cancelFrame, requestFrame } from "@/lib/frame";
+import type { BagEngine } from "@/lib/bag/engine";
+import { cancelFrame, requestFrame, subscribe } from "@/lib/frame";
 import { scrollTo } from "@/lib/scroll";
 
 import { BAG_PRODUCTS, priceLabel } from "@/lib/bag/products";
@@ -57,17 +57,37 @@ export function BagPunch() {
     const root = rootRef.current;
     const host = hostRef.current;
     if (!root || !host) return;
-    let engine: BagEngine;
-    try {
-      engine = new BagEngine({ root, host, onProduct: setIndex });
-    } catch {
-      setFallback(true); // no WebGL: the switcher still works as plain links
-      return;
-    }
-    engineRef.current = engine;
-    engine.start();
+    // The 3D engine (and three.js with it) is its own chunk, fetched when the section is within ~2.5 screens: the bag stays hidden until 40% of it is on
+    // screen anyway, so it is ready before anyone can see it, and the page's first load carries none of it.
+    let engine: BagEngine | null = null;
+    let cancelled = false;
+    let started = false;
+    const offNear = subscribe("read", () => {
+      if (started) return;
+      const r = root.getBoundingClientRect();
+      if (r.top > window.innerHeight * 2.5 || r.bottom < -window.innerHeight) return;
+      started = true;
+      offNear();
+      void import("@/lib/bag/engine")
+        .then(({ BagEngine: Engine }) => {
+          if (cancelled) return;
+          try {
+            engine = new Engine({ root, host, onProduct: setIndex });
+          } catch {
+            setFallback(true); // no WebGL: the switcher still works as plain links
+            return;
+          }
+          engineRef.current = engine;
+          engine.start();
+        })
+        .catch(() => {
+          if (!cancelled) setFallback(true); // the chunk failed to load: the same plain fallback as no WebGL
+        });
+    });
     return () => {
-      engine.destroy();
+      cancelled = true;
+      offNear();
+      engine?.destroy();
       engineRef.current = null;
     };
   }, []);
