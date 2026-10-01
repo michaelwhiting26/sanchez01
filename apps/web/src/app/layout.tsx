@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
+import "lenis/dist/lenis.css";
 import "../styles/base.css";
 import "../styles/home/index.css";
 import "../styles/share-sheet.css";
 import "../styles/bag-buttons.css";
 import "./globals.css";
+import { SmoothScroll } from "@/components/SmoothScroll";
 
 const display = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], display: "swap", variable: "--nf-display" });
 const text = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--nf-text" });
@@ -20,7 +22,10 @@ export const viewport: Viewport = { themeColor: "#0e0b09", viewportFit: "cover",
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" dir="ltr" className={`${display.variable} ${text.variable}`}>
-      <body>{children}</body>
+      <body>
+        <SmoothScroll />
+        {children}
+      </body>
     </html>
   );
 }

@@ -8,6 +8,7 @@
  *  - `hero.seek(ms)`, `hero.duration()`, `hero.timeline()`: render the hero at an exact time of its intro (the engine's own dev seek API).
  *  - `spiral.drawAt()`: draw the DNA spiral synchronously at the current scroll (it is otherwise rAF-driven).
  *  - `ribbon.update()`, `gallery.update()`: run the ribbon figure's / the gallery's per-frame update at the current scroll now.
+ *  - `scroll.to(target, opts)`: lib/scroll.ts scrollTo (the page's scroll engine: Lenis, or native under reduced motion).
  *  - `owner()`: which single Jesse figure is drawn (lib/hero/handoff.ts): "hero" | "ribbon" | "gallery" | "none".
  * Freezing time is NOT done here: the suite uses Playwright's fake clock (`page.clock`), which controls rAF, timers, Date and performance.now together.
  */
@@ -20,13 +21,14 @@ export interface SzHooks {
   spiral?: { drawAt(): void };
   ribbon?: { update(): void };
   gallery?: { update(): void };
+  scroll?: { to(target: number | string, opts?: { offset?: number; immediate?: boolean }): void };
   owner(): JesseOwner;
 }
 
 type SzWindow = Window & { __sz?: SzHooks };
 
 /** A scene publishes its public method(s) under `window.__sz`. Returns an unregister function (React Strict Mode mounts twice). */
-export function registerSz<K extends "hero" | "spiral" | "ribbon" | "gallery">(key: K, impl: NonNullable<SzHooks[K]>): () => void {
+export function registerSz<K extends "hero" | "spiral" | "ribbon" | "gallery" | "scroll">(key: K, impl: NonNullable<SzHooks[K]>): () => void {
   if (!E2E_ENABLED || typeof window === "undefined") return () => undefined;
   const w = window as SzWindow;
   const sz = (w.__sz ??= { owner: getJesseOwner });
