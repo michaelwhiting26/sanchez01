@@ -742,8 +742,8 @@ html.gallery-locked.gallery-skippable .gallery-skip { display: inline-flex; }
    1) the gallery's film, counter and bar fade out completely (film.ts, WorkshopGallery.tsx) before anything else arrives;
    2) .sz-transit is empty dark field: the fixed gold spiral (lib/dna.ts) keeps turning down it with the scroll, so the visitor feels the change of place;
    3) the SANCHEZ rows rise (the spiral steps behind them), then it narrows slowly into the bag's chain, with clear air around the pill and the bag. */
-.sz-transit { block-size: 160svh; pointer-events: none; }
-@media (min-width: 768px) { .sz-transit { block-size: 140svh; } }
+.sz-transit { block-size: 80svh; pointer-events: none; }
+@media (min-width: 768px) { .sz-transit { block-size: 70svh; } }
 
 /* wordmark rows: twice the former size, allowed to bleed off both edges (the section clips), with real air above and below */
 .sz-marquee { overflow-x: clip; overflow-y: visible; gap: clamp(28px, 7svh, 90px); min-block-size: 100svh; align-content: center; padding-block: clamp(3rem, 9svh, 8rem) !important; }
@@ -948,3 +948,20 @@ html, body { overflow-x: clip; }
 .pg-abseil__actor { position: absolute; inset-block-start: 0; inset-inline-start: 0; visibility: hidden; will-change: transform; filter: drop-shadow(0 0 4px rgb(232 168 90 / .5)); }
 .pg-abseil__sheet { position: absolute; inset-block-start: 0; inset-inline-start: 0; background-repeat: no-repeat; transform-origin: 0 0; }
 @media (prefers-reduced-motion: reduce) { .pg-abseil { display: none; } }
+
+/* Jesse floating down the middle of the DNA in a tractor beam (TransitJesse.tsx): fixed layers above the spiral canvas, moved by transform only */
+.transit-jesse { position: fixed; inset: 0; pointer-events: none; z-index: 3; visibility: hidden; }
+.transit-jesse__fig { position: absolute; inset: 0 auto auto 0; transform-origin: 50% 8%; will-change: transform; user-select: none;
+  filter: drop-shadow(0 0 2px rgb(255 230 175 / .9)) drop-shadow(0 0 14px rgb(255 214 140 / .45)); }
+.transit-jesse__beam { position: absolute; inset: 0 auto auto 0; will-change: transform, height;
+  background: linear-gradient(180deg, rgb(255 236 190 / .26), rgb(255 226 160 / .10) 70%, rgb(255 226 160 / 0));
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%); filter: blur(6px); mix-blend-mode: screen; }
+
+/* The dive into the DNA (DnaDive.tsx): a tall scroll section with a sticky stage; everything inside moves by transform/opacity only */
+.dna-dive { position: relative; block-size: 700svh; }
+.dna-dive__stage { position: sticky; inset-block-start: 0; block-size: 100svh; overflow: hidden; pointer-events: none; }
+.dna-dive__hole { position: absolute; inset-block-start: 50%; inset-inline-start: 50%; inline-size: 100vmax; block-size: 100vmax; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, transparent 0 46%, rgb(0 0 0 / .6) 58%, #000 70%); box-shadow: 0 0 0 300vmax #000; will-change: transform, opacity; }
+.dna-dive__ride { position: absolute; inset: 0; visibility: hidden; opacity: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
+.dna-dive__ride iframe { inline-size: 100%; block-size: 100%; border: 0; display: block; background: #0e0b09; pointer-events: none; }
+.dna-core, .wm-field { transform-origin: 50% 50%; }

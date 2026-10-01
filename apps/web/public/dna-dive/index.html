@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sanchez DNA dive</title>
+<style>
+  :root { --gold: #c9a45c; --bg: #0e0b09; }
+  html, body { margin: 0; overflow: hidden; background: var(--bg); color: #f3ead8; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; }
+  canvas { position: fixed; inset: 0; display: block; }
+  #spacer { height: 900vh; }
+  #title { position: fixed; top: 50%; transform: translateY(-50%); left: 0; right: 0; text-align: center; pointer-events: none;
+    font-weight: 800; font-size: clamp(64px, 17vw, 260px); letter-spacing: .06em; line-height: 1; color: transparent;
+    -webkit-text-stroke: 2px var(--gold); text-shadow: 0 0 40px rgb(201 164 92 / .25); transition: opacity .2s; }
+  #sub { position: fixed; bottom: 5vh; left: 0; right: 0; text-align: center; letter-spacing: .3em; font-size: 13px; color: var(--gold); opacity: .8; pointer-events: none; }
+  #tag { position: fixed; top: 12px; left: 12px; font: 11px/1.4 monospace; color: #8a7a60; }
+</style>
+</head>
+<body>
+<script type="module">
+import * as THREE from "./three.module.js";
+const GOLD = 0xc9a45c, R = 2.4, PITCH = 1.5;            // helix radius, vertical drop per radian
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e0b09);
+scene.fog = new THREE.Fog(0x0e0b09, 6, 22);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+
+// ---- the sections, each pinned to strand A at its own angle
+const S = [
+  { img: "/assets/carousel/workshop.jpg", title: "THE WORKSHOP", sub: "Designed in Sydney. Handmade in Pattaya." },
+  { img: "/assets/carousel/clip1.jpg", title: "EVERY STITCH", sub: "Gallery · frame 1" },
+  { img: "/assets/carousel/clip3.jpg", title: "BY HAND", sub: "Gallery · frame 2" },
+  { img: "/assets/bag3d/tiger-hd.jpg", title: "BUILD YOUR BAG", sub: "Choose a product · Bags / Gloves / Mitts" },
+  { img: "/assets/jesse/jesse-pads.webp", title: "JESSE SANCHEZ", sub: "The man behind the bag" },
+  { img: null, title: "JOIN THE WAITLIST", sub: "your@email.com   →   SUBMIT" },
+];
+const DOT = 0.32, T0 = 1.6, STEP = 2.3, TMAX = T0 + STEP * (S.length - 1) + 1.4;
+const strand = (t, phase = 0) => new THREE.Vector3(R * Math.cos(t + phase), -t * PITCH, R * Math.sin(t + phase));
+
+// ---- two strands + rungs (the structure the whole site hangs on)
+const pts = (ph) => Array.from({ length: 400 }, (_, i) => strand((TMAX + 2) * i / 399, ph));
+const tube = (ph, op) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts(ph)), 800, 0.05, 8),
+  new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, opacity: op }));
+scene.add(tube(0, 1), tube(Math.PI, 0.45));
+const rung = [];
+for (let t = 0; t < TMAX + 2; t += DOT) rung.push(strand(t), strand(t, Math.PI));
+scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(rung),
+  new THREE.LineBasicMaterial({ color: GOLD, transparent: true, opacity: 0.22 })));
+const nodes = new THREE.InstancedMesh(new THREE.SphereGeometry(0.09, 10, 10), new THREE.MeshBasicMaterial({ color: 0xf0d08a }), rung.length);
+rung.forEach((p, i) => nodes.setMatrixAt(i, new THREE.Matrix4().makeTranslation(p.x, p.y, p.z)));
+scene.add(nodes);
+const first = new THREE.Mesh(new THREE.SphereGeometry(0.28, 32, 32), new THREE.MeshBasicMaterial({ color: 0xf0d08a, transparent: true, side: THREE.DoubleSide }));
+first.position.copy(strand(0)); scene.add(first);
+// dust for depth
+const dust = []; for (let i = 0; i < 900; i++) dust.push(new THREE.Vector3((Math.random() - .5) * 30, 3 - Math.random() * (TMAX * PITCH + 10), (Math.random() - .5) * 30));
+scene.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(dust), new THREE.PointsMaterial({ color: 0x8a7350, size: 0.04 })));
+
+// ---- a perfect cylinder around the helix, its inside papered with the gallery
+const CYL_R = 7, CYL_H = TMAX * PITCH + 14;
+const wall = document.createElement("canvas"); wall.width = 4096; wall.height = 1024;
+const wg = wall.getContext("2d"); wg.fillStyle = "#1a140e"; wg.fillRect(0, 0, 4096, 1024);
+const wallTex = new THREE.CanvasTexture(wall); wallTex.colorSpace = THREE.SRGBColorSpace;
+wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
+const AROUND = 3, tileH = (2 * Math.PI * CYL_R / AROUND) / 4;               // the 4:1 strip repeats 3 times around the wall
+wallTex.repeat.set(-AROUND, CYL_H / tileH);                                   // negative x: un-mirror it, we see the inside face
+const GALLERY = ["carousel/clip1.jpg", "carousel/clip2.jpg", "depth/workshop.jpg", "carousel/clip3.jpg", "bag3d/tiger-hd.jpg",
+  "carousel/clip4.jpg", "depth/scene-machine.jpg", "carousel/clip5.jpg"];
+GALLERY.forEach((src, i) => {
+  const im = new Image(), w = 4096 / 4, x = (i % 4) * w, y = Math.floor(i / 4) * 512;
+  im.onload = () => {
+    const k = Math.max(w / im.width, 512 / im.height);
+    wg.save(); wg.beginPath(); wg.rect(x, y, w, 512); wg.clip();
+    wg.drawImage(im, x + (w - im.width * k) / 2, y + (512 - im.height * k) / 2, im.width * k, im.height * k);
+    wg.restore(); wg.strokeStyle = "#c9a45c"; wg.lineWidth = 8; wg.strokeRect(x + 4, y + 4, w - 8, 504);
+    wallTex.needsUpdate = true;
+  };
+  im.src = "/assets/" + src;
+});
+const cyl = new THREE.Mesh(new THREE.CylinderGeometry(CYL_R, CYL_R, CYL_H, 128, 1, true),
+  new THREE.MeshBasicMaterial({ map: wallTex, side: THREE.BackSide, fog: false, color: 0xd8cdb8 }));
+cyl.position.y = 4 - CYL_H / 2; scene.add(cyl);
+
+// ---- section cards: image + caption drawn on one canvas texture
+const loader = new THREE.TextureLoader();
+const cards = S.map((s, i) => {
+  const c = document.createElement("canvas"); c.width = 1024; c.height = 720;
+  const g = c.getContext("2d"), tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const caption = () => {
+    g.fillStyle = "rgba(10,8,6,.86)"; g.fillRect(0, 560, 1024, 160);
+    g.fillStyle = "#c9a45c"; g.font = "800 64px 'Arial Narrow', sans-serif"; g.fillText(s.title, 40, 632);
+    g.fillStyle = "#e8dcc4"; g.font = "28px sans-serif"; g.fillText(s.sub, 42, 686); tex.needsUpdate = true;
+  };
+  g.fillStyle = "#16120e"; g.fillRect(0, 0, 1024, 720); g.strokeStyle = "#c9a45c"; g.lineWidth = 6; g.strokeRect(3, 3, 1018, 714);
+  if (s.img) { const im = new Image(); im.onload = () => { const k = Math.max(1024 / im.width, 560 / im.height);
+      g.drawImage(im, (1024 - im.width * k) / 2, (560 - im.height * k) / 2, im.width * k, im.height * k); g.strokeRect(3, 3, 1018, 714); caption(); }; im.src = s.img; }
+  else { g.fillStyle = "#c9a45c"; g.font = "800 120px 'Arial Narrow', sans-serif"; g.textAlign = "center"; g.fillText("SANCHEZ", 512, 330); g.textAlign = "left"; }
+  caption();
+  const t = T0 + i * STEP;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 2.4), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide }));
+  const p = strand(t); m.position.set(p.x * 1.25, p.y - 0.2, p.z * 1.25);       // just outside strand A; turned to face the camera every frame
+  m.userData.t = t; m.userData.home = m.position.clone(); scene.add(m); return m;
+});
+
+// ---- scroll = position along strand A
+let target = 0, cur = 0;
+window.__dive = (p) => { target = Math.min(1, Math.max(0, p)); };
+let loop = null;
+window.__diveActive = (on) => { if (on && !loop) { loop = frame; renderer.setAnimationLoop(loop); } else if (!on && loop) { loop = null; renderer.setAnimationLoop(null); } };
+const resize = () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); };
+addEventListener("resize", resize); resize();
+
+function frame(ms) {
+  cur += (target - cur) * 0.2;
+  const f = cur * TMAX / DOT, n = Math.floor(f), e = f - n;                  // dot index; ease between dots so each scroll step lands on the next dot
+  const t = (n + e * e * (3 - 2 * e)) * DOT;
+  const P = strand(t);
+  // chase camera: it rides strand A and turns as the strand turns (heading = the strand's tangent), so the view curves at the strand's rate
+  const k = Math.min(1, cur * 14);                                             // 0 inside the first dot -> 1 once you have left it
+  const back = 0.55 * k, out = (innerWidth < 700 ? 3.2 : 2.4) * k, up = 0.7 * k;
+  const C = strand(t - back), rad = new THREE.Vector3(C.x, 0, C.z).normalize();
+  camera.position.set(C.x + rad.x * out, C.y + up, C.z + rad.z * out);
+  const L = strand(t + 0.5);
+  camera.lookAt(L.x * 0.8, L.y - 0.3 * k, L.z * 0.8);
+  for (const m of cards) m.quaternion.copy(camera.quaternion);
+  first.material.opacity = 1 - Math.min(1, cur * 6) * 0.4;
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+  const D = 1.2, visH = 2 * D * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), visW = visH * camera.aspect;
+  const cover = Math.max(visH / 2.4, visW / 3.4) * 1.02;                    // scale at which the 3.4 x 2.4 card covers the screen
+  for (const m of cards) {
+    const d = Math.abs(t - m.userData.t);
+    const seen = Math.max(0, 1 - d / 1.6), a = seen * seen * (3 - 2 * seen);
+    const f0 = Math.min(1, Math.max(0, 1 - (d - 0.2) / 0.55)), full = f0 * f0 * (3 - 2 * f0);   // 1 = the page fills the screen
+    m.material.opacity = a;
+    m.position.copy(m.userData.home).lerp(camera.position.clone().addScaledVector(fwd, D), full);
+    m.scale.setScalar(THREE.MathUtils.lerp(0.9, cover, full));
+    m.material.depthTest = full < 0.5; m.renderOrder = full > 0 ? 10 : 0;
+  }
+  renderer.render(scene, camera);
+}
+frame(0);
+window.parent?.postMessage({ dive: "ready" }, location.origin);
+</script>
+</body>
+</html>
