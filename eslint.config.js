@@ -22,6 +22,10 @@ export default tseslint.config(
       "apps/web/public/**",
       // A separate Figma plugin with its own package.json and runtime (Figma sandbox, CommonJS); not part of the web app. Tracked as debt.
       "tools/figma-plugin/**",
+      // Generated build stages and checkpoints of the character pipeline (not source).
+      "build/**",
+      // macOS automation scripts (JXA: ObjC and $ are globals of that runtime), run by hand with osascript; not part of the web app.
+      "tools/runner/character/tools/*.js",
     ],
   },
   js.configs.recommended,
@@ -46,6 +50,11 @@ export default tseslint.config(
       ],
       eqeqeq: ["error", "always"],
     },
+  },
+  {
+    // The web app's tsconfig.json leaves tests out (so `next build` on Vercel does not need vitest); tsconfig.typecheck.json includes them.
+    files: ["apps/web/src/**/*.test.ts"],
+    languageOptions: { parserOptions: { projectService: false, project: ["apps/web/tsconfig.typecheck.json"], tsconfigRootDir: import.meta.dirname } },
   },
   {
     files: ["**/*.test.ts"],

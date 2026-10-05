@@ -1,46 +1,18 @@
-import { BagPunch } from "@/components/home/BagPunch";
-import { CurvedLoop } from "@/components/home/CurvedLoop";
-import { DnaCore } from "@/components/home/DnaCore";
-import { DnaDive } from "@/components/home/DnaDive";
-import { BagHit } from "@/components/home/BagHit";
-import { FooterMin } from "@/components/home/FooterMin";
-import { Hero } from "@/components/home/Hero";
-import { Marquee } from "@/components/home/Marquee";
-import { OrbitSubmit } from "@/components/home/OrbitSubmit";
-import { RisePanel } from "@/components/home/RisePanel";
-import { TransitJesse } from "@/components/home/TransitJesse";
-import { Waitlist } from "@/components/home/Waitlist";
-import { WorkshopGallery } from "@/components/home/WorkshopGallery";
+import { StoreExperience } from "@/components/store/StoreExperience";
+import { StoreFooter } from "@/components/store/StoreFooter";
+import { getStoreBootstrap } from "@/lib/storefront/config";
 
 /**
- * Home. Order matches the approved prototype: hero, curved loop, pinned workshop gallery, marquee, 3D bag, then the rise panel
- * (which is the footer: logo, "Build your identity", waitlist, minimal footer). The hero field and the helix are fixed canvases behind everything.
+ * Home: the mobile 3D store, Parts 1 to 4 (arrive, walk in, Jesse greets you, swipe through products). See docs/STORE-3D.md.
+ * The previous scroll site is kept whole at /superseded and linked from the footer (owner, 5 Oct 2026).
  */
-export default function HomePage() {
+export default function StorePage() {
   return (
-    <div data-page-home="">
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-      <main id="main" tabIndex={-1}>
-        <Hero />
-        <DnaCore />
-        <CurvedLoop text="SANCHEZ • CUSTOM ✦ " />
-        <WorkshopGallery />
-        <div className="sz-transit" aria-hidden="true" data-transit="" />
-        <TransitJesse />
-        <Marquee />
-        <DnaDive />
-        <BagPunch />
-        <RisePanel>
-          <Waitlist />
-          <div className="globe-slot" data-globe-slot="">
-            <OrbitSubmit label="Submit" />
-            <BagHit />
-          </div>
-          <FooterMin />
-        </RisePanel>
+    <>
+      <main id="main">
+        <StoreExperience bootstrap={getStoreBootstrap()} />
       </main>
-    </div>
+      <StoreFooter />
+    </>
   );
 }

@@ -19,7 +19,7 @@ export default function ContactPage() {
         ))}
       </ul>
       <div className="pg__actions">
-        <Link className="pg__btn" href="/#waitlist">
+        <Link className="pg__btn" href="/superseded#waitlist">
           Join the waitlist
         </Link>
       </div>

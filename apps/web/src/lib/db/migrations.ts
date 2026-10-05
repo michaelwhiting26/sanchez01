@@ -37,4 +37,45 @@ export const MIGRATIONS: ReadonlyArray<{ id: string; sql: string }> = [
       );
     `,
   },
+  {
+    // The 3D store (docs/STORE-3D.md): versions, products and their files, anonymous sessions and the funnel events.
+    id: "002_storefront",
+    sql: `
+      CREATE TABLE IF NOT EXISTS storefront_versions (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        version text NOT NULL,
+        active boolean DEFAULT false,
+        created_at timestamptz DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS products (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug text UNIQUE NOT NULL,
+        name text NOT NULL,
+        description text,
+        base_price integer,
+        active boolean DEFAULT true,
+        sort_order integer NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS product_assets (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_id uuid REFERENCES products(id),
+        asset_type text,
+        url text,
+        version text
+      );
+      CREATE TABLE IF NOT EXISTS store_sessions (
+        id uuid PRIMARY KEY,
+        anonymous_id text,
+        created_at timestamptz DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS experience_events (
+        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        session_id uuid,
+        event_name text,
+        properties jsonb,
+        occurred_at timestamptz DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS experience_events_name_time_idx ON experience_events (event_name, occurred_at)
+    `,
+  },
 ];

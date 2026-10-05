@@ -16,7 +16,7 @@ export interface CatalogueItem {
   readonly price: { readonly amountMinor: number; readonly currency: string } | null;
 }
 
-export const WAITLIST_HREF = "/#waitlist" as const;
+export const WAITLIST_HREF = "/superseded#waitlist" as const;
 
 export const OTHER_PRODUCTS: readonly CatalogueItem[] = [
   {
