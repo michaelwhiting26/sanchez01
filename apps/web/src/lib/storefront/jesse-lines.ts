@@ -13,7 +13,7 @@ export const JESSE_LINES = {
   /** The question that hands over to the visitor. It stays on screen with the choices. */
   intent: ["What are we making today?", "What are you after, brother?", "What can I sort you out with?", "Where do you wanna start?"],
   /** When they choose to look around instead of shopping. */
-  lookAround: ["Yeah brother, go for it. Have a look at the wall.", "No worries. Have a look around.", "Have a squiz at the wall, brother."],
+  lookAround: ["Yeah brother, go for it. Have a look at the wall.", "Have a squiz at the wall, brother.", "That's some of what we've made, brother."],
 } as const;
 
 export type JesseLinePool = keyof typeof JESSE_LINES;

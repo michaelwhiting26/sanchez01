@@ -392,6 +392,10 @@ def build_workshop():
     empty("JESSE_GREET", (1.35, 0, -3.3))   # one step towards the visitor
     empty("JESSE_ASIDE", (1.7, 0, -5.2))    # stepped aside, by the product wall
     # The film's shot: low, at about table height, across the machine at him, with the gloves and frames above his head.
+    # Looking at the collection on his wall: far enough back that the whole display fits a phone held upright, and low enough that the
+    # pendant in front of it sits above the top row. Jesse, seated, is below the display.
+    empty("CAM_WALL", (-0.2, 1.6, -3.5))
+    empty("LOOK_WALL", (6.2, 1.9, -3.5))
     empty("CAM_GREETING", (1.0, 1.22, -3.95))
     empty("LOOK_GREETING", (3.3, 1.12, -3.55))
     export(os.path.join(OUT, "workshop.glb"), webp=True)

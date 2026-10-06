@@ -30,14 +30,22 @@ export const STORE_WALL: readonly WallStory[] = [
   },
 ];
 
+const C = "/assets/store/collection";
+
 /**
- * The collection: every finished piece Jesse has made, with its photograph and price (owner, 6 Oct 2026).
- * EMPTY ON PURPOSE. The project holds no photograph of a finished piece (the pictures saved from his old site are that site's stock
- * placeholders, logos and workshop stills) and no price is confirmed. Evidence rule: nothing is invented to fill it. Until pieces are added
- * here, the collection shows placeholder tiles that say so.
- * TODO(owner): for each piece supply a photograph, a name, a price and currency, and whether it is sold.
+ * The collection: finished pieces Jesse has made, each with its photograph and price (owner, 6 Oct 2026). The first ten also hang on the
+ * display on his wall, in this order.
+ * The four below are cut from two of his own Instagram posts, supplied by the owner on 6 Oct 2026. Their names only say what the photograph
+ * shows. NO PRICE IS CONFIRMED for any of them, so each reads "Price to come". The mitts are shown as a close detail on purpose: the full
+ * photograph carries a named person's name stitched on the mitts, which needs that person's written consent before it appears here.
+ * TODO(owner): a price and currency for each, more pieces, and whether any is sold.
  */
-export const STORE_COLLECTION: readonly CollectionPiece[] = [];
+export const STORE_COLLECTION: readonly CollectionPiece[] = [
+  { id: "bag-range", name: "Heavy bags", photo: `${C}/bag-range.webp`, priceMinor: null, currency: "AUD", soldOut: false, builderRoute: "/build/heavy-bag" },
+  { id: "bag-white", name: "Heavy bag, white", photo: `${C}/bag-white.webp`, priceMinor: null, currency: "AUD", soldOut: false, builderRoute: "/build/heavy-bag" },
+  { id: "bag-tricolour", name: "Heavy bag, red, white and green", photo: `${C}/bag-tricolour.webp`, priceMinor: null, currency: "AUD", soldOut: false, builderRoute: "/build/heavy-bag" },
+  { id: "mitt-detail", name: "Custom micro mitts", photo: `${C}/mitt-detail.webp`, priceMinor: null, currency: "AUD", soldOut: false, builderRoute: "/build/focus-mitts" },
+];
 
 /** Where the collection's marker sits: on the collection display on his wall (tools/store/jesse_workshop.py). */
 export const COLLECTION_SPOT: readonly [number, number, number] = [6.02, 2.2, -2.75];

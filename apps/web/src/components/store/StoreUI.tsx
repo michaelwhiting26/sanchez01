@@ -85,7 +85,7 @@ export function StoreUI(props: Props) {
               Customise gear
             </button>
             <button type="button" className="store-ui__choice store-ui__choice--quiet" data-choice="look" onClick={() => onChoose("look")} tabIndex={choicesOpen ? 0 : -1}>
-              Look around
+              View collection
             </button>
           </nav>
         </div>
@@ -99,7 +99,7 @@ export function StoreUI(props: Props) {
           {/* The wall's stories as ordinary buttons too, so nobody has to find a marker in the room to reach one. */}
           <nav className="store-ui__choices is-open" aria-label="On the wall">
             <button type="button" className="store-ui__choice store-ui__choice--main" data-choice="collection" onClick={() => onOpenStory("collection")}>
-              View collection
+              See every piece
             </button>
             {bootstrap.wall.map((s) => (
               <button key={s.id} type="button" className="store-ui__choice" data-story={s.id} onClick={() => onOpenStory(s.id)}>
@@ -209,7 +209,7 @@ export function StoreUI(props: Props) {
           ) : null}
           {stage === "browsing" ? (
             <button type="button" className="store-ui__look" onClick={onLookAround}>
-              Look around the workshop
+              View collection
             </button>
           ) : null}
         </section>

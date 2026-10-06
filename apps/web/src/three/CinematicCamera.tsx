@@ -81,11 +81,11 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
       });
       return;
     }
-    // Looking around: back to where the visitor stood for the greeting, facing Jesse's wall, where the stories are.
+    // Looking at the wall: step back to where the whole collection display fits the screen, over Jesse's head.
     if (stage === "lookingAround") {
-      const to = mark("CAM_GREETING");
-      const look = mark("LOOK_GREETING");
-      if (to && look) controller.moveTo(to, look, reducedMotion ? 0 : was === "greeting" ? 0.8 : TIMING.firstProduct, "sine.inOut", () => base.current.copy(to));
+      const to = mark("CAM_WALL") ?? mark("CAM_GREETING");
+      const look = mark("LOOK_WALL") ?? mark("LOOK_GREETING");
+      if (to && look) controller.moveTo(to, look, reducedMotion ? 0 : was === "greeting" ? 1.8 : TIMING.firstProduct, "sine.inOut", () => base.current.copy(to));
       return;
     }
     if (!ready || !product) return;
