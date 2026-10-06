@@ -73,7 +73,12 @@
 .store-ui__choice { min-block-size: 3.1rem; padding: 0 .9rem; border: 1px solid #c8954d; border-radius: 999px; background: rgb(17 14 11 / .72); color: #f3eee5; font-family: var(--nf-text, system-ui), sans-serif; font-weight: 600; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; transition: background-color .18s ease, transform .18s ease; }
 .store-ui__choice:active { transform: scale(.98); background: rgb(200 149 77 / .22); }
 @media (hover: hover) { .store-ui__choice:hover { background: rgb(200 149 77 / .16); } }
+/* The one main answer: solid brass, full width, the same bar as "Tap to enter". */
+.store-ui__choice--main { grid-column: 1 / -1; min-block-size: 3.4rem; background: #c8954d; color: #110e0b; font-weight: 700; font-size: .92rem; letter-spacing: .2em; box-shadow: 0 .5rem 1.6rem rgb(0 0 0 / .4); }
+.store-ui__choice--main:active { background: #e0af61; }
+@media (hover: hover) { .store-ui__choice--main:hover { background: #d3a257; } }
 .store-ui__choice--quiet { border-color: rgb(243 238 229 / .28); color: #b8aea1; }
+.store-ui__greet .store-ui__choice--quiet:last-child:nth-child(2) { grid-column: 1 / -1; }
 .store-ui__look { display: block; margin: .55rem auto 0; padding: .45rem .8rem; border: 0; background: none; color: #b8aea1; font: inherit; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: .3em; }
 
 /* Looking around: a marker pinned to something on the wall. A slow ring, nothing game-like. */

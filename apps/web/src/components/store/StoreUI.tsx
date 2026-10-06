@@ -70,15 +70,10 @@ export function StoreUI(props: Props) {
           <p className="store-ui__caption" aria-live="polite">
             {caption}
           </p>
-          {/* He asks, the visitor answers. The first two products by name, everything, or the optional look around. */}
+          {/* He asks, the visitor answers: straight to the gear, or the optional look around (owner, 6 Oct 2026: one button, not one per product). */}
           <nav className={`store-ui__choices${choicesOpen ? " is-open" : ""}`} aria-label="What are you here for?">
-            {products.slice(0, 2).map((p, i) => (
-              <button key={p.id} type="button" className="store-ui__choice" data-choice={p.id} onClick={() => onChoose(i)} tabIndex={choicesOpen ? 0 : -1}>
-                {p.name}
-              </button>
-            ))}
-            <button type="button" className="store-ui__choice" data-choice="all" onClick={() => onChoose("all")} tabIndex={choicesOpen ? 0 : -1}>
-              See everything
+            <button type="button" className="store-ui__choice store-ui__choice--main" data-choice="all" onClick={() => onChoose("all")} tabIndex={choicesOpen ? 0 : -1}>
+              Customise gear
             </button>
             <button type="button" className="store-ui__choice store-ui__choice--quiet" data-choice="look" onClick={() => onChoose("look")} tabIndex={choicesOpen ? 0 : -1}>
               Look around
