@@ -58,12 +58,12 @@ export class CinematicCameraController {
     this.play(new CatmullRomCurve3([from, mid, position.clone()]), new CatmullRomCurve3([fromLook, fromLook.clone().lerp(look, 0.5), look.clone()]), duration, onComplete ? { ease, onComplete } : { ease });
   }
 
-  /** Tiny idle sway while standing still, in metres. Call every frame with the standing point. */
-  breathe(base: Vector3, time: number, amount: number): void {
+  /** Tiny idle sway while standing still, in metres. Call every frame with the standing point. `lookAt` replaces the usual look point (the tilt look-around). */
+  breathe(base: Vector3, time: number, amount: number, lookAt: Vector3 = this.look): void {
     if (this.tween) return;
     this.tmp.set(Math.sin(time * 0.6) * amount, Math.sin(time * 0.9) * amount * 0.6, 0);
     this.camera.position.copy(base).add(this.tmp);
-    this.camera.lookAt(this.look);
+    this.camera.lookAt(lookAt);
   }
 
   get moving(): boolean {

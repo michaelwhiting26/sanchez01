@@ -15,15 +15,18 @@ interface Props {
   readonly caption: string | null;
   readonly audioEnabled: boolean;
   readonly canEnter: boolean;
+  /** True on iPhones until the visitor has allowed the motion sensor: shows the one-tap control that asks for it. */
+  readonly tiltPrompt: boolean;
   readonly send: (event: StoreEventObject) => void;
   readonly onEnter: () => void;
   readonly onSkipGreeting: () => void;
   readonly onToggleAudio: () => void;
+  readonly onEnableTilt: () => void;
   readonly onDesign: () => void;
 }
 
 /** Everything drawn over the 3D world. Kept to a small share of the screen: the room is the interface (spec Part 4: 80 to 90% world). */
-export function StoreUI({ bootstrap, stage, index, caption, audioEnabled, canEnter, send, onEnter, onSkipGreeting, onToggleAudio, onDesign }: Props) {
+export function StoreUI({ bootstrap, stage, index, caption, audioEnabled, canEnter, tiltPrompt, send, onEnter, onSkipGreeting, onToggleAudio, onEnableTilt, onDesign }: Props) {
   const products = bootstrap.products;
   const product = products[index];
   const outside = stage === "boot" || stage === "arrive";
@@ -37,6 +40,12 @@ export function StoreUI({ bootstrap, stage, index, caption, audioEnabled, canEnt
       {stage !== "boot" && stage !== "arrive" ? (
         <button type="button" className="store-ui__sound" onClick={onToggleAudio} aria-pressed={audioEnabled}>
           {audioEnabled ? "Sound on" : "Sound off"}
+        </button>
+      ) : null}
+
+      {stage === "arrive" && tiltPrompt ? (
+        <button type="button" className="store-ui__sound" onClick={onEnableTilt}>
+          Tilt to look
         </button>
       ) : null}
 

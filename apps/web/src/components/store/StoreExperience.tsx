@@ -9,6 +9,7 @@ import { flushEvents, track } from "@/experience/experience-events";
 import { storeMachine, type StoreEventObject, type StoreStage } from "@/experience/store-machine";
 import { TIMING } from "@/lib/storefront/config";
 import { prefersReducedMotion, supportsWebGL2, wantsLightExperience } from "@/lib/storefront/device";
+import { requestTiltPermission, startTilt, tiltNeedsPermission } from "@/lib/storefront/tilt";
 import type { StoreBootstrap } from "@/lib/storefront/types";
 import { AudioController } from "@/three/AudioController";
 import { SwipeController } from "@/three/SwipeController";
@@ -32,6 +33,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   const [mode, setMode] = useState<"pending" | "3d" | "fallback">("pending");
   const [reducedMotion, setReducedMotion] = useState(false);
   const [caption, setCaption] = useState<string | null>(null);
+  const [tiltPrompt, setTiltPrompt] = useState(false);
   const stageEl = useRef<HTMLDivElement>(null);
   const audio = useMemo(() => new AudioController(), []);
 
@@ -41,6 +43,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     setMode(use3d ? "3d" : "fallback");
     setReducedMotion(prefersReducedMotion());
     if (!use3d) return;
+    setTiltPrompt(tiltNeedsPermission() && !prefersReducedMotion());
     let live = true;
     let seen = false;
     try {
@@ -61,6 +64,12 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   }, [bootstrap.scene.exterior, bootstrap.scene.workshop, send]);
 
   useEffect(() => () => audio.dispose(), [audio]);
+
+  // Tilting the phone looks around the shop front a little. Listening starts at once; on an iPhone readings begin when the visitor allows them.
+  useEffect(() => (mode === "3d" && !reducedMotion ? startTilt() : undefined), [mode, reducedMotion]);
+  const onEnableTilt = useCallback(() => {
+    void requestTiltPermission().then(() => setTiltPrompt(false));
+  }, []);
 
   const onEnter = useCallback(() => {
     if (stage !== "arrive") return;
@@ -192,10 +201,12 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
         caption={caption}
         audioEnabled={audioEnabled}
         canEnter={stage === "arrive"}
+        tiltPrompt={tiltPrompt}
         send={send}
         onEnter={onEnter}
         onSkipGreeting={finishGreeting}
         onToggleAudio={onToggleAudio}
+        onEnableTilt={onEnableTilt}
         onDesign={onDesign}
       />
     </div>
