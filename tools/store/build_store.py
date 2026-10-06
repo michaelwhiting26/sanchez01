@@ -225,6 +225,15 @@ def build_workshop():
     timber = sf._textured("aged_timber", *sf.plank_maps("timber", (0.2, 0.125, 0.078), boards=3, seed=47, gap=0), rough=0.52)
     panel = sf._textured("wall_panelling", *sf.plank_maps("panel", (0.085, 0.062, 0.046), boards=8, seed=59, joints=False), rough=0.5)
     plaster = sf._textured("plaster", *sf.plaster_maps(), rough=0.92)
+    # From the owner's reference pictures (6 Oct 2026): woven timber behind the products, polished green marble lining each display alcove,
+    # and woven leather on the bench. The ideas are borrowed; no other maker's name or mark is.
+    woven = sf._textured("woven_timber", *sf.weave_maps("woven", (0.17, 0.1, 0.06), cells=8), rough=0.55, normal_strength=1.0)
+    marble = sf._textured("green_marble", *sf.marble_maps(), rough=0.36)
+    woven_leather = sf._textured("woven_leather", *sf.weave_maps("leatherweave", (0.045, 0.085, 0.06), cells=8, seed=91), rough=0.42)
+    niche_light = mat("niche_light", hexc("#ffcf94"), 0.5, 0.0, 3.5)
+    wrap_cream = mat("wrap_cream", hexc("#a99a7c"), 0.9)
+    wrap_olive = mat("wrap_olive", hexc("#5a5c43"), 0.9)
+    rope = mat("rope_leather", hexc("#4a2f1c"), 0.6)
     joinery = mat("dark_joinery", hexc("#15110d"), 0.5)
     shade = mat("lamp_shade", hexc("#0b0a09"), 0.38, 0.6)
     bulb = mat("lamp_bulb", hexc("#ffb866"), 0.5, 0.0, 4.5)
@@ -248,25 +257,68 @@ def build_workshop():
     k.bx(joinery, -W / 2, -W / 2 + 0.05, 1.12, 1.17, -D, 0, 0.006)
     k.bx(joinery, W / 2 - 0.05, W / 2, 1.12, 1.17, -D, 0, 0.006)
     k.bx(P["rug"], -1.5, 1.1, 0, 0.012, -4.4, -0.8, 0.004)
+    # the product wall: woven timber above the dado, a brass line let into the floor in front of it, brass downlights overhead
+    k.bx(woven, -W / 2, W / 2, 1.17, H, -D, -D + 0.02)
+    k.bx(P["brass"], -5.6, 5.2, 0, 0.003, -5.72, -5.7)
+    for x in (-5.6, 5.2):
+        k.bx(P["brass"], x - 0.01, x + 0.01, 0, 0.003, -D + 0.6, -5.7)
+    for x in (-4.5, -1.5, 1.5, 4.5):
+        for z in (-1.95, -4.95):
+            k.cyl(P["brass"], (x, H - 0.07, z), 0.045, 0.14, verts=16)
+            k.cyl(niche_light, (x, H - 0.142, z), 0.034, 0.004, verts=16)
+    # a long bench in the middle of the room: woven green leather on a steel frame
+    k.bx(woven_leather, -0.5, 0.06, 0.36, 0.47, -3.3, -1.75, 0.02)
+    k.bx(P["steel"], -0.47, 0.03, 0.33, 0.36, -3.27, -1.78)
+    for lx in (-0.45, 0.01):
+        for lz in (-3.24, -1.81):
+            k.bx(P["steel"], lx - 0.015, lx + 0.015, 0, 0.33, lz - 0.015, lz + 0.015)
+    # between the stations, boxing's own tools hung on brass T-hooks: a skipping rope, hand wraps, a speed bag, another rope
+    for gx, what in ((-3.3, "rope"), (-1.1, "wraps"), (1.1, "speedbag"), (3.3, "rope")):
+        k.t_hook(P["brass"], gx, 2.1, -D + 0.02)
+        hz = -D + 0.09
+        if what == "rope":
+            k.ring(rope, (gx, 1.9, hz), 0.17)
+            k.ring(rope, (gx + 0.015, 1.88, hz + 0.012), 0.15)
+            for dx in (-0.05, 0.06):
+                k.cyl(P["wood"], (gx + dx, 1.6, hz), 0.014, 0.16, verts=10)
+        elif what == "wraps":
+            for dx, m in ((-0.035, wrap_cream), (0.035, wrap_olive)):
+                k.bx(m, gx + dx - 0.022, gx + dx + 0.022, 1.45, 2.1, hz - 0.003, hz + 0.003)
+                k.bx(m, gx + dx - 0.022, gx + dx + 0.022, 1.52, 2.1, hz + 0.008, hz + 0.014)
+        else:
+            k.bx(P["leather2"], gx - 0.012, gx + 0.012, 1.93, 2.1, hz - 0.004, hz + 0.004)
+            k.blob(P["leather2"], (gx, 1.72, hz + 0.02), (0.24, 0.34, 0.24))
+            k.taper(P["leather2"], (gx, 1.9, hz + 0.02), 0.07, 0.02, 0.12, 14)
 
     # the five product stations along the back wall
     for pid, x, hangs in PRODUCTS:
-        # framed display board behind the product
-        k.bx(panel, x - 0.86, x + 0.86, 1.17, 2.9, -D + 0.0, -D + 0.05)
-        for a, b, c, d in ((x - 0.9, x - 0.83, 1.17, 2.94), (x + 0.83, x + 0.9, 1.17, 2.94), (x - 0.9, x + 0.9, 2.87, 2.94)):
-            k.bx(timber, a, b, c, d, -D, -D + 0.085, 0.006)
         if hangs:
-            # the bag hangs from a beam bracket on a chain
+            # the bag hangs from a beam bracket on a chain, in front of a full-height marble slab framed in timber
+            k.bx(marble, x - 0.62, x + 0.62, 1.17, 2.9, -D + 0.02, -D + 0.05)
+            for a_, b_, c_, d_ in ((x - 0.7, x - 0.62, 1.17, 2.98), (x + 0.62, x + 0.7, 1.17, 2.98), (x - 0.7, x + 0.7, 2.9, 2.98)):
+                k.bx(timber, a_, b_, c_, d_, -D + 0.02, -D + 0.1, 0.006)
             k.bx(timber, x - 0.09, x + 0.09, H - 0.34, H - 0.22, -6.9, -5.9, 0.006)
             k.cyl(P["steel"], (x, (2.69 + H - 0.34) / 2, -6.3), 0.012, H - 0.34 - 2.69, verts=8)
+            k.pendant(shade, bulb, P["steel"], x, 2.86, -6.25, H, 0.13)
         else:
-            # a thick timber counter on a panelled cabinet
+            # a thick timber counter on a panelled cabinet, under a marble-lined alcove with a concealed light along its head
             k.bx(joinery, x - 0.6, x + 0.6, 0, 0.955, -D + 0.02, -6.46, 0.006)
-            for a, b in ((x - 0.52, x - 0.04), (x + 0.04, x + 0.52)):
-                k.bx(joinery, a, b, 0.14, 0.86, -6.46, -6.445, 0.012)                  # raised door panels
+            for a_, b_ in ((x - 0.52, x - 0.04), (x + 0.04, x + 0.52)):
+                k.bx(joinery, a_, b_, 0.14, 0.86, -6.46, -6.445, 0.012)                # raised door panels
             k.bx(timber, x - 0.68, x + 0.68, 0.955, 1.045, -D + 0.0, -6.4, 0.01)
             k.bx(P["brass"], x - 0.2, x + 0.2, 0.975, 1.025, -6.4, -6.392, 0.003)       # name plate on the counter edge (blank)
-        k.pendant(shade, bulb, P["steel"], x, 2.86 if hangs else 1.77, -6.25 if hangs else -6.6, H - 0.22 if not hangs else H, 0.13)
+            k.bx(marble, x - 0.62, x + 0.62, 1.045, 2.5, -D + 0.02, -D + 0.05)          # back of the alcove
+            for sx in (-1, 1):
+                k.bx(marble, x + sx * 0.62, x + sx * 0.66, 1.045, 2.5, -D + 0.02, -6.78)  # cheeks
+                k.bx(timber, x + sx * 0.66, x + sx * 0.74, 1.045, 2.66, -D + 0.02, -6.72, 0.006)
+            k.bx(joinery, x - 0.66, x + 0.66, 2.5, 2.58, -D + 0.02, -6.76)              # soffit
+            k.bx(timber, x - 0.74, x + 0.74, 2.58, 2.66, -D + 0.02, -6.72, 0.006)       # head
+            k.bx(niche_light, x - 0.58, x + 0.58, 2.488, 2.5, -6.86, -6.8)              # the light, tucked behind the head
+            if pid in ("GLOVES", "THAI_PADS"):
+                # a stone bowl of rolled hand wraps at the end of the counter
+                k.blob(marble, (x + 0.47, 1.075, -6.62), (0.2, 0.09, 0.2))
+                for dx, dz, m in ((-0.03, 0.0, wrap_cream), (0.035, 0.02, wrap_olive)):
+                    k.cyl(m, (x + 0.47 + dx, 1.135, -6.62 + dz), 0.034, 0.05, axis="z", verts=14)
         # Where the product model is attached, and where the camera stands and looks for it. Composed for a phone held upright with a 48 degree lens:
         # the product fills a little over half the width, sits above centre, and the name and button have the bottom fifth to themselves.
         empty(f"PRODUCT_{pid}", (x, 2.69 if hangs else 1.05, -6.3 if hangs else -6.72))
@@ -308,11 +360,13 @@ def build_workshop():
     k.pendant(shade, bulb, P["steel"], 0.0, 2.5, -3.0, H - 0.22, 0.24)
 
     joined = sf.join_by_material(k.made, "WS")
-    for name, tiles in (("floor_boards", (0.84, 0.84)), ("aged_timber", (0.6, 0.6)), ("wall_panelling", (0.96, 0.96)), ("plaster", (2.4, 2.4))):
+    textured = {"floor_boards": (0.84, 0.84), "aged_timber": (0.6, 0.6), "wall_panelling": (0.96, 0.96), "plaster": (2.4, 2.4),
+                "woven_timber": (0.56, 0.56), "green_marble": (1.9, 1.9), "woven_leather": (0.32, 0.32)}
+    for name, tiles in textured.items():
         sf._uv_from_world(joined[name], *tiles)
     banner.name = "WS_banner"
     for name, o in joined.items():
-        if name not in ("floor_boards", "aged_timber", "wall_panelling", "plaster"):
+        if name not in textured:
             while o.data.uv_layers:
                 o.data.uv_layers.remove(o.data.uv_layers[0])
     # Path and character marks (read by the site at run time).

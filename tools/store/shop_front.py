@@ -137,6 +137,39 @@ def plaster_maps(size=512):
     return _image("plaster_colour", rgb), _normal("plaster_normal", _soften(0.6 * patch + 0.4 * fine, 1), 0.7)
 
 
+def weave_maps(name, base, size=512, cells=8, seed=71):
+    """Strips woven over and under each other, basket fashion. `cells` crossings to a repeat (an even number, so it tiles)."""
+    y, x = np.mgrid[0:size, 0:size]
+    c = size / cells
+    u, v = (x % c) / c, (y % c) / c
+    over = ((x // c + y // c) % 2) == 0                 # True where the strip running across is on top
+    across = np.sin(np.pi * v) ** 0.6 * (0.62 + 0.38 * np.sin(np.pi * u))
+    down = np.sin(np.pi * u) ** 0.6 * (0.62 + 0.38 * np.sin(np.pi * v))
+    height = np.where(over, across, down)
+    grain_down = _streak(size, seed)
+    grain = np.where(over, grain_down.T, grain_down)    # grain follows each strip
+    rng = np.random.default_rng(seed + 1)
+    tone = rng.uniform(-1, 1, (cells, cells))[(y // c).astype(int), (x // c).astype(int)]
+    k = (0.8 + 0.2 * height) * (1 + 0.1 * tone + 0.2 * grain)
+    rgb = np.stack([base[0] * k, base[1] * k, base[2] * k], -1)
+    return _image(f"{name}_colour", rgb), _normal(f"{name}_normal", _soften(height + 0.05 * grain, 2), 1.7)
+
+
+def marble_maps(size=512):
+    """Dark green marble, polished: a slow cloudiness in the stone and only a few long, thin veins, so it sits quietly behind a product.
+    A vein is where very slow noise crosses zero; a little faster noise bends it so it wanders instead of running straight."""
+    a = _noise(size, 0.004, 0.003, 81) + 0.22 * _noise(size, 0.02, 0.012, 82)
+    b = _noise(size, 0.005, 0.003, 83) + 0.2 * _noise(size, 0.03, 0.02, 84)
+    cloud = _noise(size, 0.012, 0.012, 85)
+    fleck = _noise(size, 0.12, 0.08, 86)
+    pale = np.exp(-(a / 0.016) ** 2)
+    ochre = np.exp(-(b / 0.01) ** 2)
+    k = 1 + 0.5 * cloud + 0.12 * fleck
+    rgb = np.stack([0.028 * k, 0.058 * k, 0.043 * k], -1)
+    rgb += pale[..., None] * np.array([0.2, 0.22, 0.17]) + ochre[..., None] * np.array([0.16, 0.11, 0.045])
+    return _image("marble_colour", rgb), _normal("marble_normal", _soften(0.15 * cloud, 2), 0.3)
+
+
 def _textured(name, colour_img, normal_img, rough, normal_strength=1.0, metal=0.0):
     m = bpy.data.materials.new(name)
     try:
@@ -231,6 +264,32 @@ class Kit:
         self.cyl(shade, (x, y + 0.2, z), 0.03, 0.07, verts=10)
         self.cyl(cord, (x, (y + 0.23 + ceiling) / 2, z), 0.006, ceiling - y - 0.23, verts=6)
         self.bulb(glow, (x, y + 0.03, z), 0.05)
+
+    def blob(self, m, c, s):
+        """A rounded form: a ball squashed to size."""
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.5, segments=16, ring_count=10, location=self.B(c))
+        o = bpy.context.object
+        o.scale = (s[0], s[2], s[1])
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        bpy.ops.object.shade_smooth()
+        o.data.materials.append(m)
+        self.made.append(o)
+        return o
+
+    def ring(self, m, c, r, thick=0.006):
+        """A loop lying flat against the back wall (a coiled rope)."""
+        bpy.ops.mesh.primitive_torus_add(major_radius=r, minor_radius=thick, major_segments=24, minor_segments=6, location=self.B(c), rotation=(math.pi / 2, 0, 0))
+        o = bpy.context.object
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+        bpy.ops.object.shade_smooth()
+        o.data.materials.append(m)
+        self.made.append(o)
+        return o
+
+    def t_hook(self, m, x, y, z, out=0.07):
+        """A brass T-hook standing out from the back wall."""
+        self.cyl(m, (x, y, z + out / 2), 0.008, out, axis="z", verts=10)
+        self.cyl(m, (x, y, z + out), 0.01, 0.09, axis="x", verts=10)
 
     def cone(self, m, c, r, h, sides=4):
         bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=r, radius2=0.012, depth=h, location=self.B(c), rotation=(0, 0, math.pi / 4))
