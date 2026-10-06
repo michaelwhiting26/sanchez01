@@ -37,6 +37,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   const [caption, setCaption] = useState<string | null>(null);
   const [tiltPrompt, setTiltPrompt] = useState(false);
   const [storyId, setStoryId] = useState<string | null>(null);
+  const [collectionOpen, setCollectionOpen] = useState(false);
   const [choicesOpen, setChoicesOpen] = useState(false);
   const stageEl = useRef<HTMLDivElement>(null);
   const audio = useMemo(() => new AudioController(), []);
@@ -168,13 +169,21 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
       clearTimeout(t);
       setCaption(null);
       setStoryId(null);
+      setCollectionOpen(false);
     };
   }, [stage]);
 
   const onOpenStory = useCallback((id: string) => {
+    // The glove rail's marker opens the collection; every other marker opens its story.
+    if (id === "collection") {
+      track("collection_opened");
+      setCollectionOpen(true);
+      return;
+    }
     track("story_opened", { id });
     setStoryId(id);
   }, []);
+  const onCloseCollection = useCallback(() => setCollectionOpen(false), []);
   const onCloseStory = useCallback(() => setStoryId(null), []);
   const story = bootstrap.wall.find((s) => s.id === storyId) ?? null;
 
@@ -213,6 +222,8 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   stageRef.current = stage;
   const storyRef = useRef(storyId);
   storyRef.current = storyId;
+  const collectionRef = useRef(collectionOpen);
+  collectionRef.current = collectionOpen;
   useEffect(() => {
     const el = stageEl.current;
     if (!el || mode !== "3d") return;
@@ -227,6 +238,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
       else if (e.key === "Escape") {
         // Escape closes an open story first; only then does it step back out of where the visitor is.
         if (storyRef.current) setStoryId(null);
+        else if (collectionRef.current) setCollectionOpen(false);
         else send({ type: "BACK" });
       }
     };
@@ -262,6 +274,8 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
         onLookAround={onLookAround}
         onOpenStory={onOpenStory}
         onCloseStory={onCloseStory}
+        collectionOpen={collectionOpen}
+        onCloseCollection={onCloseCollection}
         onDesign={onDesign}
       />
     </div>

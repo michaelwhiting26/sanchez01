@@ -1,4 +1,4 @@
-import type { StoreBootstrap, StoreProduct, WallStory } from "./types";
+import type { CollectionPiece, StoreBootstrap, StoreProduct, WallStory } from "./types";
 
 /**
  * The store's content. This is the source for GET /api/storefront/bootstrap until the products table (migration 002) is filled from an admin.
@@ -30,6 +30,18 @@ export const STORE_WALL: readonly WallStory[] = [
   },
 ];
 
+/**
+ * The collection: every finished piece Jesse has made, with its photograph and price (owner, 6 Oct 2026).
+ * EMPTY ON PURPOSE. The project holds no photograph of a finished piece (the pictures saved from his old site are that site's stock
+ * placeholders, logos and workshop stills) and no price is confirmed. Evidence rule: nothing is invented to fill it. Until pieces are added
+ * here, the collection shows placeholder tiles that say so.
+ * TODO(owner): for each piece supply a photograph, a name, a price and currency, and whether it is sold.
+ */
+export const STORE_COLLECTION: readonly CollectionPiece[] = [];
+
+/** Where the collection's marker sits on the wall: the rail of hanging gloves. */
+export const COLLECTION_SPOT: readonly [number, number, number] = [6.02, 2.18, -3.95];
+
 export function getStoreBootstrap(): StoreBootstrap {
   return {
     version: "2026.10.1",
@@ -51,6 +63,7 @@ export function getStoreBootstrap(): StoreBootstrap {
     },
     products: STORE_PRODUCTS.filter((p) => p.active).toSorted((a, b) => a.sortOrder - b.sortOrder),
     wall: STORE_WALL,
+    collection: STORE_COLLECTION,
     experience: { greetingEnabled: true, soundDefault: false },
   };
 }

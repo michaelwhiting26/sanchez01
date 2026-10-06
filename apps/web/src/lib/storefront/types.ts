@@ -54,6 +54,20 @@ export interface WallStory {
   readonly position: readonly [number, number, number];
 }
 
+/** One finished piece in the collection: something Jesse has actually made, shown with its photograph and its price. */
+export interface CollectionPiece {
+  readonly id: string;
+  readonly name: string;
+  /** A photograph of the real piece, served from this site. */
+  readonly photo: string;
+  /** Price in minor units (cents), or null while it is not confirmed. */
+  readonly priceMinor: number | null;
+  readonly currency: "AUD" | "AED" | "SGD" | "GBP" | "USD";
+  readonly soldOut: boolean;
+  /** Where "Build one like this" goes, if this kind of piece has a builder. */
+  readonly builderRoute: string | null;
+}
+
 export interface StoreBootstrap {
   readonly version: string;
   /** `workshopLight` is the room's baked light: a picture that must come from the same bake as `workshop` (tools/store/bake_light.py). */
@@ -63,6 +77,8 @@ export interface StoreBootstrap {
   readonly products: readonly StoreProduct[];
   /** The stories on the wall. One to begin with, to prove the idea (owner, 6 Oct 2026). */
   readonly wall: readonly WallStory[];
+  /** Everything he has made, for "View collection" on the wall. Empty until real photographs and prices are supplied. */
+  readonly collection: readonly CollectionPiece[];
   readonly experience: { readonly greetingEnabled: boolean; readonly soundDefault: boolean };
 }
 
@@ -79,5 +95,6 @@ export const STORE_EVENTS = [
   "greeting_choice",
   "look_around_started",
   "story_opened",
+  "collection_opened",
 ] as const;
 export type StoreEvent = (typeof STORE_EVENTS)[number];

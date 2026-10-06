@@ -1,11 +1,18 @@
 "use client";
 
-import type { StoreBootstrap, StoreProduct, WallStory } from "@/lib/storefront/types";
+import type { CollectionPiece, StoreBootstrap, StoreProduct, WallStory } from "@/lib/storefront/types";
 import type { StoreEventObject, StoreStage } from "@/experience/store-machine";
 
 export function formatPrice(product: StoreProduct): string {
   if (product.priceFromMinor === null) return "Price to come";
   return `From ${new Intl.NumberFormat("en-AU", { style: "currency", currency: product.currency, maximumFractionDigits: 0 }).format(product.priceFromMinor / 100)}`;
+}
+
+/** A collection piece's price line: its price, "Sold out", or an honest "Price to come". */
+export function piecePrice(piece: CollectionPiece): string {
+  if (piece.soldOut) return "Sold out";
+  if (piece.priceMinor === null) return "Price to come";
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency: piece.currency, maximumFractionDigits: 0 }).format(piece.priceMinor / 100);
 }
 
 interface Props {
@@ -30,13 +37,15 @@ interface Props {
   readonly onLookAround: () => void;
   readonly onOpenStory: (id: string) => void;
   readonly onCloseStory: () => void;
+  readonly collectionOpen: boolean;
+  readonly onCloseCollection: () => void;
   readonly onDesign: () => void;
 }
 
 /** Everything drawn over the 3D world. Kept to a small share of the screen: the room is the interface (spec Part 4: 80 to 90% world). */
 export function StoreUI(props: Props) {
   const { bootstrap, stage, index, caption, audioEnabled, canEnter, tiltPrompt, send, onEnter, onToggleAudio, onEnableTilt, onDesign } = props;
-  const { choicesOpen, story, onChoose, onLookAround, onOpenStory, onCloseStory } = props;
+  const { choicesOpen, story, onChoose, onLookAround, onOpenStory, onCloseStory, collectionOpen, onCloseCollection } = props;
   const products = bootstrap.products;
   const product = products[index];
   const outside = stage === "boot" || stage === "arrive";
@@ -89,6 +98,9 @@ export function StoreUI(props: Props) {
           </p>
           {/* The wall's stories as ordinary buttons too, so nobody has to find a marker in the room to reach one. */}
           <nav className="store-ui__choices is-open" aria-label="On the wall">
+            <button type="button" className="store-ui__choice store-ui__choice--main" data-choice="collection" onClick={() => onOpenStory("collection")}>
+              View collection
+            </button>
             {bootstrap.wall.map((s) => (
               <button key={s.id} type="button" className="store-ui__choice" data-story={s.id} onClick={() => onOpenStory(s.id)}>
                 {s.title}
@@ -98,6 +110,46 @@ export function StoreUI(props: Props) {
               Back to the products
             </button>
           </nav>
+        </div>
+      ) : null}
+
+      {collectionOpen ? (
+        <div className="store-collection" role="dialog" aria-modal="true" aria-label="The collection">
+          <header className="store-collection__head">
+            <p className="store-collection__title">The collection</p>
+            <button type="button" className="store-collection__close" onClick={onCloseCollection}>
+              Close
+            </button>
+          </header>
+          {bootstrap.collection.length > 0 ? (
+            <ul className="store-collection__grid">
+              {bootstrap.collection.map((piece) => (
+                <li key={piece.id} className="store-collection__piece">
+                  <img className="store-collection__photo" src={piece.photo} alt={piece.name} loading="lazy" />
+                  <p className="store-collection__name">{piece.name}</p>
+                  <p className={`store-collection__price${piece.soldOut ? " is-sold" : ""}`}>{piecePrice(piece)}</p>
+                  {piece.builderRoute && !piece.soldOut ? (
+                    <a className="store-collection__build" href={piece.builderRoute}>
+                      Build one like this
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              <p className="store-collection__note">Every piece Jesse has made will be shown here with its price. PLACEHOLDER: photographs and prices to come.</p>
+              <ul className="store-collection__grid" aria-hidden="true">
+                {Array.from({ length: 6 }, (_, i) => (
+                  <li key={i} className="store-collection__piece is-placeholder">
+                    <span className="store-collection__photo">Photo to come</span>
+                    <p className="store-collection__name">Name to come</p>
+                    <p className="store-collection__price">Price to come</p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       ) : null}
 
