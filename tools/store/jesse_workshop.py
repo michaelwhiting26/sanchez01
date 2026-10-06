@@ -47,8 +47,13 @@ def _picture(k, m, x, y0, y1, z0, z1):
     return o
 
 
-def sewing_station(k, mat, hexc, P, timber, x0=2.475, x1=3.325, z0=-4.6, z1=-2.6, top=0.955):
-    """The table Jesse works at. He stands on the low-x side facing the machine; the handwheel is to his right (towards the door)."""
+def sewing_station(k, mat, hexc, P, timber, x0=2.475, x1=3.325, z0=-4.6, z1=-2.6, top=0.76):
+    """The table Jesse works at (specs/10, 6 Oct 2026). He SITS on the far side of it from the visitor, between the table and his wall, facing
+    back across the room, as in the wide film: the machine's working side is towards him and its back towards the visitor, the handwheel on
+    his right. The parts below are laid out for an operator on the near side and the whole station is then turned half a turn about the
+    table's centre, which puts every part where it belongs for him without rewriting each one."""
+    # The top is at 0.76 m, a sewing table's height, not a standing bench's: seated behind it, his head and shoulders clear the machine.
+    first = len(k.made)
     enamel = mat("machine_enamel", hexc("#141516"), 0.34, 0.55)       # the machine's dark body
     bright = mat("machine_steel", hexc("#9a9c9e"), 0.3, 1.0)          # face plate, needle bar, handwheel rim
     olive = mat("thread_olive", hexc("#3b3f2a"), 0.85)
@@ -81,8 +86,8 @@ def sewing_station(k, mat, hexc, P, timber, x0=2.475, x1=3.325, z0=-4.6, z1=-2.6
     for i in range(2):                                                                                          # tension discs, facing him
         k.cyl(bright, (mx - 0.068, top + 0.24 - i * 0.07, mz0 + 0.19), 0.018, 0.014, axis="x", verts=14)
     k.cyl(bright, (mx, top + 0.335, mz1 - 0.2), 0.012, 0.05, verts=10)                                          # bobbin winder
-    k.bx(enamel, mx - 0.1, mx + 0.1, 0.6, 0.78, -3.72, -3.44, 0.01)                                             # motor under the table
-    k.bx(P["leather2"], mx - 0.008, mx + 0.008, 0.7, top + 0.2, mz1 + 0.02, mz1 + 0.03)                          # drive belt
+    k.bx(enamel, mx - 0.1, mx + 0.1, top - 0.3, top - 0.12, -3.72, -3.44, 0.01)                                 # motor under the table
+    k.bx(P["leather2"], mx - 0.008, mx + 0.008, top - 0.2, top + 0.2, mz1 + 0.02, mz1 + 0.03)                          # drive belt
     k.bx(P["steel"], 2.56, 2.86, 0.03, 0.05, -3.8, -3.45, 0.004)                                                # treadle
 
     # thread stand: pole, tray with two big cones on discs, guide arm above
@@ -116,6 +121,27 @@ def sewing_station(k, mat, hexc, P, timber, x0=2.475, x1=3.325, z0=-4.6, z1=-2.6
     k.cyl(P["leather2"], (2.82, top + 0.06, -4.28), 0.06, 0.46, axis="z")
     k.cyl(mat("roll_tan", hexc("#8a6a44"), 0.6), (3.1, top + 0.055, -4.32), 0.055, 0.42, axis="z")
     k.bx(mat("cutting_mat", hexc("#1f3a2c"), 0.9), 2.84, 3.26, top, top + 0.006, -3.05, -2.68)
+    k.bx(P["leather"], 2.68, 3.16, top + 0.022, top + 0.028, mz0 - 0.03, mz0 + 0.13, 0.002)   # the piece he is sewing, lying through the machine
+
+    # Turn the whole station half a turn about the middle of the table, so it faces the seat.
+    from mathutils import Matrix
+    c = k.B(((x0 + x1) / 2, 0, (z0 + z1) / 2))
+    turn = Matrix.Translation(c) @ Matrix.Rotation(math.pi, 4, "Z") @ Matrix.Translation([-v for v in c])
+    for o in k.made[first:]:
+        o.matrix_world = turn @ o.matrix_world
+        bpy.ops.object.select_all(action="DESELECT")
+        o.select_set(True)
+        bpy.context.view_layer.objects.active = o
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+    # His seat: a fixed work stool, padded top at 0.50 m, in line with the needle and 0.42 m back from the table edge.
+    sx, sz = x1 + 0.42, (z0 + z1) / 2 + 0.1
+    k.cyl(P["leather2"], (sx, 0.475, sz), 0.18, 0.05, verts=22)
+    k.cyl(P["steel"], (sx, 0.44, sz), 0.16, 0.02, verts=18)
+    for ax, az in ((0.12, 0.12), (-0.12, 0.12), (0.12, -0.12), (-0.12, -0.12)):
+        k.bx(P["steel"], sx + ax - 0.012, sx + ax + 0.012, 0, 0.43, sz + az - 0.012, sz + az + 0.012)
+    k.bx(P["steel"], sx - 0.13, sx + 0.13, 0.16, 0.18, sz - 0.13, sz + 0.13)
+    return (sx, sz)
 
 
 def workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=6.2, ceiling=3.18):

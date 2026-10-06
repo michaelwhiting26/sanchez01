@@ -94,7 +94,7 @@ const LANTERNS: ReadonlyArray<{ position: [number, number, number]; intensity: n
 const HIGHLIGHT = 0.16;
 const PENDANTS: ReadonlyArray<{ position: [number, number, number]; intensity: number }> = [
   { position: [-3.65, 1.95, -2.6], intensity: 9 },
-  { position: [2.9, 1.95, -3.6], intensity: 10 },
+  { position: [2.9, 2.4, -3.6], intensity: 10 },
   { position: [0, 2.4, -3.0], intensity: 13 },
   { position: [5.3, 2.2, -3.5], intensity: 9 }, // the wall behind Jesse's sewing table: gloves, frames, banner
 ];

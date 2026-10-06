@@ -61,17 +61,17 @@ export const ENTRANCE_PATH: ReadonlyArray<readonly [number, number, number]> = [
   [0.3, 1.66, 5.2],
   [0.12, 1.68, 2.6],
   [-0.05, 1.67, 0.1],
-  [-0.55, 1.66, -1.4],
-  [-1.7, 1.63, -3.1],
-  [-2.2, 1.6, -4.4],
+  [0.35, 1.6, -1.2],
+  [0.7, 1.45, -2.6],
+  [1.0, 1.22, -3.95],
 ];
 /** Where the eyes rest along that walk: the door, then the room, then Jesse. The last point is replaced by LOOK_GREETING from the workshop file. */
 export const ENTRANCE_LOOK_PATH: ReadonlyArray<readonly [number, number, number]> = [
   [0, 1.95, 0],
   [0.3, 1.6, -1.5],
-  [1.2, 1.45, -3.0],
-  [1.9, 1.4, -3.4],
-  [2.2, 1.35, -3.45],
+  [1.5, 1.45, -2.8],
+  [2.8, 1.3, -3.4],
+  [3.3, 1.12, -3.55],
 ];
 
 /**

@@ -3,7 +3,9 @@
 import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { AnimationMixer, Box3, CanvasTexture, LoopOnce, MathUtils, Mesh, MeshStandardMaterial, SkinnedMesh, Vector3, type AnimationAction, type Group } from "three";
+import { AnimationMixer, Box3, LoopOnce, MathUtils, Mesh, MeshStandardMaterial, SkinnedMesh, Vector3, type AnimationAction, type Group } from "three";
+import { JesseSeated } from "./JesseSeated";
+import { useFloorPatch } from "./use-floor-patch";
 import { useGltf } from "./use-gltf";
 import { useScene } from "./scene-store";
 import type { WorldProps } from "./types";
@@ -12,14 +14,14 @@ const HEIGHT = 1.76; // metres. TODO(owner): confirm Jesse's height.
 const facing = (from: Vector3, to: Vector3): number => Math.atan2(to.x - from.x, to.z - from.z);
 
 /**
- * Part 3: Jesse. He is in the room the whole time: at the bench when the visitor walks in, a step forward to greet, then aside by the wall,
- * turning towards whatever the visitor is looking at.
+ * Jesse STANDING: the earlier staging, kept only for a room that has no seat mark. He is at the bench when the visitor walks in, takes a step
+ * forward to greet, then moves aside by the wall, turning towards whatever the visitor is looking at. See JesseSeated.tsx for what is used.
  *
  * INTERIM LOOK: drawn as a dark silhouette. The character model is not owner-approved yet (docs/LOCKED-DECISIONS.md), so no face is shown.
  * The model has no mouth shapes and no wave or point clips yet, so the greeting uses his turn, step and nod; lip sync is wired (experience/lip-sync.ts)
  * and starts working when a model with mouth shapes and a recorded line are supplied.
  */
-export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: Omit<WorldProps, "onOpenStory">) {
+function JesseStanding({ bootstrap, stage, index, returning, reducedMotion }: Omit<WorldProps, "onOpenStory">) {
   const gltf = useGltf(stage === "boot" ? null : bootstrap.scene.jesse);
   const anchors = useScene((s) => s.anchors);
   const camera = useThree((s) => s.camera);
@@ -119,23 +121,8 @@ export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: Omi
     g.rotation.y = MathUtils.euclideanModulo(g.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
   });
 
-  // He moves, so the room's baked shadows cannot include his. A soft dark patch on the floor under him stands in for it (specs/09): it follows his
-  // feet because it sits inside his own group. It is a patch, not a figure-shaped shadow, and nothing about the model itself is touched.
-  const patch = useMemo(() => {
-    const c = document.createElement("canvas");
-    c.width = c.height = 128;
-    const g = c.getContext("2d");
-    if (g) {
-      const fade = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-      fade.addColorStop(0, "rgb(0 0 0 / 0.5)");
-      fade.addColorStop(0.55, "rgb(0 0 0 / 0.22)");
-      fade.addColorStop(1, "rgb(0 0 0 / 0)");
-      g.fillStyle = fade;
-      g.fillRect(0, 0, 128, 128);
-    }
-    return new CanvasTexture(c);
-  }, []);
-  useEffect(() => () => patch.dispose(), [patch]);
+  // He moves, so the room's baked shadows cannot include his. A soft dark patch on the floor under him stands in for it (specs/09).
+  const patch = useFloorPatch();
 
   if (!gltf || !rig) return null;
   return (
@@ -147,4 +134,14 @@ export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: Omi
       </mesh>
     </group>
   );
+}
+
+/**
+ * Part 3: Jesse. In the room as it is built he sits at his sewing machine for the whole visit (JesseSeated.tsx, specs/10). The standing version
+ * above is used only if the room file carries no JESSE_SEAT and JESSE_HANDS marks.
+ */
+export function Jesse(props: Omit<WorldProps, "onOpenStory">) {
+  const seat = useScene((s) => s.anchors.get("JESSE_SEAT"));
+  const hands = useScene((s) => s.anchors.get("JESSE_HANDS"));
+  return seat && hands ? <JesseSeated {...props} seat={seat} hands={hands} /> : <JesseStanding {...props} />;
 }

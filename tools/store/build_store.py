@@ -333,9 +333,9 @@ def build_workshop():
         empty(f"CAM_FOCUS_{pid}", (x - 0.05, 1.62 if hangs else 1.34, -3.6 if hangs else -5.02))
 
     # Jesse's sewing table (where he is working when the visitor walks in) and the wall behind him, both taken from his real workshop
-    jesse_workshop.sewing_station(k, mat, hexc, P, timber)
+    seat_x, seat_z = jesse_workshop.sewing_station(k, mat, hexc, P, timber)
     banner = jesse_workshop.workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=W / 2, ceiling=H - 0.22)
-    k.pendant(shade, bulb, P["steel"], 2.9, 2.05, -3.6, H - 0.22, cd=10.0)
+    k.pendant(shade, bulb, P["steel"], 2.9, 2.5, -3.6, H - 0.22, cd=10.0)   # high enough to stay out of the shot of him at the machine
     # a second table on the left: hides laid out, thread, a box of offcuts
     k.bx(timber, -4.1, -3.2, 0.87, 0.94, -3.5, -1.7, 0.008)
     for lx, lz in ((-4.02, -3.42), (-3.28, -3.42), (-4.02, -1.78), (-3.28, -1.78)):
@@ -384,13 +384,16 @@ def build_workshop():
     mark = empty("LIGHTMAP", (0, 0, 0))   # read by the site: how much to multiply the light picture by, and which bake it belongs to
     mark["scale"], mark["fingerprint"] = float(light["scale"]), light["fingerprint"]
     # Path and character marks (read by the site at run time).
+    # Jesse sits at his machine for the whole visit (specs/10). JESSE_SEAT is where he sits; JESSE_HANDS is the needle plate, which also tells
+    # the site which way he faces. The three standing marks below are only used if a build has no seat.
+    empty("JESSE_SEAT", (seat_x, 0, seat_z))
+    empty("JESSE_HANDS", (2.9, 0.79, seat_z))
     empty("JESSE_BENCH", (2.25, 0, -3.5))   # at the bench, working
     empty("JESSE_GREET", (1.35, 0, -3.3))   # one step towards the visitor
     empty("JESSE_ASIDE", (1.7, 0, -5.2))    # stepped aside, by the product wall
-    # The visitor comes to rest across the room from Jesse, looking along it: he is in front of his sewing table, with the gloves, frames and banner
-    # on the wall behind. At this distance he fills about half the height of a phone screen.
-    empty("CAM_GREETING", (-2.2, 1.6, -4.4))
-    empty("LOOK_GREETING", (2.2, 1.35, -3.45))
+    # The film's shot: low, at about table height, across the machine at him, with the gloves and frames above his head.
+    empty("CAM_GREETING", (1.0, 1.22, -3.95))
+    empty("LOOK_GREETING", (3.3, 1.12, -3.55))
     export(os.path.join(OUT, "workshop.glb"), webp=True)
 
 
