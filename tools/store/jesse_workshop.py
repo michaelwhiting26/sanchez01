@@ -1,6 +1,6 @@
 """Jesse's own corner of the workshop, taken from the two sewing films on his current site (saved in the project's Dropbox folder under
 assets/workshop-reference, 6 Oct 2026): the industrial sewing machine and everything round it on his table, and the wall behind him with its
-row of hanging gloves, two big frames, the Sanchez banner and the tool board. Imported by build_store.py; it does not run on its own.
+collection display (where the row of hanging gloves and two big frames were until the owner replaced them, 6 Oct 2026), the Sanchez banner and the tool board. Imported by build_store.py; it does not run on its own.
 
 It is built by eye from those films, so sizes are judged, not measured. Two things in the films are deliberately not copied: the pictures inside
 his frames (other people's photographs) and the other makers' names on the gloves. The frames hold plain panels and the gloves carry no marks.
@@ -145,49 +145,38 @@ def sewing_station(k, mat, hexc, P, timber, x0=2.475, x1=3.325, z0=-4.6, z1=-2.6
 
 
 def workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=6.2, ceiling=3.18):
-    """The wall behind Jesse (the room's right-hand wall): gloves on a rail, two frames, the banner, the tool board."""
-    red = mat("glove_red", hexc("#8a1714"), 0.45)
-    gold = mat("glove_gold", hexc("#9a7a3a"), 0.4, 0.2)
-    dark = mat("glove_black", hexc("#131211"), 0.45)
-    lace = mat("glove_lace", hexc("#b9a98a"), 0.9)
-    mount = mat("frame_mount", hexc("#0f0d0b"), 0.9)
-    print_a = mat("frame_panel_sepia", hexc("#4a3a28"), 0.85)
-    print_b = mat("frame_panel_cream", hexc("#6a5d48"), 0.85)
-    print_c = mat("frame_panel_red", hexc("#5a1a16"), 0.85)
+    """The wall behind Jesse (the room's right-hand wall): the collection display, the banner and the tool board.
+    Returns the banner and the list of collection tiles, which are kept as separate pieces of the room."""
     gilt = mat("frame_gilt", hexc("#a97938"), 0.4, 0.9)
     board = mat("tool_board", hexc("#8d8271"), 0.9)
     tool = mat("tool_steel", hexc("#3a3c3f"), 0.35, 0.9)
     handle = mat("tool_handle", hexc("#1a1512"), 0.6)
     x = wall_x
 
-    # rail and gloves: hung cuff-up in a row, the way they hang over his machine
-    k.bx(timber, x - 0.2, x, 2.5, 2.54, -5.0, -2.0, 0.006)
-    for z in (-4.9, -3.5, -2.1):
-        k.bx(P["steel"], x - 0.18, x, 2.36, 2.5, z - 0.012, z + 0.012)
-    colours = (dark, red, red, red, gold, gold, gold, dark, red)
-    for i, m in enumerate(colours):
-        z = -4.78 + i * 0.32
-        gx = x - 0.14
-        lean = 0.02 * ((i * 7) % 3 - 1)
-        k.cyl(lace, (gx, 2.43, z), 0.004, 0.14, verts=6)
-        k.cyl(m, (gx, 2.31, z + lean), 0.055, 0.11, verts=14)                       # cuff
-        _blob(k, m, (gx, 2.14, z + lean), (0.15, 0.27, 0.13))                        # the fist
-        _blob(k, m, (gx - 0.035, 2.17, z + lean + 0.065), (0.07, 0.15, 0.07))        # thumb
-
-    # two frames, as on his wall: a big black one and a gilt one. Plain panels inside (his hold other people's photographs).
-    def frame(m, z0, z1, y0, y1, cols, rows, tones):
-        k.bx(mount, x - 0.02, x, y0, y1, z0, z1)
-        f = 0.045
-        for a, b, c, d in ((z0, z0 + f, y0, y1), (z1 - f, z1, y0, y1), (z0, z1, y1 - f, y1), (z0, z1, y0, y0 + f)):
-            k.bx(m, x - 0.04, x, c, d, a, b, 0.006)
-        pw, ph = (z1 - z0 - 2 * f - 0.06) / cols, (y1 - y0 - 2 * f - 0.06) / rows
-        for r in range(rows):
-            for c in range(cols):
-                pz, py = z0 + f + 0.03 + c * pw, y0 + f + 0.03 + r * ph
-                k.bx(tones[(r * cols + c) % len(tones)], x - 0.024, x - 0.02, py + 0.015, py + ph - 0.015, pz + 0.015, pz + pw - 0.015)
-
-    frame(joinery, -4.7, -3.55, 1.28, 2.02, 3, 2, (print_a, print_b, print_a, print_a, print_a, print_b))
-    frame(gilt, -3.25, -2.25, 1.3, 2.0, 3, 2, (print_c, print_b, print_b, print_a, print_b, print_a))
+    # The collection display (owner, 6 Oct 2026): this section of the wall, where the glove rail and the two frames were, shows what he has
+    # made. A framed board with ten tiles, two rows of five, each over a small brass plate for its price. Every tile is its own piece of the
+    # room with its own material (COLLECTION_TILE_0 to 9), so the site can lay a photograph on each from the collection list without the
+    # room being rebuilt. With nothing in the list they are plain dark mounts: nothing is invented to fill them.
+    z0, z1, y0, y1 = -5.0, -2.0, 1.26, 2.56
+    k.bx(joinery, x - 0.03, x, y0, y1, z0, z1)
+    f = 0.055
+    for a, b, c, d in ((z0, z0 + f, y0, y1), (z1 - f, z1, y0, y1), (z0, z1, y1 - f, y1), (z0, z1, y0, y0 + f)):
+        k.bx(timber, x - 0.06, x, c, d, a, b, 0.006)
+    tile, cols, rows = 0.44, 5, 2
+    gap = (z1 - z0 - 2 * f - cols * tile) / (cols + 1)
+    tiles = []
+    for r in range(rows):
+        ty1 = y1 - f - 0.07 - r * 0.6
+        for c in range(cols):
+            tz0 = z0 + f + gap + c * (tile + gap)
+            i = r * cols + c
+            for a, b, cc, d in ((tz0 - 0.012, tz0, ty1 - tile, ty1), (tz0 + tile, tz0 + tile + 0.012, ty1 - tile, ty1),
+                                (tz0 - 0.012, tz0 + tile + 0.012, ty1, ty1 + 0.012), (tz0 - 0.012, tz0 + tile + 0.012, ty1 - tile - 0.012, ty1 - tile)):
+                k.bx(gilt, x - 0.045, x - 0.03, cc, d, a, b)
+            k.bx(gilt, x - 0.036, x - 0.03, ty1 - tile - 0.075, ty1 - tile - 0.04, tz0 + 0.08, tz0 + tile - 0.08, 0.002)   # price plate (blank)
+            face = _picture(k, mat(f"collection_tile_{i}", hexc("#17130f"), 0.85), x - 0.032, ty1 - tile, ty1, tz0, tz0 + tile)
+            face.name = f"COLLECTION_TILE_{i}"
+            tiles.append(face)
     k.pendant(shade, bulb, P["steel"], x - 0.9, 2.3, -3.5, ceiling, 0.18)
 
     # the tool board: shears, a mallet, an awl and a rule, hung on pegs
@@ -221,4 +210,4 @@ def workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=6.2, cei
     bm.node_tree.links.new(where.outputs["UV"], tex.inputs["Vector"])
     bm.node_tree.links.new(tex.outputs["Color"], b.inputs["Base Color"])
     k.bx(joinery, x - 0.03, x, 1.3, 2.16, -1.82, -0.42, 0.004)
-    return _picture(k, bm, x - 0.032, 1.33, 2.13, -1.79, -0.45)
+    return _picture(k, bm, x - 0.032, 1.33, 2.13, -1.79, -0.45), tiles

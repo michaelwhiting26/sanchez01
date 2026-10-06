@@ -17,7 +17,7 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
 
 /**
  * The wall. Each entry is one of Jesse's own films from his current site, already in this project at web size. The hotspot for the first sits on
- * the gilt frame behind his sewing table. Captions state only what the film shows; his own words about it are for him to record.
+ * the Sanchez banner on his wall. Captions state only what the film shows; his own words about it are for him to record.
  */
 export const STORE_WALL: readonly WallStory[] = [
   {
@@ -26,7 +26,7 @@ export const STORE_WALL: readonly WallStory[] = [
     caption: "Jesse at the sewing machine. Designed in Sydney. Handmade in Pattaya.",
     video: "/assets/carousel/clip1.mp4",
     poster: "/assets/carousel/clip1.jpg",
-    position: [6.05, 1.65, -2.75],
+    position: [6.05, 1.73, -1.12],
   },
 ];
 
@@ -39,8 +39,10 @@ export const STORE_WALL: readonly WallStory[] = [
  */
 export const STORE_COLLECTION: readonly CollectionPiece[] = [];
 
-/** Where the collection's marker sits on the wall: the rail of hanging gloves. */
-export const COLLECTION_SPOT: readonly [number, number, number] = [6.02, 2.18, -3.95];
+/** Where the collection's marker sits: on the collection display on his wall (tools/store/jesse_workshop.py). */
+export const COLLECTION_SPOT: readonly [number, number, number] = [6.02, 2.2, -2.75];
+/** How many tiles the display on the wall has. Pieces beyond this show in the collection grid only. */
+export const COLLECTION_WALL_TILES = 10;
 
 export function getStoreBootstrap(): StoreBootstrap {
   return {

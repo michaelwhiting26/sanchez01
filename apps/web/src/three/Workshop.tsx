@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mesh, MeshStandardMaterial, Vector3 } from "three";
+import { Mesh, MeshStandardMaterial, SRGBColorSpace, TextureLoader, Vector3 } from "three";
 import { loadLightMap, type LightMap } from "@/experience/light-map";
+import { COLLECTION_WALL_TILES } from "@/lib/storefront/config";
 import { useGltf } from "./use-gltf";
 import { useScene } from "./scene-store";
 import type { WorldProps } from "./types";
@@ -60,6 +61,33 @@ export function Workshop({ bootstrap }: WorldProps) {
       o.receiveShadow = true; // for the one live shadow in the room: the product on show, onto its counter
     });
   }, [gltf, light]);
+
+  // The collection display on Jesse's wall: each tile is its own piece of the room, and takes the photograph of the piece in that place in the
+  // collection list. With an empty list the tiles stay plain. Photographs sit under the room's baked light like any other surface.
+  useEffect(() => {
+    if (!gltf) return;
+    let live = true;
+    const loader = new TextureLoader();
+    for (const [i, piece] of bootstrap.collection.slice(0, COLLECTION_WALL_TILES).entries()) {
+      const tile = gltf.scene.getObjectByName(`COLLECTION_TILE_${i}`);
+      if (!(tile instanceof Mesh) || !(tile.material instanceof MeshStandardMaterial)) continue;
+      const material = tile.material;
+      void loader
+        .loadAsync(piece.photo)
+        .then((photo) => {
+          if (!live) return;
+          photo.flipY = false;
+          photo.colorSpace = SRGBColorSpace;
+          material.map = photo;
+          material.color.set("#ffffff");
+          material.needsUpdate = true;
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      live = false;
+    };
+  }, [gltf, bootstrap.collection]);
 
   return gltf ? <primitive object={gltf.scene} /> : null;
 }

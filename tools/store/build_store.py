@@ -334,7 +334,7 @@ def build_workshop():
 
     # Jesse's sewing table (where he is working when the visitor walks in) and the wall behind him, both taken from his real workshop
     seat_x, seat_z = jesse_workshop.sewing_station(k, mat, hexc, P, timber)
-    banner = jesse_workshop.workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=W / 2, ceiling=H - 0.22)
+    banner, wall_tiles = jesse_workshop.workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=W / 2, ceiling=H - 0.22)
     k.pendant(shade, bulb, P["steel"], 2.9, 2.5, -3.6, H - 0.22, cd=10.0)   # high enough to stay out of the shot of him at the machine
     # a second table on the left: hides laid out, thread, a box of offcuts
     k.bx(timber, -4.1, -3.2, 0.87, 0.94, -3.5, -1.7, 0.008)
@@ -377,7 +377,7 @@ def build_workshop():
                 o.data.uv_layers.remove(o.data.uv_layers[0])
     # Baked light: everything in this file is fixed, so everything except the glowing parts themselves gets it.
     glowing = ("lamp_bulb", "niche_light", "task_lamp_glow")
-    fixed = [o for name, o in joined.items() if name not in glowing] + [banner]
+    fixed = [o for name, o in joined.items() if name not in glowing] + [banner] + wall_tiles
     bake_light.strip_hidden(fixed, B((-W / 2, 0, 0)), B((W / 2, H, -D)))  # opposite corners: Blender's depth axis runs the other way to web z
     light = bake_light.run(fixed, k.lights, OUT, "workshop-light", B, hexc, os.path.join(os.path.dirname(os.path.abspath(__file__)), "baked"),
                            size=BAKE_SIZE, samples=BAKE_SAMPLES, bake=BAKE)
