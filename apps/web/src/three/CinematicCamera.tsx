@@ -14,8 +14,9 @@ import type { WorldProps } from "./types";
 const v = (p: readonly [number, number, number]): Vector3 => new Vector3(p[0], p[1], p[2]);
 const ARRIVAL = v(ENTRANCE_PATH[0] ?? [0.45, 1.62, 7.65]);
 const ARRIVAL_LOOK = v(ENTRANCE_LOOK_PATH[0] ?? [0, 1.95, 0]);
-/** How far a full tilt of the phone moves the arrival view, in metres at the shop front (about 5 degrees across, 3 up and down) and at the camera. */
-const TILT = { lookX: 0.65, lookY: 0.38, stepX: 0.22 } as const;
+/** How far a full tilt of the phone turns the view (degrees), and how far it shifts the standing point sideways (metres), on the street and inside. */
+const TILT = { degreesAcross: 5, degreesUp: 3, stepOutside: 0.22, stepInside: 0.1 } as const;
+const UP = new Vector3(0, 1, 0);
 
 /** Drives the one camera from the store's stage. No orbit, pan or pinch: the visitor cannot get lost (spec §0). */
 export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }: Omit<WorldProps, "onOpenStory">) {
@@ -29,6 +30,7 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
   const tilt = useRef({ x: 0, y: 0 });
   const tiltedLook = useRef(ARRIVAL_LOOK.clone());
   const standing = useRef(ARRIVAL.clone());
+  const work = useMemo(() => ({ away: new Vector3(), side: new Vector3() }), []);
 
   // Two lenses. Outside, a longer one from across the street: the shop front reads as a photograph, not a wide game view.
   // Inside, a slightly wider one, so the room has air round Jesse and round each product and a turn of the head does not sweep the whole view.
@@ -90,11 +92,14 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
     }
     // Looking at the wall: step back to where the whole collection display fits the screen, over Jesse's head.
     if (stage === "lookingAround") {
+      if (was === "greeting") controller.look.copy(tiltedLook.current);
       const to = mark("CAM_WALL") ?? mark("CAM_GREETING");
       const look = mark("LOOK_WALL") ?? mark("LOOK_GREETING");
       if (to && look) controller.moveTo(to, look, reducedMotion ? 0 : was === "greeting" ? 1.8 : TIMING.firstProduct, "sine.inOut", () => base.current.copy(to));
       return;
     }
+    // Leaving the greeting: start the move from wherever the visitor is actually looking (they may have tilted the phone).
+    if (was === "greeting") controller.look.copy(tiltedLook.current);
     if (!ready || !product) return;
     if (stage === "browsing" || stage === "productSelected" || stage === "builderLoading") {
       const focus = stage !== "browsing";
@@ -109,21 +114,28 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
   useEffect(() => () => controller.kill(), [controller]);
 
   // Standing still, the view breathes very slightly so the room never looks like a photograph.
-  // On the street the visitor can also look around a little by tilting the phone (or moving the mouse): the aim shifts a few degrees and the
-  // standing point a hand's width, which is enough for the door, lanterns and windows to slide against each other.
+  // Standing on the street, and again standing in front of Jesse, the visitor can look around a little by tilting the phone (or moving the
+  // mouse): the aim shifts a few degrees and the standing point a hand's width, enough for near and far things to slide against each other.
+  // The shift is worked out from wherever the camera is facing, so "left" is the visitor's left in both places.
   useFrame(({ clock }, dt) => {
     if (reducedMotion || controller.moving) return;
-    if (stage !== "arrive") {
+    if (stage !== "arrive" && stage !== "greeting") {
       controller.breathe(base.current, clock.elapsedTime, 0.006);
       return;
     }
     const want = readTilt();
     tilt.current.x = MathUtils.damp(tilt.current.x, want.x, 5, dt);
     tilt.current.y = MathUtils.damp(tilt.current.y, want.y, 5, dt);
-    standing.current.copy(base.current);
-    standing.current.x += tilt.current.x * TILT.stepX;
-    tiltedLook.current.set(ARRIVAL_LOOK.x + tilt.current.x * TILT.lookX, ARRIVAL_LOOK.y - tilt.current.y * TILT.lookY, ARRIVAL_LOOK.z);
-    controller.breathe(standing.current, clock.elapsedTime, 0.012, tiltedLook.current);
+    const aim = stage === "arrive" ? ARRIVAL_LOOK : controller.look;
+    const away = work.away.copy(aim).sub(base.current);
+    const reach = away.length();
+    const side = work.side.crossVectors(away.normalize(), UP).normalize(); // the visitor's right
+    const across = Math.tan(MathUtils.degToRad(TILT.degreesAcross)) * reach * tilt.current.x;
+    const upDown = Math.tan(MathUtils.degToRad(TILT.degreesUp)) * reach * tilt.current.y;
+    standing.current.copy(base.current).addScaledVector(side, tilt.current.x * (stage === "arrive" ? TILT.stepOutside : TILT.stepInside));
+    tiltedLook.current.copy(aim).addScaledVector(side, across);
+    tiltedLook.current.y -= upDown;
+    controller.breathe(standing.current, clock.elapsedTime, stage === "arrive" ? 0.012 : 0.006, tiltedLook.current);
   });
 
   return null;

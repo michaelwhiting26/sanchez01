@@ -114,3 +114,6 @@
 .store-collection__build { justify-self: center; margin-block-start: .15rem; font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: #b8aea1; text-underline-offset: .3em; }
 .store-collection__piece.is-placeholder .store-collection__name, .store-collection__piece.is-placeholder .store-collection__price { color: #6f665b; }
 @media (prefers-reduced-motion: reduce) { .store-collection { animation: none; } }
+
+/* Inside, the sound control has the top right, so the one-tap "Tilt to look" (iPhones that have not yet allowed the motion sensor) sits top left. */
+.store-ui__tilt { position: absolute; inset-block-start: max(1rem, env(safe-area-inset-top)); inset-inline-start: 1rem; padding: .45rem .8rem; border: 1px solid rgb(255 255 255 / .28); border-radius: 999px; background: rgb(9 7 5 / .5); color: inherit; font: inherit; font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; }

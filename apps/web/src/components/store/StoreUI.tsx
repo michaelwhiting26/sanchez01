@@ -74,6 +74,12 @@ export function StoreUI(props: Props) {
         </button>
       ) : null}
 
+      {stage === "greeting" && tiltPrompt ? (
+        <button type="button" className="store-ui__tilt" onClick={onEnableTilt}>
+          Tilt to look
+        </button>
+      ) : null}
+
       {stage === "greeting" ? (
         <div className="store-ui__greet">
           <p className="store-ui__caption" aria-live="polite">
