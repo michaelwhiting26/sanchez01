@@ -8,6 +8,8 @@ one persistent WebGL canvas, a fixed set of camera moves, and a state machine th
 1. **Arrive** (`arrive`): outside the workshop door. "Tap to enter". No sound and no Jesse speaking yet.
 2. **Walk in** (`entering`): the door swings open and the camera walks a spline through it (2.8 s, a barely-there step rhythm).
 3. **Jesse greets you** (`greeting`): he turns from the bench, steps forward, nods; captions carry the line; then he turns to the wall.
+   He ends on a question, and the visitor answers with one of four buttons: a product by name, everything, or looking around.
+3b. **Look around** (`lookingAround`, optional): the camera returns to face Jesse's wall, he steps aside, and a marker on the wall opens a story (a short film with a line about it) over the store. "Back to the products" is always one tap away. It is never a step before buying.
 4. **Swipe through products** (`browsing`): five products at five places on the back wall. Swipe, arrow keys, dots or tapping a product moves the camera sideways (0.65 s). Tapping the product in view, or "Design it", moves in close (`productSelected`); "Design this" opens `/build/<slug>`.
 
 ## Where things are
