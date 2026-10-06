@@ -1,5 +1,6 @@
 "use client";
 
+import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import { CatmullRomCurve3, Vector3, type PerspectiveCamera } from "three";
@@ -10,8 +11,8 @@ import { useScene } from "./scene-store";
 import type { WorldProps } from "./types";
 
 const v = (p: readonly [number, number, number]): Vector3 => new Vector3(p[0], p[1], p[2]);
-const ARRIVAL = v(ENTRANCE_PATH[0] ?? [0.15, 1.68, 4.2]);
-const ARRIVAL_LOOK = v(ENTRANCE_LOOK_PATH[0] ?? [0, 1.55, 0]);
+const ARRIVAL = v(ENTRANCE_PATH[0] ?? [0.45, 1.62, 7.65]);
+const ARRIVAL_LOOK = v(ENTRANCE_LOOK_PATH[0] ?? [0, 1.95, 0]);
 
 /** Drives the one camera from the store's stage. No orbit, pan or pinch: the visitor cannot get lost (spec §0). */
 export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }: WorldProps) {
@@ -23,11 +24,23 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
   const previous = useRef<StoreStage>("boot");
   const base = useRef(ARRIVAL.clone());
 
-  // A phone held upright sees a narrow slice of the room: widen the lens so a product and its surroundings still fit.
+  // Two lenses. Outside, a longer one from across the street: the shop front reads as a photograph, not a wide game view.
+  // Inside, nearly the same lens: every standing point in the room is composed for it (tools/store/build_store.py), so nothing has a wide-angle game look.
+  const arrivalFov = aspect < 0.7 ? 50 : aspect < 1 ? 46 : 40;
+  const insideFov = aspect < 0.7 ? 48 : aspect < 1 ? 46 : 40;
   useEffect(() => {
-    camera.fov = aspect < 0.7 ? 62 : aspect < 1 ? 56 : 46;
-    camera.updateProjectionMatrix();
-  }, [camera, aspect]);
+    const to = stage === "boot" || stage === "arrive" ? arrivalFov : insideFov;
+    const apply = (): void => camera.updateProjectionMatrix();
+    if (stage === "entering" && !reducedMotion) {
+      const tween = gsap.to(camera, { fov: to, duration: TIMING.enter, ease: "power2.inOut", onUpdate: apply });
+      return () => {
+        tween.kill();
+      };
+    }
+    camera.fov = to;
+    apply();
+    return undefined;
+  }, [camera, stage, arrivalFov, insideFov, reducedMotion]);
 
   useEffect(() => {
     const was = previous.current;

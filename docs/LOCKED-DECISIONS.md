@@ -6,6 +6,11 @@ The owner's current word on how each part of the site behaves. Anyone changing t
 - **`/` is the mobile 3D store, Parts 1 to 4** (arrive, walk in, Jesse greets you, swipe through products), built to the owner's engineering specification. See `docs/STORE-3D.md`. One persistent canvas, cinematic camera only, everything driven by the state machine.
 - **The scroll site below is superseded, not deleted.** It lives whole at `/superseded`, linked as "Superseded" in the store footer. Its sections ("Home, top to bottom") still describe that page and still apply to it.
 - **Jesse in the store is a dark silhouette** until his character model is approved; no face is shown. He stays in the room throughout and does not speak on every swipe.
+- **Realism pass, phase by phase (owner, 6 Oct 2026).** The store is being taken from grey-box to the owner's storyboard (`specs/08` in the Dropbox project folder and the storyboard image of the same date), one phase at a time, each signed off from phone-size captures before the next starts.
+- **Front door** is the wrought-iron double door from the owner's reference photo (6 Oct 2026). The brass door frame is gone; the frame is iron.
+- **Shop front** follows the owner's storyboard (6 Oct 2026): night street, black timber front, brass sign on the fascia, lanterns, setts. The storyboard's lines "A higher standard in custom boxing" and "Handcrafted for champions" are NOT on the site: the owner has not confirmed them as approved copy.
+- **Buttons inside the store are plain** (owner, 6 Oct 2026): ivory and aged brass, no punch-bag buttons in Parts 1 to 4. The punch-bag rule under "Always" still applies to every other page. "Tap to enter" is done; the product buttons land in the interface phase.
+- **Jesse is left alone in this pass** (owner, 6 Oct 2026): still the dark silhouette, no lighting or model change until the owner says.
 - Build order from the specification stands: only after Parts 1 to 4 pass on real phones does the full product builder (Parts 5 to 12) start.
 
 ## Home, top to bottom (now at /superseded)

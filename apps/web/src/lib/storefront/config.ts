@@ -39,18 +39,18 @@ export function getStoreBootstrap(): StoreBootstrap {
   };
 }
 
-/** The walk from the street to the greeting spot, in the web scene's space (door at z = 0). Matches the spec's entrance spline. */
+/** The walk from across the street to the greeting spot, in the web scene's space (door at z = 0). The first point is the arrival shot, composed for a phone held upright. */
 export const ENTRANCE_PATH: ReadonlyArray<readonly [number, number, number]> = [
-  [0.15, 1.68, 4.2],
-  [0.12, 1.69, 2.8],
-  [0.05, 1.68, 1.4],
-  [-0.1, 1.67, 0.1],
+  [0.45, 1.62, 7.65],
+  [0.3, 1.66, 5.2],
+  [0.12, 1.68, 2.6],
+  [-0.05, 1.67, 0.1],
   [-0.2, 1.66, -1.8],
 ];
 /** Where the eyes rest along that walk: the door, then the room, then Jesse. The last point is replaced by LOOK_GREETING from the workshop file. */
 export const ENTRANCE_LOOK_PATH: ReadonlyArray<readonly [number, number, number]> = [
-  [0, 1.55, 0],
-  [0.05, 1.55, -1.6],
+  [0, 1.95, 0],
+  [0.02, 1.6, -1.2],
   [0.5, 1.52, -3.2],
   [1.3, 1.5, -3.3],
 ];

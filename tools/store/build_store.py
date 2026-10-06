@@ -11,8 +11,13 @@ GREY-BOX: plain materials, no baked lighting yet, and the room is not modelled o
 """
 import bpy, sys, os, math
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import iron_door  # the wrought-iron front door (owner's reference photo, 6 Oct 2026)
+import shop_front  # the timber shop front, brick, setts and lanterns (owner's storyboard, 6 Oct 2026)
+
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[argv.index("--out") + 1] if "--out" in argv else "."
+PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None  # straight-on picture of one door leaf, for checking against the photo
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -113,9 +118,10 @@ def text(name, body, c, size, m, extrude=0.02):
     return o
 
 
-def export(path):
+def export(path, webp=False):
     bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", export_apply=True, export_yup=True, export_extras=True, use_selection=False)
+    extra = dict(export_image_format="WEBP", export_image_quality=88) if webp else {}  # textures travel as WebP; a file with none is unaffected
+    bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", export_apply=True, export_yup=True, export_extras=True, use_selection=False, **extra)
     print("WROTE", path, os.path.getsize(path))
 
 
@@ -140,45 +146,65 @@ def palette():
     )
 
 
+# ---------------------------------------------------------------- check picture
+def preview_leaf(path):
+    """A straight-on, evenly lit picture of the left leaf against a pale backing, to lay beside the reference photo. Not part of the site."""
+    bpy.ops.mesh.primitive_plane_add(size=6, location=B((-0.4, 1.1, -0.4)), rotation=(math.pi / 2, 0, 0))
+    bpy.context.object.data.materials.append(mat("preview_backing", (0.9, 0.86, 0.78), 1.0, 0.0, 1.6))
+    for o in bpy.data.objects:
+        if "glass" in o.name:
+            o.hide_render = True
+    cam = bpy.data.objects.new("PREVIEW_CAM", bpy.data.cameras.new("PREVIEW_CAM"))
+    bpy.context.scene.collection.objects.link(cam)
+    cam.data.type, cam.data.ortho_scale = "ORTHO", 2.34
+    cam.location, cam.rotation_euler = B((-0.4, 1.11, 3.0)), (math.pi / 2, 0, 0)
+    for loc, energy in (((-1.8, 2.6, 2.5), 3.0), ((1.2, 0.8, 2.5), 1.2)):
+        light = bpy.data.objects.new("PREVIEW_SUN", bpy.data.lights.new("PREVIEW_SUN", "SUN"))
+        bpy.context.scene.collection.objects.link(light)
+        light.data.energy = energy
+        light.location = B(loc)
+        light.rotation_euler = (math.radians(62), 0, math.radians(-28 if loc[0] < 0 else 24))
+    sc = bpy.context.scene
+    sc.camera = cam
+    for engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
+        try:
+            sc.render.engine = engine
+            break
+        except Exception:
+            pass
+    sc.render.resolution_x, sc.render.resolution_y, sc.render.filepath = 800, 2240, path
+    bpy.ops.render.render(write_still=True)
+    print("PREVIEW", path)
+
+
 # ---------------------------------------------------------------- exterior
 def build_exterior():
     reset()
     MATS.clear()
     P = palette()
-    box("EXT_pavement", (0, -0.05, 4.0), (16, 0.1, 8.5), P["pave"])
-    box("EXT_facade_left", (-3.325, 2.1, 0.125), (5.35, 4.2, 0.25), P["facade"])
-    box("EXT_facade_right", (3.325, 2.1, 0.125), (5.35, 4.2, 0.25), P["facade"])
-    box("EXT_facade_lintel", (0, 3.225, 0.125), (1.3, 1.95, 0.25), P["facade"])
-    box("EXT_doorframe_left", (-0.68, 1.125, 0.14), (0.06, 2.25, 0.3), P["brass"])
-    box("EXT_doorframe_right", (0.68, 1.125, 0.14), (0.06, 2.25, 0.3), P["brass"])
-    box("EXT_doorframe_top", (0, 2.28, 0.14), (1.42, 0.06, 0.3), P["brass"])
-    box("EXT_step", (0, 0.02, 0.5), (1.9, 0.04, 0.7), P["steel"])
-    # The door leaf is its own node, hinged on its left edge, so the site can swing it open.
-    hinge = empty("DOOR", (-0.65, 0, 0.14))
-    for nm, c, s, m in (
-        ("DOOR_stile_l", (0.04, 1.11, 0), (0.08, 2.2, 0.05), P["steel"]),
-        ("DOOR_stile_r", (1.26, 1.11, 0), (0.08, 2.2, 0.05), P["steel"]),
-        ("DOOR_rail_top", (0.65, 2.17, 0), (1.3, 0.08, 0.05), P["steel"]),
-        ("DOOR_rail_mid", (0.65, 1.0, 0), (1.3, 0.06, 0.05), P["steel"]),
-        ("DOOR_rail_bot", (0.65, 0.09, 0), (1.3, 0.16, 0.05), P["steel"]),
-        ("DOOR_glass", (0.65, 1.11, 0), (1.18, 2.0, 0.012), P["glass"]),
-        ("DOOR_handle", (1.16, 1.05, 0.05), (0.03, 0.32, 0.04), P["brass"]),
+    # Each leaf is its own node (DOOR, DOOR_R), hinged on its outer edge, so the site can swing the pair open.
+    _, _, iron = iron_door.build_double_door(B, hexc, half_width=0.8, door_z=0.14, empty=empty)
+    for nm, c, s, bevel in (
+        ("EXT_doorframe_left", (-0.83, 1.155, 0.14), (0.06, 2.31, 0.26), 0.003),
+        ("EXT_doorframe_right", (0.83, 1.155, 0.14), (0.06, 2.31, 0.26), 0.003),
+        ("EXT_doorframe_top", (0, 2.2675, 0.14), (1.6, 0.085, 0.26), 0.003),
+        ("EXT_doorframe_sill", (0, 0.008, 0.14), (1.6, 0.016, 0.26), 0.002),
+        # the stepped face casing that stands a little proud of the wall
+        ("EXT_doorcasing_left", (-0.87, 1.1775, 0.3), (0.11, 2.355, 0.03), 0.004),
+        ("EXT_doorcasing_right", (0.87, 1.1775, 0.3), (0.11, 2.355, 0.03), 0.004),
+        ("EXT_doorcasing_top", (0, 2.30, 0.3), (1.63, 0.11, 0.03), 0.004),
     ):
-        o = box(nm, (c[0] - 0.65, c[1], c[2] + 0.14), s, m)
-        o.parent = hinge
-        o.matrix_parent_inverse = hinge.matrix_world.inverted()
-    text("EXT_sign_sanchez", "SANCHEZ", (0, 2.98, 0.27), 0.36, P["sign"])
-    text("EXT_sign_custom", "CUSTOM BOXING", (0, 2.72, 0.27), 0.125, P["sign"])
-    box("EXT_lamp_bar", (0, 3.48, 0.42), (1.9, 0.04, 0.08), P["glow"])
-    # Shop window on the left: a glazed opening with warm light behind it.
-    box("EXT_window_glow", (-3.0, 1.55, 0.26), (2.4, 1.7, 0.02), mat("window_glow", hexc("#c98f4a"), 0.6, 0.0, 1.1))
-    for nm, c, s in (("EXT_window_frame_t", (-3.0, 2.43, 0.28), (2.52, 0.06, 0.06)), ("EXT_window_frame_b", (-3.0, 0.67, 0.28), (2.52, 0.06, 0.06)),
-                     ("EXT_window_frame_l", (-4.23, 1.55, 0.28), (0.06, 1.82, 0.06)), ("EXT_window_frame_r", (-1.77, 1.55, 0.28), (0.06, 1.82, 0.06)),
-                     ("EXT_window_frame_m", (-3.0, 1.55, 0.28), (0.04, 1.76, 0.05))):
-        box(nm, c, s, P["brass"])
-    empty("CAM_ARRIVAL", (0.15, 1.68, 4.2))
-    empty("LOOK_ARRIVAL", (0, 1.55, 0))
-    export(os.path.join(OUT, "exterior.glb"))
+        o = box(nm, c, s, iron["iron"])
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        md = o.modifiers.new("edge", "BEVEL")
+        md.width, md.segments, md.limit_method = bevel, 2, "ANGLE"
+    shop_front.build(B, mat, hexc, iron["iron"])
+    # Where the visitor stands on arrival: back across the street, a touch off-centre, eyes on the door and the sign above it.
+    empty("CAM_ARRIVAL", (0.45, 1.62, 7.65))
+    empty("LOOK_ARRIVAL", (0, 1.95, 0))
+    export(os.path.join(OUT, "exterior.glb"), webp=True)
+    if PREVIEW:
+        preview_leaf(PREVIEW)
 
 
 # ---------------------------------------------------------------- workshop
@@ -187,63 +213,118 @@ PRODUCTS = [  # id, x along the back wall, hangs (camera sits further back and l
 
 
 def build_workshop():
+    """The room, dressed as a working leather shop (owner's storyboard, 6 Oct 2026). Still invented: there is no footage of Jesse's real workshop yet."""
     reset()
     MATS.clear()
     P = palette()
+    sf = shop_front
+    k = sf.Kit(B, mat, hexc)
     W, D, H = 12.4, 7.2, 3.4  # room: x -6.2..6.2, z -7.2..0
-    box("WS_floor", (0, -0.05, -D / 2), (W, 0.1, D), P["floor"])
-    box("WS_ceiling", (0, H + 0.05, -D / 2), (W, 0.1, D), P["wall"])
-    box("WS_wall_back", (0, H / 2, -D - 0.1), (W, H, 0.2), P["wall"])
-    box("WS_wall_left", (-W / 2 - 0.1, H / 2, -D / 2), (0.2, H, D), P["wall"])
-    box("WS_wall_right", (W / 2 + 0.1, H / 2, -D / 2), (0.2, H, D), P["wall"])
-    box("WS_wall_front_l", (-3.44, H / 2, -0.06), (5.52, H, 0.12), P["wall"])
-    box("WS_wall_front_r", (3.44, H / 2, -0.06), (5.52, H, 0.12), P["wall"])
-    box("WS_wall_front_top", (0, 2.83, -0.06), (1.36, 1.14, 0.12), P["wall"])
-    for i, z in enumerate((-1.6, -3.6, -5.6)):
-        box(f"WS_beam_{i}", (0, H - 0.12, z), (W, 0.2, 0.22), P["wood"])
-    box("WS_rug", (-0.2, 0.006, -2.6), (2.6, 0.012, 3.6), P["rug"])
-    box("WS_rail", (0, 2.72, -6.55), (11.4, 0.05, 0.05), P["brass"])
+    floor = sf._textured("floor_boards", *sf.plank_maps("floor", (0.27, 0.165, 0.1), boards=6, seed=31), rough=0.58)
+    timber = sf._textured("aged_timber", *sf.plank_maps("timber", (0.2, 0.125, 0.078), boards=3, seed=47, gap=0), rough=0.52)
+    panel = sf._textured("wall_panelling", *sf.plank_maps("panel", (0.085, 0.062, 0.046), boards=8, seed=59, joints=False), rough=0.5)
+    plaster = sf._textured("plaster", *sf.plaster_maps(), rough=0.92)
+    joinery = mat("dark_joinery", hexc("#15110d"), 0.5)
+    shade = mat("lamp_shade", hexc("#0b0a09"), 0.38, 0.6)
+    bulb = mat("lamp_bulb", hexc("#ffb866"), 0.5, 0.0, 4.5)
+    kraft = mat("kraft_box", hexc("#6f5435"), 0.92)
+    cream = mat("thread_cream", hexc("#b9a98a"), 0.85)
+    oxblood = mat("thread_oxblood", hexc("#4a1512"), 0.85)
+
+    # shell
+    k.bx(floor, -W / 2, W / 2, -0.1, 0, -D, 0)
+    k.bx(panel, -W / 2, W / 2, H, H + 0.1, -D, 0)                                   # boarded ceiling
+    k.bx(plaster, -W / 2, W / 2, 0, H, -D - 0.2, -D)
+    k.bx(plaster, -W / 2 - 0.2, -W / 2, 0, H, -D, 0)
+    k.bx(plaster, W / 2, W / 2 + 0.2, 0, H, -D, 0)
+    k.wall(plaster, -W / 2, W / 2, 0, H, -0.12, 0, (sf.DOOR, *sf.WINDOWS))            # the street wall: door and a window each side
+    for i, z in enumerate((-1.2, -2.7, -4.2, -5.7)):
+        k.bx(timber, -W / 2, W / 2, H - 0.22, H, z - 0.11, z + 0.11, 0.006)          # beams
+    # panelling to dado height on the three solid walls, with a rail on top
+    for x0, x1, z0, z1 in ((-W / 2, W / 2, -D, -D + 0.025), (-W / 2, -W / 2 + 0.025, -D, 0), (W / 2 - 0.025, W / 2, -D, 0)):
+        k.bx(panel, x0, x1, 0, 1.12, z0, z1)
+    k.bx(joinery, -W / 2, W / 2, 1.12, 1.17, -D, -D + 0.05, 0.006)
+    k.bx(joinery, -W / 2, -W / 2 + 0.05, 1.12, 1.17, -D, 0, 0.006)
+    k.bx(joinery, W / 2 - 0.05, W / 2, 1.12, 1.17, -D, 0, 0.006)
+    k.bx(P["rug"], -1.5, 1.1, 0, 0.012, -4.4, -0.8, 0.004)
+
+    # the five product stations along the back wall
     for pid, x, hangs in PRODUCTS:
-        box(f"BAY_{pid}_board", (x, 1.55, -7.06), (1.7, 2.3, 0.06), P["board"])
-        box(f"BAY_{pid}_plate", (x, 0.52, -7.0), (0.5, 0.09, 0.02), P["brass"])
-        box(f"BAY_{pid}_lamp", (x, 2.98, -6.3), (0.5, 0.04, 0.12), P["glow"])
-        if not hangs:
-            box(f"BAY_{pid}_shelf", (x, 1.02, -6.78), (1.1, 0.05, 0.5), P["wood"])
-            for sx in (-0.5, 0.5):
-                box(f"BAY_{pid}_bracket_{'l' if sx < 0 else 'r'}", (x + sx, 0.9, -6.9), (0.04, 0.24, 0.26), P["steel"])
-        # Where the product model is attached, and where the camera stands and looks for it.
-        empty(f"PRODUCT_{pid}", (x, 2.69 if hangs else 1.05, -6.3 if hangs else -6.78))
-        # The phone's lower third carries the product name and button, so the camera looks below the product: it then sits in the upper part of the screen.
-        empty(f"CAM_PRODUCT_{pid}", (x - 0.1, 1.55 if hangs else 1.35, -3.4 if hangs else -5.5))
-        empty(f"LOOK_PRODUCT_{pid}", (x, 1.35 if hangs else 0.98, -6.3 if hangs else -6.78))
-        empty(f"CAM_FOCUS_{pid}", (x - 0.05, 1.6 if hangs else 1.28, -4.3 if hangs else -5.98))
-    # Workbench on the right, where Jesse is working when the visitor walks in.
-    box("WS_bench_top", (2.9, 0.92, -3.6), (0.85, 0.07, 2.0), P["wood"])
-    for i, (lx, lz) in enumerate(((2.55, -2.7), (3.25, -2.7), (2.55, -4.5), (3.25, -4.5))):
-        box(f"WS_bench_leg_{i}", (lx, 0.44, lz), (0.07, 0.88, 0.07), P["steel"])
-    box("WS_bench_shelf", (2.9, 0.3, -3.6), (0.75, 0.04, 1.86), P["steel"])
-    cyl("WS_roll_a", (2.95, 1.03, -3.1), 0.075, 0.7, P["leather"], axis="z")
-    cyl("WS_roll_b", (2.85, 1.02, -3.95), 0.065, 0.62, P["leather2"], axis="z")
-    box("WS_cutting_mat", (2.85, 0.962, -3.55), (0.6, 0.008, 0.45), mat("cutting_mat", hexc("#1f3a2c"), 0.9))
-    cyl("WS_stool_seat", (2.0, 0.62, -3.0), 0.17, 0.05, P["leather2"])
-    cyl("WS_stool_leg", (2.0, 0.3, -3.0), 0.03, 0.6, P["steel"])
-    # Shelving on the left wall with leather rolls and boxes.
-    for i, y in enumerate((0.5, 1.1, 1.7, 2.3)):
-        box(f"WS_shelf_{i}", (-5.9, y, -2.6), (0.5, 0.04, 2.6), P["wood"])
-    for i, z in enumerate((-1.4, -3.8)):
-        box(f"WS_shelf_post_{i}", (-5.9, 1.2, z), (0.5, 2.4, 0.05), P["steel"])
-    for i, (y, z, m) in enumerate(((0.61, -1.9, "leather"), (0.61, -2.3, "leather2"), (1.21, -2.9, "leather"), (1.81, -2.0, "leather2"), (1.81, -3.2, "leather"), (2.41, -2.6, "leather2"))):
-        cyl(f"WS_shelf_roll_{i}", (-5.9, y + 0.07, z), 0.09, 0.44, P[m], axis="x")
-    for i, x in enumerate((-3.2, 0.0, 3.2)):
-        cyl(f"WS_pendant_cord_{i}", (x, 3.05, -3.0), 0.008, 0.7, P["steel"], verts=8)
-        ball(f"WS_pendant_{i}", (x, 2.66, -3.0), (0.22, 0.16, 0.22), P["glow"])
+        # framed display board behind the product
+        k.bx(panel, x - 0.86, x + 0.86, 1.17, 2.9, -D + 0.0, -D + 0.05)
+        for a, b, c, d in ((x - 0.9, x - 0.83, 1.17, 2.94), (x + 0.83, x + 0.9, 1.17, 2.94), (x - 0.9, x + 0.9, 2.87, 2.94)):
+            k.bx(timber, a, b, c, d, -D, -D + 0.085, 0.006)
+        if hangs:
+            # the bag hangs from a beam bracket on a chain
+            k.bx(timber, x - 0.09, x + 0.09, H - 0.34, H - 0.22, -6.9, -5.9, 0.006)
+            k.cyl(P["steel"], (x, (2.69 + H - 0.34) / 2, -6.3), 0.012, H - 0.34 - 2.69, verts=8)
+        else:
+            # a thick timber counter on a panelled cabinet
+            k.bx(joinery, x - 0.6, x + 0.6, 0, 0.955, -D + 0.02, -6.46, 0.006)
+            for a, b in ((x - 0.52, x - 0.04), (x + 0.04, x + 0.52)):
+                k.bx(joinery, a, b, 0.14, 0.86, -6.46, -6.445, 0.012)                  # raised door panels
+            k.bx(timber, x - 0.68, x + 0.68, 0.955, 1.045, -D + 0.0, -6.4, 0.01)
+            k.bx(P["brass"], x - 0.2, x + 0.2, 0.975, 1.025, -6.4, -6.392, 0.003)       # name plate on the counter edge (blank)
+        k.pendant(shade, bulb, P["steel"], x, 2.86 if hangs else 1.77, -6.25 if hangs else -6.6, H - 0.22 if not hangs else H, 0.13)
+        # Where the product model is attached, and where the camera stands and looks for it. Composed for a phone held upright with a 48 degree lens:
+        # the product fills a little over half the width, sits above centre, and the name and button have the bottom fifth to themselves.
+        empty(f"PRODUCT_{pid}", (x, 2.69 if hangs else 1.05, -6.3 if hangs else -6.72))
+        empty(f"CAM_PRODUCT_{pid}", (x - 0.1, 1.6 if hangs else 1.38, -3.15 if hangs else -4.72))
+        empty(f"LOOK_PRODUCT_{pid}", (x, 1.35 if hangs else 1.1, -6.3 if hangs else -6.72))
+        empty(f"CAM_FOCUS_{pid}", (x - 0.05, 1.62 if hangs else 1.34, -3.6 if hangs else -5.02))
+
+    # workbench on the right, where Jesse is working when the visitor walks in
+    k.bx(timber, 2.475, 3.325, 0.885, 0.955, -4.6, -2.6, 0.008)
+    for lx, lz in ((2.55, -2.7), (3.25, -2.7), (2.55, -4.5), (3.25, -4.5)):
+        k.bx(P["steel"], lx - 0.035, lx + 0.035, 0, 0.885, lz - 0.035, lz + 0.035)
+    k.bx(P["steel"], 2.525, 3.275, 0.28, 0.32, -4.53, -2.67)
+    k.cyl(P["leather"], (2.95, 1.03, -3.1), 0.075, 0.7, axis="z")
+    k.cyl(P["leather2"], (2.85, 1.02, -3.95), 0.065, 0.62, axis="z")
+    k.bx(mat("cutting_mat", hexc("#1f3a2c"), 0.9), 2.55, 3.15, 0.955, 0.963, -3.78, -3.33)
+    k.pendant(shade, bulb, P["steel"], 2.9, 2.05, -3.6, H - 0.22)
+    # a second table on the left: hides laid out, thread, a box of offcuts
+    k.bx(timber, -4.1, -3.2, 0.87, 0.94, -3.5, -1.7, 0.008)
+    for lx, lz in ((-4.02, -3.42), (-3.28, -3.42), (-4.02, -1.78), (-3.28, -1.78)):
+        k.bx(joinery, lx - 0.04, lx + 0.04, 0, 0.87, lz - 0.04, lz + 0.04)
+    k.bx(P["leather"], -4.0, -3.35, 0.94, 0.948, -2.6, -1.85, 0.003)
+    k.bx(P["leather2"], -3.9, -3.3, 0.948, 0.955, -3.35, -2.75, 0.003)
+    for i, (tx, tz, m) in enumerate(((-3.38, -2.5, cream), (-3.45, -2.32, oxblood), (-3.32, -2.2, P["leather2"]), (-3.5, -2.62, P["brass"]))):
+        k.taper(m, (tx, 0.94 + 0.065, tz), 0.035, 0.014, 0.13, 12)
+    k.bx(kraft, -4.05, -3.75, 0.94, 1.1, -3.4, -3.05, 0.004)
+    k.pendant(shade, bulb, P["steel"], -3.65, 2.05, -2.6, H - 0.22)
+    for sx, sz in ((2.0, -3.0), (-2.95, -2.3)):
+        k.cyl(P["leather2"], (sx, 0.62, sz), 0.17, 0.05)
+        k.cyl(P["steel"], (sx, 0.3, sz), 0.03, 0.6, verts=10)
+        k.cyl(P["steel"], (sx, 0.02, sz), 0.16, 0.03)
+    # shelving on the left wall: leather rolls and packed orders
+    for y in (0.5, 1.1, 1.7, 2.3):
+        k.bx(timber, -6.15, -5.65, y - 0.02, y + 0.02, -3.9, -1.3, 0.004)
+    for z in (-1.4, -2.6, -3.8):
+        k.bx(P["steel"], -6.15, -5.65, 0, 2.4, z - 0.02, z + 0.02)
+    for y, z, m in ((0.61, -1.9, "leather"), (0.61, -2.25, "leather2"), (1.21, -3.0, "leather"), (1.81, -2.0, "leather2"), (1.81, -3.3, "leather"), (2.41, -2.2, "leather2")):
+        k.cyl(P[m], (-5.9, y + 0.07, z), 0.09, 0.44, axis="x")
+    for y, z0, z1, h in ((0.52, -3.6, -3.15, 0.3), (1.12, -2.2, -1.75, 0.26), (1.12, -1.7, -1.42, 0.2), (1.72, -2.9, -2.45, 0.3), (2.32, -3.7, -3.3, 0.22), (2.32, -3.25, -2.9, 0.3), (0.52, -3.05, -2.75, 0.2)):
+        k.bx(kraft, -6.1, -5.72, y, y + h, z0, z1, 0.004)
+    # a heavy bag hanging in the far right corner, part of the room rather than part of the range
+    k.cyl(P["leather2"], (5.6, 1.75, -6.35), 0.18, 1.3, verts=20)
+    k.cyl(P["steel"], (5.6, 2.9, -6.35), 0.01, 1.0, verts=6)
+    # general light: one large pendant in the middle of the room (the bench and the table have their own)
+    k.pendant(shade, bulb, P["steel"], 0.0, 2.5, -3.0, H - 0.22, 0.24)
+
+    joined = sf.join_by_material(k.made, "WS")
+    for name, tiles in (("floor_boards", (0.84, 0.84)), ("aged_timber", (0.6, 0.6)), ("wall_panelling", (0.96, 0.96)), ("plaster", (2.4, 2.4))):
+        sf._uv_from_world(joined[name], *tiles)
+    for name, o in joined.items():
+        if name not in ("floor_boards", "aged_timber", "wall_panelling", "plaster"):
+            while o.data.uv_layers:
+                o.data.uv_layers.remove(o.data.uv_layers[0])
     # Path and character marks (read by the site at run time).
     empty("JESSE_BENCH", (2.25, 0, -3.5))   # at the bench, working
     empty("JESSE_GREET", (1.35, 0, -3.3))   # one step towards the visitor
     empty("JESSE_ASIDE", (1.7, 0, -5.2))    # stepped aside, by the product wall
-    empty("CAM_GREETING", (-0.2, 1.66, -1.8))
-    empty("LOOK_GREETING", (1.3, 1.5, -3.3))
-    export(os.path.join(OUT, "workshop.glb"))
+    empty("CAM_GREETING", (-0.75, 1.62, -0.95))  # just inside the door: far enough back that he is seen head to knee with the room around him
+    empty("LOOK_GREETING", (1.3, 1.42, -3.3))
+    export(os.path.join(OUT, "workshop.glb"), webp=True)
 
 
 # ---------------------------------------------------------------- stand-in product forms
