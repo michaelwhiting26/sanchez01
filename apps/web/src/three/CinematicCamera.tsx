@@ -31,14 +31,14 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
   const standing = useRef(ARRIVAL.clone());
 
   // Two lenses. Outside, a longer one from across the street: the shop front reads as a photograph, not a wide game view.
-  // Inside, nearly the same lens: every standing point in the room is composed for it (tools/store/build_store.py), so nothing has a wide-angle game look.
+  // Inside, a slightly wider one, so the room has air round Jesse and round each product and a turn of the head does not sweep the whole view.
   const arrivalFov = aspect < 0.7 ? 50 : aspect < 1 ? 46 : 40;
-  const insideFov = aspect < 0.7 ? 48 : aspect < 1 ? 46 : 40;
+  const insideFov = aspect < 0.7 ? 54 : aspect < 1 ? 50 : 44;
   useEffect(() => {
     const to = stage === "boot" || stage === "arrive" ? arrivalFov : insideFov;
     const apply = (): void => camera.updateProjectionMatrix();
     if (stage === "entering" && !reducedMotion) {
-      const tween = gsap.to(camera, { fov: to, duration: TIMING.enter, ease: "power2.inOut", onUpdate: apply });
+      const tween = gsap.to(camera, { fov: to, duration: TIMING.enter, ease: "sine.inOut", onUpdate: apply });
       return () => {
         tween.kill();
       };
@@ -72,7 +72,8 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
       const path = new CatmullRomCurve3([camera.position.clone(), ...ENTRANCE_PATH.slice(1, -1).map(v), end]);
       const look = new CatmullRomCurve3([tiltedLook.current.clone(), ...ENTRANCE_LOOK_PATH.slice(1, -1).map(v), endLook]);
       controller.play(path, look, TIMING.enter, {
-        stride: 0.006,
+        ease: "sine.inOut", // the gentlest start and stop: no surge in the middle of the walk
+        stride: 0.003,
         onComplete: () => {
           base.current.copy(end);
           send({ type: "CAMERA_COMPLETE" });
@@ -87,7 +88,7 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
       const look = mark(`LOOK_PRODUCT_${product.cameraAnchor}`);
       if (!to || !look) return;
       const seconds = reducedMotion ? 0 : focus || was === "productSelected" ? TIMING.focus : was === "greeting" ? TIMING.firstProduct : TIMING.swipe;
-      controller.moveTo(to, look, seconds, was === "greeting" ? "power2.inOut" : "power3.inOut", () => base.current.copy(to));
+      controller.moveTo(to, look, seconds, was === "greeting" ? "sine.inOut" : "power2.inOut", () => base.current.copy(to));
     }
   }, [stage, index, ready, anchors, bootstrap.products, controller, reducedMotion, send]);
 

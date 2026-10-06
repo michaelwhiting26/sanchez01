@@ -19,14 +19,14 @@ for (const [w, h] of [[390, 844], [430, 932]]) {
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${out}/A-arrive-${w}x${h}.png` });
   await page.click(".store-ui__door");
-  for (const [name, ms] of [["B1-doors-opening", 800], ["B2-threshold", 1000], ["B3-inside", 900], ["C1-greeting-arrives", 1100], ["C-greeting", 1900]]) {
+  for (const [name, ms] of [["B1-doors-opening", 1100], ["B2-threshold", 1700], ["B3-inside", 1300], ["C1-greeting-arrives", 2300], ["C-greeting", 2300]]) {
     await page.waitForTimeout(ms);
     await page.screenshot({ path: `${out}/${name}-${w}x${h}.png` });
   }
   // Part 4: each product in turn (arrow key = one swipe), then the chosen-product moment on the last one.
   await page.waitForSelector('.store[data-stage="browsing"]', { timeout: 15000 });
   for (const name of ["D-gloves", "E-heavy-bag", "F2-thai-pads", "F-focus-mitts", "G-guards"]) {
-    await page.waitForTimeout(1900);
+    await page.waitForTimeout(name === "D-gloves" ? 3600 : 2100);
     await page.screenshot({ path: `${out}/${name}-${w}x${h}.png` });
     if (name !== "G-guards") await page.keyboard.press("ArrowRight");
   }

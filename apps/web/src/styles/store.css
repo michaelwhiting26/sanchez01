@@ -1,5 +1,6 @@
 /* The 3D store (home). The world fills the screen; the interface is a thin layer over it. Mobile first. */
-.store, .store-fallback { position: relative; block-size: 100svh; min-block-size: 30rem; overflow: hidden; background: #090705; color: #f3ece2; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+/* 100dvh after 100svh: the store fills exactly what the phone is showing, toolbars in or out, so the footer never peeks under it. */
+.store, .store-fallback { position: relative; block-size: 100svh; block-size: 100dvh; min-block-size: 30rem; overflow: hidden; background: #090705; color: #f3ece2; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .store__canvas { position: absolute; inset: 0; }
 .store__canvas canvas { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
 .store-ui { position: absolute; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom)); font-family: var(--nf-text, system-ui), sans-serif; }

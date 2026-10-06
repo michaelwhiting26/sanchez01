@@ -52,10 +52,14 @@ export const ENTRANCE_PATH: ReadonlyArray<readonly [number, number, number]> = [
 /** Where the eyes rest along that walk: the door, then the room, then Jesse. The last point is replaced by LOOK_GREETING from the workshop file. */
 export const ENTRANCE_LOOK_PATH: ReadonlyArray<readonly [number, number, number]> = [
   [0, 1.95, 0],
-  [0.02, 1.6, -1.2],
-  [0.6, 1.5, -3.0],
-  [1.6, 1.4, -3.4],
+  [0.3, 1.6, -1.5],
+  [1.2, 1.45, -3.0],
+  [1.9, 1.4, -3.4],
   [2.2, 1.35, -3.45],
 ];
 
-export const TIMING = { enter: 3.4, firstProduct: 1.3, swipe: 0.65, focus: 0.7, greeting: 4.0, greetingBack: 2.0 } as const;
+/**
+ * Seconds for each camera move and for the greeting. Deliberately unhurried (owner, 6 Oct 2026: the faster moves swung the view round and felt
+ * like motion sickness on a phone). The walk-in covers about twelve metres and turns to face Jesse; the first product is a quarter turn back.
+ */
+export const TIMING = { enter: 5.8, firstProduct: 3.0, swipe: 1.2, focus: 1.0, greeting: 4.0, greetingBack: 3.2 } as const;
