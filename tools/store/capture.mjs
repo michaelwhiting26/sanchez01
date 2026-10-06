@@ -19,7 +19,7 @@ for (const [w, h] of [[390, 844], [430, 932]]) {
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${out}/A-arrive-${w}x${h}.png` });
   await page.click(".store-ui__door");
-  for (const [name, ms] of [["B1-doors-opening", 700], ["B2-threshold", 900], ["B3-inside", 900], ["C-greeting", 2300]]) {
+  for (const [name, ms] of [["B1-doors-opening", 800], ["B2-threshold", 1000], ["B3-inside", 900], ["C1-greeting-arrives", 1100], ["C-greeting", 1900]]) {
     await page.waitForTimeout(ms);
     await page.screenshot({ path: `${out}/${name}-${w}x${h}.png` });
   }

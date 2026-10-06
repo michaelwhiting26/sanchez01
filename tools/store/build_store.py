@@ -14,6 +14,7 @@ import bpy, sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import iron_door  # the wrought-iron front door (owner's reference photo, 6 Oct 2026)
 import shop_front  # the timber shop front, brick, setts and lanterns (owner's storyboard, 6 Oct 2026)
+import jesse_workshop  # his sewing table and the wall behind it, from the films on his current site (6 Oct 2026)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[argv.index("--out") + 1] if "--out" in argv else "."
@@ -273,14 +274,9 @@ def build_workshop():
         empty(f"LOOK_PRODUCT_{pid}", (x, 1.35 if hangs else 1.1, -6.3 if hangs else -6.72))
         empty(f"CAM_FOCUS_{pid}", (x - 0.05, 1.62 if hangs else 1.34, -3.6 if hangs else -5.02))
 
-    # workbench on the right, where Jesse is working when the visitor walks in
-    k.bx(timber, 2.475, 3.325, 0.885, 0.955, -4.6, -2.6, 0.008)
-    for lx, lz in ((2.55, -2.7), (3.25, -2.7), (2.55, -4.5), (3.25, -4.5)):
-        k.bx(P["steel"], lx - 0.035, lx + 0.035, 0, 0.885, lz - 0.035, lz + 0.035)
-    k.bx(P["steel"], 2.525, 3.275, 0.28, 0.32, -4.53, -2.67)
-    k.cyl(P["leather"], (2.95, 1.03, -3.1), 0.075, 0.7, axis="z")
-    k.cyl(P["leather2"], (2.85, 1.02, -3.95), 0.065, 0.62, axis="z")
-    k.bx(mat("cutting_mat", hexc("#1f3a2c"), 0.9), 2.55, 3.15, 0.955, 0.963, -3.78, -3.33)
+    # Jesse's sewing table (where he is working when the visitor walks in) and the wall behind him, both taken from his real workshop
+    jesse_workshop.sewing_station(k, mat, hexc, P, timber)
+    banner = jesse_workshop.workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=W / 2, ceiling=H - 0.22)
     k.pendant(shade, bulb, P["steel"], 2.9, 2.05, -3.6, H - 0.22)
     # a second table on the left: hides laid out, thread, a box of offcuts
     k.bx(timber, -4.1, -3.2, 0.87, 0.94, -3.5, -1.7, 0.008)
@@ -314,6 +310,7 @@ def build_workshop():
     joined = sf.join_by_material(k.made, "WS")
     for name, tiles in (("floor_boards", (0.84, 0.84)), ("aged_timber", (0.6, 0.6)), ("wall_panelling", (0.96, 0.96)), ("plaster", (2.4, 2.4))):
         sf._uv_from_world(joined[name], *tiles)
+    banner.name = "WS_banner"
     for name, o in joined.items():
         if name not in ("floor_boards", "aged_timber", "wall_panelling", "plaster"):
             while o.data.uv_layers:
@@ -322,8 +319,10 @@ def build_workshop():
     empty("JESSE_BENCH", (2.25, 0, -3.5))   # at the bench, working
     empty("JESSE_GREET", (1.35, 0, -3.3))   # one step towards the visitor
     empty("JESSE_ASIDE", (1.7, 0, -5.2))    # stepped aside, by the product wall
-    empty("CAM_GREETING", (-0.75, 1.62, -0.95))  # just inside the door: far enough back that he is seen head to knee with the room around him
-    empty("LOOK_GREETING", (1.3, 1.42, -3.3))
+    # The visitor comes to rest across the room from Jesse, looking along it: he is in front of his sewing table, with the gloves, frames and banner
+    # on the wall behind. At this distance he fills about half the height of a phone screen.
+    empty("CAM_GREETING", (-2.2, 1.6, -4.4))
+    empty("LOOK_GREETING", (2.2, 1.35, -3.45))
     export(os.path.join(OUT, "workshop.glb"), webp=True)
 
 

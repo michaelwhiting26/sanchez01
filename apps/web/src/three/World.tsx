@@ -82,11 +82,12 @@ const LANTERNS: ReadonlyArray<{ position: [number, number, number]; intensity: n
   { position: [0, 2.9, 2.0], intensity: 2.2, distance: 5, color: "#ffd9a8" },
 ];
 
-/** The room's own light: one point light under each of the three working pendants (tools/store/build_store.py places the fixtures). */
+/** The room's own light: one point light under each working pendant (tools/store/build_store.py places the fixtures). */
 const PENDANTS: ReadonlyArray<{ position: [number, number, number]; intensity: number }> = [
   { position: [-3.65, 1.95, -2.6], intensity: 9 },
   { position: [2.9, 1.95, -3.6], intensity: 10 },
   { position: [0, 2.4, -3.0], intensity: 13 },
+  { position: [5.3, 2.2, -3.5], intensity: 9 }, // the wall behind Jesse's sewing table: gloves, frames, banner
 ];
 
 /** Warm pools under the pendants. When a product is chosen the room drops back a little so the product holds the eye. */
