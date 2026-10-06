@@ -102,7 +102,7 @@ export function StoreUI(props: Props) {
               See every piece
             </button>
             <button type="button" className="store-ui__choice store-ui__choice--quiet" data-choice="back" onClick={() => send({ type: "BACK" })}>
-              Back to the products
+              Back to Jesse
             </button>
           </nav>
         </div>

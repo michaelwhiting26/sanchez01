@@ -41,9 +41,11 @@ describe("store machine", () => {
     expect(b.getSnapshot().value).toBe("lookingAround");
     b.send({ type: "SELECT_PRODUCT", productId: "gloves", index: 0 }); // nothing to buy while looking at the wall
     expect(b.getSnapshot().value).toBe("lookingAround");
-    b.send({ type: "BACK" });
+    b.send({ type: "BACK" }); // back from the wall is back to Jesse
+    expect(b.getSnapshot().value).toBe("greeting");
+    b.send({ type: "GREETING_COMPLETE" });
     expect(b.getSnapshot().value).toBe("browsing");
-    b.send({ type: "LOOK_AROUND" }); // and it can be reached again from the products
+    b.send({ type: "LOOK_AROUND" }); // and the wall can be reached again from the products
     expect(b.getSnapshot().value).toBe("lookingAround");
   });
 

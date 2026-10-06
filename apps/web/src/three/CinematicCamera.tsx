@@ -81,6 +81,13 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
       });
       return;
     }
+    // Back from the wall to Jesse: return to the greeting shot across his machine.
+    if (stage === "greeting" && was === "lookingAround") {
+      const to = mark("CAM_GREETING");
+      const look = mark("LOOK_GREETING");
+      if (to && look) controller.moveTo(to, look, reducedMotion ? 0 : 1.8, "sine.inOut", () => base.current.copy(to));
+      return;
+    }
     // Looking at the wall: step back to where the whole collection display fits the screen, over Jesse's head.
     if (stage === "lookingAround") {
       const to = mark("CAM_WALL") ?? mark("CAM_GREETING");

@@ -4,7 +4,7 @@ import { assign, setup } from "xstate";
  * The store's one source of truth for where the visitor is (spec §1). Camera, Jesse, audio and UI all read this; none of them navigates on its own.
  * Stage names follow the spec: BOOT, ARRIVE, ENTERING, GREETING, BROWSING, PRODUCT_SELECTED, BUILDER_LOADING.
  * LOOKING_AROUND (owner, 6 Oct 2026) is the optional branch: the visitor turns to the wall and its stories instead of shopping, and is one
- * tap from the products the whole time. It is never a step on the way to buying.
+ * tap from Jesse, and so two from the products, the whole time. It is never a step on the way to buying.
  */
 export type StoreStage = "boot" | "arrive" | "entering" | "greeting" | "browsing" | "lookingAround" | "productSelected" | "builderLoading";
 
@@ -69,7 +69,8 @@ export const storeMachine = setup({
         LOOK_AROUND: "lookingAround",
       },
     },
-    lookingAround: { on: { BACK: "browsing", GO_TO_PRODUCT: { target: "browsing", actions: "goTo" } } },
+    // Back from the wall is back to Jesse, who asks again what the visitor is after (owner, 6 Oct 2026).
+    lookingAround: { on: { BACK: "greeting", GO_TO_PRODUCT: { target: "browsing", actions: "goTo" } } },
     productSelected: { on: { OPEN_BUILDER: "builderLoading", BACK: { target: "browsing", actions: "clearSelection" } } },
     builderLoading: {},
   },

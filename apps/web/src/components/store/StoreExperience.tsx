@@ -107,6 +107,15 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     send({ type: "SET_AUDIO", enabled: !audioEnabled });
   }, [audio, audioEnabled, send]);
 
+  // Which stage the visitor has just left, for the few places where that changes what happens next.
+  const cameFrom = useRef<StoreStage>("boot");
+  useEffect(
+    () => () => {
+      cameFrom.current = stage;
+    },
+    [stage],
+  );
+
   // Part 3: the greeting runs on a fixed timeline. Captions carry it when sound is off or the line is not recorded yet.
   const finishGreeting = useCallback(() => {
     if (stage !== "greeting") return;
@@ -127,9 +136,15 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
       // and the choices arrive while he is still saying hello: talking and choosing happen together, never one after the other.
       const hello = sayFrom(returningCustomer ? "openingBack" : "opening");
       const question = sayFrom("intent");
-      timers.push(setTimeout(() => setCaption(hello), Math.max(first, 0.4) * 1000));
-      timers.push(setTimeout(() => setChoicesOpen(true), 900));
-      timers.push(setTimeout(() => setCaption(question), 2600));
+      if (cameFrom.current === "lookingAround") {
+        // Back from the wall: he has already said hello. Straight to the question, with the answers there at once.
+        setCaption(question);
+        setChoicesOpen(true);
+      } else {
+        timers.push(setTimeout(() => setCaption(hello), Math.max(first, 0.4) * 1000));
+        timers.push(setTimeout(() => setChoicesOpen(true), 900));
+        timers.push(setTimeout(() => setCaption(question), 2600));
+      }
     } else {
       setChoicesOpen(true);
     }

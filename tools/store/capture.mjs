@@ -32,7 +32,11 @@ for (const [w, h] of [[390, 844], [430, 932]]) {
   await page.waitForTimeout(1200);
   await page.screenshot({ path: `${out}/J-collection-${w}x${h}.png` });
   await page.click(".store-collection__close");
-  await page.click('.store-ui__choice[data-choice="back"]');
+  await page.click('.store-ui__choice[data-choice="back"]'); // "Back to Jesse": the greeting again
+  await page.waitForSelector('.store[data-stage="greeting"]', { timeout: 15000 });
+  await page.waitForTimeout(2200);
+  await page.screenshot({ path: `${out}/K-back-to-jesse-${w}x${h}.png` });
+  await page.click('.store-ui__choice[data-choice="all"]');
   // Part 4: each product in turn (arrow key = one swipe), then the chosen-product moment on the last one.
   await page.waitForSelector('.store[data-stage="browsing"]', { timeout: 15000 });
   for (const name of ["D-gloves", "E-heavy-bag", "F2-thai-pads", "F-focus-mitts", "G-guards"]) {
