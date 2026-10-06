@@ -9,6 +9,8 @@ export interface WorldProps {
   readonly returning: boolean;
   readonly reducedMotion: boolean;
   readonly send: (event: StoreEventObject) => void;
+  /** The visitor tapped something on the wall while looking around: open its story over the store. */
+  readonly onOpenStory: (id: string) => void;
 }
 
-export const INSIDE: ReadonlySet<StoreStage> = new Set<StoreStage>(["greeting", "browsing", "productSelected", "builderLoading"]);
+export const INSIDE: ReadonlySet<StoreStage> = new Set<StoreStage>(["greeting", "browsing", "lookingAround", "productSelected", "builderLoading"]);

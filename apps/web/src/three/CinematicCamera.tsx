@@ -18,7 +18,7 @@ const ARRIVAL_LOOK = v(ENTRANCE_LOOK_PATH[0] ?? [0, 1.95, 0]);
 const TILT = { lookX: 0.65, lookY: 0.38, stepX: 0.22 } as const;
 
 /** Drives the one camera from the store's stage. No orbit, pan or pinch: the visitor cannot get lost (spec §0). */
-export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }: WorldProps) {
+export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }: Omit<WorldProps, "onOpenStory">) {
   const camera = useThree((s) => s.camera) as PerspectiveCamera;
   const aspect = useThree((s) => s.viewport.aspect);
   const anchors = useScene((s) => s.anchors);
@@ -81,14 +81,21 @@ export function CinematicCamera({ bootstrap, stage, index, reducedMotion, send }
       });
       return;
     }
+    // Looking around: back to where the visitor stood for the greeting, facing Jesse's wall, where the stories are.
+    if (stage === "lookingAround") {
+      const to = mark("CAM_GREETING");
+      const look = mark("LOOK_GREETING");
+      if (to && look) controller.moveTo(to, look, reducedMotion ? 0 : was === "greeting" ? 0.8 : TIMING.firstProduct, "sine.inOut", () => base.current.copy(to));
+      return;
+    }
     if (!ready || !product) return;
     if (stage === "browsing" || stage === "productSelected" || stage === "builderLoading") {
       const focus = stage !== "browsing";
       const to = mark(`${focus ? "CAM_FOCUS" : "CAM_PRODUCT"}_${product.cameraAnchor}`);
       const look = mark(`LOOK_PRODUCT_${product.cameraAnchor}`);
       if (!to || !look) return;
-      const seconds = reducedMotion ? 0 : focus || was === "productSelected" ? TIMING.focus : was === "greeting" ? TIMING.firstProduct : TIMING.swipe;
-      controller.moveTo(to, look, seconds, was === "greeting" ? "sine.inOut" : "power2.inOut", () => base.current.copy(to));
+      const seconds = reducedMotion ? 0 : focus || was === "productSelected" ? TIMING.focus : was === "greeting" || was === "lookingAround" ? TIMING.firstProduct : TIMING.swipe;
+      controller.moveTo(to, look, seconds, was === "greeting" || was === "lookingAround" ? "sine.inOut" : "power2.inOut", () => base.current.copy(to));
     }
   }, [stage, index, ready, anchors, bootstrap.products, controller, reducedMotion, send]);
 

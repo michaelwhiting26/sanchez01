@@ -28,6 +28,25 @@ describe("store machine", () => {
     expect(a.getSnapshot().context.currentProductIndex).toBe(0);
   });
 
+  it("lets the visitor answer the greeting by naming a product, or by looking around", () => {
+    const a = start();
+    for (const type of ["READY", "ENTER", "CAMERA_COMPLETE"] as const) a.send({ type });
+    a.send({ type: "CHOOSE_PRODUCT", index: 1 });
+    expect(a.getSnapshot().value).toBe("browsing");
+    expect(a.getSnapshot().context.currentProductIndex).toBe(1);
+
+    const b = start();
+    for (const type of ["READY", "ENTER", "CAMERA_COMPLETE"] as const) b.send({ type });
+    b.send({ type: "LOOK_AROUND" });
+    expect(b.getSnapshot().value).toBe("lookingAround");
+    b.send({ type: "SELECT_PRODUCT", productId: "gloves", index: 0 }); // nothing to buy while looking at the wall
+    expect(b.getSnapshot().value).toBe("lookingAround");
+    b.send({ type: "BACK" });
+    expect(b.getSnapshot().value).toBe("browsing");
+    b.send({ type: "LOOK_AROUND" }); // and it can be reached again from the products
+    expect(b.getSnapshot().value).toBe("lookingAround");
+  });
+
   it("stops at the first and last product", () => {
     const a = start();
     for (const type of ["READY", "ENTER", "CAMERA_COMPLETE", "GREETING_COMPLETE"] as const) a.send({ type });

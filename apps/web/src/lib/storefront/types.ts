@@ -43,6 +43,17 @@ export interface VoiceClip {
   readonly visemes: readonly Viseme[];
 }
 
+/** Something on the workshop wall the visitor can tap while looking around: a short film or picture with a line about it. */
+export interface WallStory {
+  readonly id: string;
+  readonly title: string;
+  readonly caption: string;
+  readonly video: string;
+  readonly poster: string;
+  /** Where its hotspot sits in the room, in the web scene's space. */
+  readonly position: readonly [number, number, number];
+}
+
 export interface StoreBootstrap {
   readonly version: string;
   /** `workshopLight` is the room's baked light: a picture that must come from the same bake as `workshop` (tools/store/bake_light.py). */
@@ -50,6 +61,8 @@ export interface StoreBootstrap {
   readonly audio: { readonly streetTone: string | null; readonly roomTone: string | null; readonly doorOpen: string | null };
   readonly voice: { readonly welcome: VoiceClip; readonly welcomeBack: VoiceClip };
   readonly products: readonly StoreProduct[];
+  /** The stories on the wall. One to begin with, to prove the idea (owner, 6 Oct 2026). */
+  readonly wall: readonly WallStory[];
   readonly experience: { readonly greetingEnabled: boolean; readonly soundDefault: boolean };
 }
 
@@ -63,5 +76,8 @@ export const STORE_EVENTS = [
   "product_swiped",
   "product_selected",
   "builder_started",
+  "greeting_choice",
+  "look_around_started",
+  "story_opened",
 ] as const;
 export type StoreEvent = (typeof STORE_EVENTS)[number];

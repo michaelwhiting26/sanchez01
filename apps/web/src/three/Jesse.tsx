@@ -19,7 +19,7 @@ const facing = (from: Vector3, to: Vector3): number => Math.atan2(to.x - from.x,
  * The model has no mouth shapes and no wave or point clips yet, so the greeting uses his turn, step and nod; lip sync is wired (experience/lip-sync.ts)
  * and starts working when a model with mouth shapes and a recorded line are supplied.
  */
-export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: WorldProps) {
+export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: Omit<WorldProps, "onOpenStory">) {
   const gltf = useGltf(stage === "boot" ? null : bootstrap.scene.jesse);
   const anchors = useScene((s) => s.anchors);
   const camera = useThree((s) => s.camera);
@@ -87,7 +87,7 @@ export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: Wor
       if (nod) tl.call(() => void (nod.reset().setLoop(LoopOnce, 1).fadeIn(0.15).play(), nod.fadeOut(0.3).startAt(rig.mixer.time + 1.4)), undefined, returning ? 0.5 : 1.6);
       const wall = anchors.get("PRODUCT_GLOVES");
       if (wall) tl.call(() => void (targetYaw.current = facing(g.position, wall)), undefined, returning ? 1.4 : 3.5);
-    } else if (stage === "browsing" || stage === "productSelected") {
+    } else if (stage === "browsing" || stage === "productSelected" || stage === "lookingAround") {
       const aside = anchors.get("JESSE_ASIDE");
       if (aside && g.position.distanceTo(aside) > 0.2) {
         tl.call(() => void (targetYaw.current = facing(g.position, aside)), undefined, 0);

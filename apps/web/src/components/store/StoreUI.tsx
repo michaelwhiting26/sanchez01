@@ -1,6 +1,6 @@
 "use client";
 
-import type { StoreBootstrap, StoreProduct } from "@/lib/storefront/types";
+import type { StoreBootstrap, StoreProduct, WallStory } from "@/lib/storefront/types";
 import type { StoreEventObject, StoreStage } from "@/experience/store-machine";
 
 export function formatPrice(product: StoreProduct): string {
@@ -22,11 +22,21 @@ interface Props {
   readonly onSkipGreeting: () => void;
   readonly onToggleAudio: () => void;
   readonly onEnableTilt: () => void;
+  /** True once Jesse has started speaking: the answers appear while he talks, not after. */
+  readonly choicesOpen: boolean;
+  /** The wall story the visitor has opened, if any. */
+  readonly story: WallStory | null;
+  readonly onChoose: (choice: number | "all" | "look") => void;
+  readonly onLookAround: () => void;
+  readonly onOpenStory: (id: string) => void;
+  readonly onCloseStory: () => void;
   readonly onDesign: () => void;
 }
 
 /** Everything drawn over the 3D world. Kept to a small share of the screen: the room is the interface (spec Part 4: 80 to 90% world). */
-export function StoreUI({ bootstrap, stage, index, caption, audioEnabled, canEnter, tiltPrompt, send, onEnter, onSkipGreeting, onToggleAudio, onEnableTilt, onDesign }: Props) {
+export function StoreUI(props: Props) {
+  const { bootstrap, stage, index, caption, audioEnabled, canEnter, tiltPrompt, send, onEnter, onToggleAudio, onEnableTilt, onDesign } = props;
+  const { choicesOpen, story, onChoose, onLookAround, onOpenStory, onCloseStory } = props;
   const products = bootstrap.products;
   const product = products[index];
   const outside = stage === "boot" || stage === "arrive";
@@ -56,14 +66,60 @@ export function StoreUI({ bootstrap, stage, index, caption, audioEnabled, canEnt
       ) : null}
 
       {stage === "greeting" ? (
-        <>
+        <div className="store-ui__greet">
           <p className="store-ui__caption" aria-live="polite">
             {caption}
           </p>
-          <button type="button" className="store-ui__skip" onClick={onSkipGreeting}>
-            Skip
-          </button>
-        </>
+          {/* He asks, the visitor answers. The first two products by name, everything, or the optional look around. */}
+          <nav className={`store-ui__choices${choicesOpen ? " is-open" : ""}`} aria-label="What are you here for?">
+            {products.slice(0, 2).map((p, i) => (
+              <button key={p.id} type="button" className="store-ui__choice" data-choice={p.id} onClick={() => onChoose(i)} tabIndex={choicesOpen ? 0 : -1}>
+                {p.name}
+              </button>
+            ))}
+            <button type="button" className="store-ui__choice" data-choice="all" onClick={() => onChoose("all")} tabIndex={choicesOpen ? 0 : -1}>
+              See everything
+            </button>
+            <button type="button" className="store-ui__choice store-ui__choice--quiet" data-choice="look" onClick={() => onChoose("look")} tabIndex={choicesOpen ? 0 : -1}>
+              Look around
+            </button>
+          </nav>
+        </div>
+      ) : null}
+
+      {stage === "lookingAround" ? (
+        <div className="store-ui__greet">
+          <p className="store-ui__caption" aria-live="polite">
+            {caption}
+          </p>
+          {/* The wall's stories as ordinary buttons too, so nobody has to find a marker in the room to reach one. */}
+          <nav className="store-ui__choices is-open" aria-label="On the wall">
+            {bootstrap.wall.map((s) => (
+              <button key={s.id} type="button" className="store-ui__choice" data-story={s.id} onClick={() => onOpenStory(s.id)}>
+                {s.title}
+              </button>
+            ))}
+            <button type="button" className="store-ui__choice store-ui__choice--quiet" data-choice="back" onClick={() => send({ type: "BACK" })}>
+              Back to the products
+            </button>
+          </nav>
+        </div>
+      ) : null}
+
+      {story ? (
+        <div className="store-story" role="dialog" aria-modal="true" aria-label={story.title}>
+          <button type="button" className="store-story__shade" onClick={onCloseStory} aria-label="Close" />
+          <figure className="store-story__frame">
+            <video className="store-story__film" src={story.video} poster={story.poster} autoPlay loop playsInline muted={!audioEnabled} controls />
+            <figcaption className="store-story__words">
+              <span className="store-story__title">{story.title}</span>
+              <span className="store-story__caption">{story.caption}</span>
+            </figcaption>
+            <button type="button" className="store-story__close" onClick={onCloseStory}>
+              Close
+            </button>
+          </figure>
+        </div>
       ) : null}
 
       {(stage === "browsing" || stage === "productSelected" || stage === "builderLoading") && product ? (
@@ -103,6 +159,11 @@ export function StoreUI({ bootstrap, stage, index, caption, audioEnabled, canEnt
                 ›
               </button>
             </nav>
+          ) : null}
+          {stage === "browsing" ? (
+            <button type="button" className="store-ui__look" onClick={onLookAround}>
+              Look around the workshop
+            </button>
           ) : null}
         </section>
       ) : null}

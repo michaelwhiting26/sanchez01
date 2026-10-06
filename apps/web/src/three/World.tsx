@@ -9,6 +9,7 @@ import { Exterior } from "./Exterior";
 import { Jesse } from "./Jesse";
 import { LODController } from "./LODController";
 import { ProductWall } from "./ProductWall";
+import { WallSpots } from "./WallSpots";
 import { Workshop } from "./Workshop";
 import { useScene } from "./scene-store";
 import type { WorldProps } from "./types";
@@ -30,6 +31,7 @@ export default function World(props: WorldProps) {
       <Workshop {...props} />
       <ProductWall {...props} />
       <Jesse {...props} />
+      <WallSpots {...props} />
       <Dust {...props} />
       <CinematicCamera {...props} />
       <LODController />

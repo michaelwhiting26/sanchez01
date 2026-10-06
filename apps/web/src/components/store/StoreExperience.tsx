@@ -9,6 +9,7 @@ import { flushEvents, track } from "@/experience/experience-events";
 import { loadLightMap } from "@/experience/light-map";
 import { storeMachine, type StoreEventObject, type StoreStage } from "@/experience/store-machine";
 import { TIMING } from "@/lib/storefront/config";
+import { sayFrom } from "@/lib/storefront/jesse-lines";
 import { prefersReducedMotion, supportsWebGL2, wantsLightExperience } from "@/lib/storefront/device";
 import { requestTiltPermission, startTilt, tiltNeedsPermission } from "@/lib/storefront/tilt";
 import type { StoreBootstrap } from "@/lib/storefront/types";
@@ -35,6 +36,8 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [caption, setCaption] = useState<string | null>(null);
   const [tiltPrompt, setTiltPrompt] = useState(false);
+  const [storyId, setStoryId] = useState<string | null>(null);
+  const [choicesOpen, setChoicesOpen] = useState(false);
   const stageEl = useRef<HTMLDivElement>(null);
   const audio = useMemo(() => new AudioController(), []);
 
@@ -119,10 +122,15 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     if (length > 0) {
       const first = clip.captions[0]?.start ?? 0;
       timers.push(setTimeout(() => void audio.play(returningCustomer ? "welcome-back" : "welcome"), first * 1000));
-      for (const line of clip.captions) {
-        timers.push(setTimeout(() => setCaption(line.text), line.start * 1000));
-        timers.push(setTimeout(() => setCaption((c) => (c === line.text ? null : c)), line.end * 1000));
-      }
+      // Two short lines from his pools: a hello, then the question that hands over. The question stays up with the choices beside it,
+      // and the choices arrive while he is still saying hello: talking and choosing happen together, never one after the other.
+      const hello = sayFrom(returningCustomer ? "openingBack" : "opening");
+      const question = sayFrom("intent");
+      timers.push(setTimeout(() => setCaption(hello), Math.max(first, 0.4) * 1000));
+      timers.push(setTimeout(() => setChoicesOpen(true), 900));
+      timers.push(setTimeout(() => setCaption(question), 2600));
+    } else {
+      setChoicesOpen(true);
     }
     timers.push(
       setTimeout(() => {
@@ -133,8 +141,42 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     return () => {
       for (const t of timers) clearTimeout(t);
       setCaption(null);
+      setChoicesOpen(false);
     };
   }, [stage, returningCustomer, bootstrap.voice, bootstrap.experience.greetingEnabled, audio, send]);
+
+  // Answering Jesse. Naming a product goes straight to it; "look around" is the optional branch to the wall and its stories.
+  const onChoose = useCallback(
+    (choice: number | "all" | "look") => {
+      if (stage !== "greeting") return;
+      track("greeting_choice", { choice: String(choice) });
+      if (choice === "look") send({ type: "LOOK_AROUND" });
+      else if (choice === "all") send({ type: "GREETING_COMPLETE" });
+      else send({ type: "CHOOSE_PRODUCT", index: choice });
+    },
+    [stage, send],
+  );
+  const onLookAround = useCallback(() => send({ type: "LOOK_AROUND" }), [send]);
+
+  useEffect(() => {
+    if (stage !== "lookingAround") return;
+    track("look_around_started");
+    const line = sayFrom("lookAround");
+    setCaption(line);
+    const t = setTimeout(() => setCaption((c) => (c === line ? null : c)), 4500);
+    return () => {
+      clearTimeout(t);
+      setCaption(null);
+      setStoryId(null);
+    };
+  }, [stage]);
+
+  const onOpenStory = useCallback((id: string) => {
+    track("story_opened", { id });
+    setStoryId(id);
+  }, []);
+  const onCloseStory = useCallback(() => setStoryId(null), []);
+  const story = bootstrap.wall.find((s) => s.id === storyId) ?? null;
 
   // Funnel events: when browsing starts, and how long each product held the visitor's attention.
   const viewed = useRef<{ index: number; at: number } | null>(null);
@@ -169,6 +211,8 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   // Swipe between products; arrow keys do the same on a keyboard.
   const stageRef = useRef(stage);
   stageRef.current = stage;
+  const storyRef = useRef(storyId);
+  storyRef.current = storyId;
   useEffect(() => {
     const el = stageEl.current;
     if (!el || mode !== "3d") return;
@@ -180,7 +224,11 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     const key = (e: KeyboardEvent): void => {
       if (e.key === "ArrowRight") send({ type: "NEXT_PRODUCT" });
       else if (e.key === "ArrowLeft") send({ type: "PREV_PRODUCT" });
-      else if (e.key === "Escape") send({ type: "BACK" });
+      else if (e.key === "Escape") {
+        // Escape closes an open story first; only then does it step back out of where the visitor is.
+        if (storyRef.current) setStoryId(null);
+        else send({ type: "BACK" });
+      }
     };
     window.addEventListener("keydown", key);
     return () => {
@@ -193,7 +241,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   return (
     <div className="store" ref={stageEl} data-stage={stage}>
       <div className="store__canvas" aria-hidden="true">
-        {mode === "3d" ? <World bootstrap={bootstrap} stage={stage} index={index} returning={returningCustomer} reducedMotion={reducedMotion} send={send} /> : null}
+        {mode === "3d" ? <World bootstrap={bootstrap} stage={stage} index={index} returning={returningCustomer} reducedMotion={reducedMotion} send={send} onOpenStory={onOpenStory} /> : null}
       </div>
       <StoreUI
         bootstrap={bootstrap}
@@ -208,6 +256,12 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
         onSkipGreeting={finishGreeting}
         onToggleAudio={onToggleAudio}
         onEnableTilt={onEnableTilt}
+        choicesOpen={choicesOpen}
+        story={story}
+        onChoose={onChoose}
+        onLookAround={onLookAround}
+        onOpenStory={onOpenStory}
+        onCloseStory={onCloseStory}
         onDesign={onDesign}
       />
     </div>

@@ -1,4 +1,4 @@
-import type { StoreBootstrap, StoreProduct } from "./types";
+import type { StoreBootstrap, StoreProduct, WallStory } from "./types";
 
 /**
  * The store's content. This is the source for GET /api/storefront/bootstrap until the products table (migration 002) is filled from an admin.
@@ -13,6 +13,21 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
   { id: "thai-pads", slug: "thai-pads", name: "Thai Pads", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "THAI_PADS", modelAsset: `${S}/standin-thai-pads.glb`, builderRoute: "/build/thai-pads", sortOrder: 3, active: true, standIn: true, hangs: false, displayHeight: 0.44 },
   { id: "focus-mitts", slug: "focus-mitts", name: "Focus Mitts", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "MITTS", modelAsset: `${S}/focus-mitts.glb`, builderRoute: "/build/focus-mitts", sortOrder: 4, active: true, standIn: false, hangs: false, displayHeight: 0.3, modelRotation: [Math.PI / 2, 0, 0] },
   { id: "guards", slug: "guards", name: "Guards", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GUARDS", modelAsset: `${S}/standin-guards.glb`, builderRoute: "/build/guards", sortOrder: 5, active: true, standIn: true, hangs: false, displayHeight: 0.42 },
+];
+
+/**
+ * The wall. Each entry is one of Jesse's own films from his current site, already in this project at web size. The hotspot for the first sits on
+ * the gilt frame behind his sewing table. Captions state only what the film shows; his own words about it are for him to record.
+ */
+export const STORE_WALL: readonly WallStory[] = [
+  {
+    id: "the-workshop",
+    title: "The workshop",
+    caption: "Jesse at the sewing machine. Designed in Sydney. Handmade in Pattaya.",
+    video: "/assets/carousel/clip1.mp4",
+    poster: "/assets/carousel/clip1.jpg",
+    position: [6.05, 1.65, -2.75],
+  },
 ];
 
 export function getStoreBootstrap(): StoreBootstrap {
@@ -35,6 +50,7 @@ export function getStoreBootstrap(): StoreBootstrap {
       welcomeBack: { src: null, duration: 1.2, captions: [{ text: "Welcome back.", start: 0.6, end: 1.8 }], visemes: [] },
     },
     products: STORE_PRODUCTS.filter((p) => p.active).toSorted((a, b) => a.sortOrder - b.sortOrder),
+    wall: STORE_WALL,
     experience: { greetingEnabled: true, soundDefault: false },
   };
 }
@@ -62,4 +78,5 @@ export const ENTRANCE_LOOK_PATH: ReadonlyArray<readonly [number, number, number]
  * Seconds for each camera move and for the greeting. Deliberately unhurried (owner, 6 Oct 2026: the faster moves swung the view round and felt
  * like motion sickness on a phone). The walk-in covers about twelve metres and turns to face Jesse; the first product is a quarter turn back.
  */
-export const TIMING = { enter: 5.8, firstProduct: 3.0, swipe: 1.2, focus: 1.0, greeting: 4.0, greetingBack: 3.2 } as const;
+/** `greeting` and `greetingBack` are how long Jesse waits for an answer before showing the first product himself. He asks; the visitor chooses. */
+export const TIMING = { enter: 5.8, firstProduct: 3.0, swipe: 1.2, focus: 1.0, greeting: 12, greetingBack: 12 } as const;
