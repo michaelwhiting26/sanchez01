@@ -333,9 +333,10 @@ def build_workshop():
         empty(f"CAM_FOCUS_{pid}", (x - 0.05, 1.62 if hangs else 1.34, -3.6 if hangs else -5.02))
 
     # Jesse's sewing table (where he is working when the visitor walks in) and the wall behind him, both taken from his real workshop
-    seat_x, seat_z = jesse_workshop.sewing_station(k, mat, hexc, P, timber)
+    (seat_x, seat_z), scanned = jesse_workshop.sewing_station(k, mat, hexc, P, timber)
     banner, wall_tiles = jesse_workshop.workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=W / 2, ceiling=H - 0.22)
     k.pendant(shade, bulb, P["steel"], 2.9, 2.5, -3.6, H - 0.22, cd=10.0)   # high enough to stay out of the shot of him at the machine
+    k.lights.append(("point", (2.86, 1.2, -3.25), 2.2, "#ffe2b8"))   # his work lamp, over the needle
     # a second table on the left: hides laid out, thread, a box of offcuts
     k.bx(timber, -4.1, -3.2, 0.87, 0.94, -3.5, -1.7, 0.008)
     for lx, lz in ((-4.02, -3.42), (-3.28, -3.42), (-4.02, -1.78), (-3.28, -1.78)):
@@ -372,12 +373,12 @@ def build_workshop():
         sf._uv_from_world(joined[name], *tiles)
     banner.name = "WS_banner"
     for name, o in joined.items():
-        if name not in textured:
+        if name not in textured and not o.data.materials[0].get("keep_uv"):
             while o.data.uv_layers:
                 o.data.uv_layers.remove(o.data.uv_layers[0])
     # Baked light: everything in this file is fixed, so everything except the glowing parts themselves gets it.
     glowing = ("lamp_bulb", "niche_light", "task_lamp_glow")
-    fixed = [o for name, o in joined.items() if name not in glowing] + [banner] + wall_tiles
+    fixed = [o for name, o in joined.items() if name not in glowing] + [banner] + wall_tiles + scanned
     bake_light.strip_hidden(fixed, B((-W / 2, 0, 0)), B((W / 2, H, -D)))  # opposite corners: Blender's depth axis runs the other way to web z
     light = bake_light.run(fixed, k.lights, OUT, "workshop-light", B, hexc, os.path.join(os.path.dirname(os.path.abspath(__file__)), "baked"),
                            size=BAKE_SIZE, samples=BAKE_SAMPLES, bake=BAKE)
