@@ -23,15 +23,15 @@ for (const [w, h] of [[390, 844], [430, 932]]) {
     await page.waitForTimeout(ms);
     await page.screenshot({ path: `${out}/${name}-${w}x${h}.png` });
   }
-  // The optional branch: answer Jesse with "Look around", open the story on the wall, close it, and go back to the products.
+  // The optional branch: answer Jesse with "View collection", open the full collection from the wall, close it, and go back to the products.
   await page.click('.store-ui__choice[data-choice="look"]');
   await page.waitForSelector('.store[data-stage="lookingAround"]', { timeout: 15000 });
   await page.waitForTimeout(3600);
   await page.screenshot({ path: `${out}/I-looking-around-${w}x${h}.png` });
-  await page.click(".store-ui__choice[data-story]");
-  await page.waitForTimeout(1500);
-  await page.screenshot({ path: `${out}/J-wall-story-${w}x${h}.png` });
-  await page.click(".store-story__close");
+  await page.click('.store-ui__choice[data-choice="collection"]');
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${out}/J-collection-${w}x${h}.png` });
+  await page.click(".store-collection__close");
   await page.click('.store-ui__choice[data-choice="back"]');
   // Part 4: each product in turn (arrow key = one swipe), then the chosen-product moment on the last one.
   await page.waitForSelector('.store[data-stage="browsing"]', { timeout: 15000 });

@@ -96,16 +96,11 @@ export function StoreUI(props: Props) {
           <p className="store-ui__caption" aria-live="polite">
             {caption}
           </p>
-          {/* The wall's stories as ordinary buttons too, so nobody has to find a marker in the room to reach one. */}
+          {/* The wall view: open the full collection, or go back. (The workshop film's button was removed by the owner, 6 Oct 2026.) */}
           <nav className="store-ui__choices is-open" aria-label="On the wall">
             <button type="button" className="store-ui__choice store-ui__choice--main" data-choice="collection" onClick={() => onOpenStory("collection")}>
               See every piece
             </button>
-            {bootstrap.wall.map((s) => (
-              <button key={s.id} type="button" className="store-ui__choice" data-story={s.id} onClick={() => onOpenStory(s.id)}>
-                {s.title}
-              </button>
-            ))}
             <button type="button" className="store-ui__choice store-ui__choice--quiet" data-choice="back" onClick={() => send({ type: "BACK" })}>
               Back to the products
             </button>
