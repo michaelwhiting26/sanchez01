@@ -38,7 +38,7 @@ def _picture(k, m, x, y0, y1, z0, z1):
     B = k.B
     me = bpy.data.meshes.new("banner")
     me.from_pydata([B((x, y0, z0)), B((x, y0, z1)), B((x, y1, z1)), B((x, y1, z0))], [], [(0, 1, 2, 3)])
-    uv = me.uv_layers.new().data
+    uv = me.uv_layers.new(name="UVMap").data
     for i, co in enumerate(((0, 0), (1, 0), (1, 1), (0, 1))):
         uv[i].uv = co
     o = bpy.data.objects.new("banner", me)
@@ -188,8 +188,11 @@ def workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=6.2, cei
         pass
     b = bm.node_tree.nodes.get("Principled BSDF")
     b.inputs["Roughness"].default_value = 0.85
+    where = bm.node_tree.nodes.new("ShaderNodeUVMap")   # the banner's own layout, by name (it also carries one for baked light)
+    where.uv_map = "UVMap"
     tex = bm.node_tree.nodes.new("ShaderNodeTexImage")
     tex.image = img
+    bm.node_tree.links.new(where.outputs["UV"], tex.inputs["Vector"])
     bm.node_tree.links.new(tex.outputs["Color"], b.inputs["Base Color"])
     k.bx(joinery, x - 0.03, x, 1.3, 2.16, -1.82, -0.42, 0.004)
     return _picture(k, bm, x - 0.032, 1.33, 2.13, -1.79, -0.45)

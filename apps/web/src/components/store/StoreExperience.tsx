@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { assetManager } from "@/experience/asset-manager";
 import { flushEvents, track } from "@/experience/experience-events";
+import { loadLightMap } from "@/experience/light-map";
 import { storeMachine, type StoreEventObject, type StoreStage } from "@/experience/store-machine";
 import { TIMING } from "@/lib/storefront/config";
 import { prefersReducedMotion, supportsWebGL2, wantsLightExperience } from "@/lib/storefront/device";
@@ -51,7 +52,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     } catch {
       /* storage blocked: treat as a first visit */
     }
-    void Promise.all([assetManager.load(bootstrap.scene.exterior), assetManager.load(bootstrap.scene.workshop)])
+    void Promise.all([assetManager.load(bootstrap.scene.exterior), assetManager.load(bootstrap.scene.workshop), loadLightMap(bootstrap.scene.workshopLight)])
       .then(() => {
         if (!live) return;
         send({ type: "READY", returningCustomer: seen });
@@ -61,7 +62,7 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     return () => {
       live = false;
     };
-  }, [bootstrap.scene.exterior, bootstrap.scene.workshop, send]);
+  }, [bootstrap.scene.exterior, bootstrap.scene.workshop, bootstrap.scene.workshopLight, send]);
 
   useEffect(() => () => audio.dispose(), [audio]);
 

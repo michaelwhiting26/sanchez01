@@ -9,6 +9,7 @@ import bpy, math, os
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+TEXTURE_UV = "UVMap"    # the name of the layout the tiling textures are drawn on (Blender's default name for a mesh's first layout)
 WALL_Z = 0.25           # street face of the brick
 FRONT_Z = 0.29          # street face of the timber shop front (40 mm proud of the brick)
 SHOP_X = 3.0            # the timber shop front runs from -SHOP_X to +SHOP_X
@@ -180,11 +181,17 @@ def _textured(name, colour_img, normal_img, rough, normal_strength=1.0, metal=0.
     b = nt.nodes.get("Principled BSDF")
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
+    # The textures name the layout they are drawn on. A surface can also carry a second layout for baked light (bake_light.py), and neither
+    # Blender nor the exported file may be left to guess which is which.
+    where = nt.nodes.new("ShaderNodeUVMap")
+    where.uv_map = TEXTURE_UV
     col = nt.nodes.new("ShaderNodeTexImage")
     col.image = colour_img
+    nt.links.new(where.outputs["UV"], col.inputs["Vector"])
     nt.links.new(col.outputs["Color"], b.inputs["Base Color"])
     nor = nt.nodes.new("ShaderNodeTexImage")
     nor.image = normal_img
+    nt.links.new(where.outputs["UV"], nor.inputs["Vector"])
     nor.image.colorspace_settings.name = "Non-Color"
     nm = nt.nodes.new("ShaderNodeNormalMap")
     nm.inputs["Strength"].default_value = normal_strength
@@ -198,6 +205,7 @@ class Kit:
     def __init__(self, B, mat, hexc):
         self.B, self.mat, self.hexc = B, mat, hexc
         self.made = []
+        self.lights = []   # where the fixtures put light, for the bake: (kind, position, candela, colour[, length])
 
     def bx(self, m, x0, x1, y0, y1, z0, z1, bevel=0.0):
         """A box from its corners, edges eased when asked."""
@@ -258,8 +266,9 @@ class Kit:
         self.made.append(o)
         return o
 
-    def pendant(self, shade, glow, cord, x, y, z, ceiling, r=0.2):
-        """A black enamel shade on a cord with a lit bulb under it. (x, y, z) is the rim of the shade."""
+    def pendant(self, shade, glow, cord, x, y, z, ceiling, r=0.2, cd=9.0):
+        """A black enamel shade on a cord with a lit bulb under it. (x, y, z) is the rim of the shade; `cd` is how bright the bulb is, in candela."""
+        self.lights.append(("point", (x, y - 0.03, z), cd, "#ffc58a"))
         self.taper(shade, (x, y + 0.085, z), r, 0.035, 0.17, 20, open_ends=True)
         self.cyl(shade, (x, y + 0.2, z), 0.03, 0.07, verts=10)
         self.cyl(cord, (x, (y + 0.23 + ceiling) / 2, z), 0.006, ceiling - y - 0.23, verts=6)

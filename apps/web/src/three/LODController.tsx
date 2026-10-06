@@ -13,5 +13,8 @@ export function LODController() {
   useEffect(() => {
     setDpr(Math.min(window.devicePixelRatio, dpr));
   }, [dpr, setDpr]);
+  // Development only: `?quality=full` holds the full quality level whatever the frame rate, so the live product shadow can be checked on a
+  // slow test browser. The check never runs in a production build.
+  if (process.env.NODE_ENV !== "production" && new URLSearchParams(window.location.search).get("quality") === "full") return null;
   return <PerformanceMonitor bounds={() => [40, 58]} flipflops={3} onDecline={() => setQuality(1, 1)} onIncline={() => setQuality(0, 1.5)} onFallback={() => setQuality(1, 1)} />;
 }

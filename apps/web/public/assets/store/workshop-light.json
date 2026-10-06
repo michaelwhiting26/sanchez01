@@ -1,0 +1,11 @@
+{
+ "fingerprint": "38d93f8fe13d971d9f5f",
+ "scale": 1.0,
+ "size": 2048,
+ "samples": 256,
+ "seconds": 133.7,
+ "gpu": true,
+ "peak": 0.717,
+ "covered": 0.572,
+ "bytes": 565536
+}

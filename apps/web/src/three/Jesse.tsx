@@ -3,7 +3,7 @@
 import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { AnimationMixer, Box3, LoopOnce, MathUtils, Mesh, MeshStandardMaterial, SkinnedMesh, Vector3, type AnimationAction, type Group } from "three";
+import { AnimationMixer, Box3, CanvasTexture, LoopOnce, MathUtils, Mesh, MeshStandardMaterial, SkinnedMesh, Vector3, type AnimationAction, type Group } from "three";
 import { useGltf } from "./use-gltf";
 import { useScene } from "./scene-store";
 import type { WorldProps } from "./types";
@@ -119,10 +119,32 @@ export function Jesse({ bootstrap, stage, index, returning, reducedMotion }: Wor
     g.rotation.y = MathUtils.euclideanModulo(g.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
   });
 
+  // He moves, so the room's baked shadows cannot include his. A soft dark patch on the floor under him stands in for it (specs/09): it follows his
+  // feet because it sits inside his own group. It is a patch, not a figure-shaped shadow, and nothing about the model itself is touched.
+  const patch = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const g = c.getContext("2d");
+    if (g) {
+      const fade = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      fade.addColorStop(0, "rgb(0 0 0 / 0.5)");
+      fade.addColorStop(0.55, "rgb(0 0 0 / 0.22)");
+      fade.addColorStop(1, "rgb(0 0 0 / 0)");
+      g.fillStyle = fade;
+      g.fillRect(0, 0, 128, 128);
+    }
+    return new CanvasTexture(c);
+  }, []);
+  useEffect(() => () => patch.dispose(), [patch]);
+
   if (!gltf || !rig) return null;
   return (
     <group ref={root}>
       <primitive object={gltf.scene} scale={rig.scale} />
+      <mesh rotation-x={-Math.PI / 2} position-y={0.016} scale={[1.15, 0.9, 1]} renderOrder={1}>
+        <circleGeometry args={[0.5, 32]} />
+        <meshBasicMaterial map={patch} transparent depthWrite={false} toneMapped={false} />
+      </mesh>
     </group>
   );
 }

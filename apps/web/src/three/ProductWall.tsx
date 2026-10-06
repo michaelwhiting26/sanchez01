@@ -1,8 +1,8 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import { Box3, Euler, MathUtils, Matrix4, Vector3, type Group } from "three";
+import { useEffect, useMemo, useRef } from "react";
+import { Box3, Euler, MathUtils, Matrix4, Mesh, Vector3, type Group } from "three";
 import type { StoreProduct } from "@/lib/storefront/types";
 import { useGltf } from "./use-gltf";
 import { useScene } from "./scene-store";
@@ -40,6 +40,13 @@ function ProductModel({ product, position, stage, index, send }: WorldProps & { 
     const y = product.hangs ? -box.max.y * scale : -box.min.y * scale;
     return { rotation, scale, offset: new Vector3(-centre.x * scale, y, -centre.z * scale) };
   }, [gltf, product.displayHeight, product.hangs, product.modelRotation]);
+
+  // Products are the one thing in the room that casts a live shadow (onto the counter, from the light that follows the product in view).
+  useEffect(() => {
+    gltf?.scene.traverse((o) => {
+      if (o instanceof Mesh) o.castShadow = true;
+    });
+  }, [gltf]);
 
   const active = index === position && (stage === "browsing" || stage === "productSelected");
   useFrame((_, dt) => {

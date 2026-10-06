@@ -45,7 +45,8 @@ export interface VoiceClip {
 
 export interface StoreBootstrap {
   readonly version: string;
-  readonly scene: { readonly exterior: string; readonly workshop: string; readonly jesse: string };
+  /** `workshopLight` is the room's baked light: a picture that must come from the same bake as `workshop` (tools/store/bake_light.py). */
+  readonly scene: { readonly exterior: string; readonly workshop: string; readonly workshopLight: string; readonly jesse: string };
   readonly audio: { readonly streetTone: string | null; readonly roomTone: string | null; readonly doorOpen: string | null };
   readonly voice: { readonly welcome: VoiceClip; readonly welcomeBack: VoiceClip };
   readonly products: readonly StoreProduct[];

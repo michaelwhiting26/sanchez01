@@ -18,7 +18,7 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
 export function getStoreBootstrap(): StoreBootstrap {
   return {
     version: "2026.10.1",
-    scene: { exterior: `${S}/exterior.glb`, workshop: `${S}/workshop.glb`, jesse: `${S}/jesse.glb` },
+    scene: { exterior: `${S}/exterior.glb`, workshop: `${S}/workshop.glb`, workshopLight: `${S}/workshop-light.webp`, jesse: `${S}/jesse.glb` },
     // TODO(owner): record the real workshop room tone, the street tone and the door. Null means silent; nothing is faked with stock sound.
     audio: { streetTone: null, roomTone: null, doorOpen: null },
     voice: {

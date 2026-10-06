@@ -15,12 +15,13 @@ import type { WorldProps } from "./types";
 
 /**
  * The one persistent WebGL canvas for Parts 1 to 4 (spec §0). It is mounted once and never rebuilt between stages.
- * Lighting is deliberately cheap: one environment, a sky and key light that change between street and room, the lantern light outside and three warm room lights.
- * Nothing is baked into the surfaces yet, and nothing casts a shadow.
+ * The workshop's light and shadow are baked (specs/09): ray-traced once in Blender and read from a picture, see Workshop.tsx. What is worked out live
+ * is only what moves or shines: faint lights at the fixtures for highlights on brass, steel and leather, the light on the product in view with its
+ * one real shadow, and a little fill for Jesse and the products. The street is still lit live.
  */
 export default function World(props: WorldProps) {
   return (
-    <Canvas dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} camera={{ fov: 50, near: 0.1, far: 40, position: [0.45, 1.62, 7.65] }}>
+    <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} camera={{ fov: 50, near: 0.1, far: 40, position: [0.45, 1.62, 7.65] }}>
       <Stage />
       <Ambience {...props} />
       <RoomLights {...props} />
@@ -38,7 +39,9 @@ export default function World(props: WorldProps) {
 
 // `env` is how strongly surfaces mirror the studio-style reflection map: kept low on the street, where it would put a grey sheen on black paint.
 const STREET = { sky: 0.1, key: 0.16, keyColor: new Color("#8fa6cf"), env: 0.1 } as const;
-const ROOM = { sky: 0.26, key: 0.22, keyColor: new Color("#ffe9cf"), env: 0.3 } as const;
+// Inside, the room is lit by its baked light. Sky and key are only a little fill for the things that move (products, Jesse), kept low so they
+// do not lift the baked shadows back to flat.
+const ROOM = { sky: 0.07, key: 0.05, keyColor: new Color("#ffe9cf"), env: 0.3 } as const;
 
 /**
  * The light that changes with where the visitor is. On the street it is night: a faint cool sky, and warm pools from the two lanterns and over the sign.
@@ -82,7 +85,11 @@ const LANTERNS: ReadonlyArray<{ position: [number, number, number]; intensity: n
   { position: [0, 2.9, 2.0], intensity: 2.2, distance: 5, color: "#ffd9a8" },
 ];
 
-/** The room's own light: one point light under each working pendant (tools/store/build_store.py places the fixtures). */
+/**
+ * One faint point light under each working pendant (tools/store/build_store.py places the fixtures). The pendants' real light and shadow are in the
+ * baked picture; these are a fraction of that strength and exist only so brass, steel and leather catch a highlight as the camera moves.
+ */
+const HIGHLIGHT = 0.16;
 const PENDANTS: ReadonlyArray<{ position: [number, number, number]; intensity: number }> = [
   { position: [-3.65, 1.95, -2.6], intensity: 9 },
   { position: [2.9, 1.95, -3.6], intensity: 10 },
@@ -90,17 +97,17 @@ const PENDANTS: ReadonlyArray<{ position: [number, number, number]; intensity: n
   { position: [5.3, 2.2, -3.5], intensity: 9 }, // the wall behind Jesse's sewing table: gloves, frames, banner
 ];
 
-/** Warm pools under the pendants. When a product is chosen the room drops back a little so the product holds the eye. */
+/** Highlights from the pendants. When a product is chosen they drop back a little so the product holds the eye. */
 function RoomLights({ stage }: WorldProps) {
   const lights = useRef<Array<PointLight | null>>([]);
   useFrame((_, dt) => {
-    const k = stage === "productSelected" || stage === "builderLoading" ? 0.6 : 1;
+    const k = HIGHLIGHT * (stage === "productSelected" || stage === "builderLoading" ? 0.6 : 1);
     for (const [i, light] of lights.current.entries()) if (light) light.intensity = MathUtils.damp(light.intensity, k * (PENDANTS[i]?.intensity ?? 0), 4, dt);
   });
   return (
     <>
       {PENDANTS.map((l, i) => (
-        <pointLight key={i} ref={(el) => void (lights.current[i] = el)} position={l.position} intensity={l.intensity} distance={8} decay={2} color="#ffc58a" />
+        <pointLight key={i} ref={(el) => void (lights.current[i] = el)} position={l.position} intensity={l.intensity * HIGHLIGHT} distance={8} decay={2} color="#ffc58a" />
       ))}
     </>
   );
@@ -109,9 +116,12 @@ function RoomLights({ stage }: WorldProps) {
 /**
  * One presentation light for whichever product is in view. It travels along the wall with the visitor, so the product they are looking at is
  * the brightest thing in the frame and its neighbours sit a stop or two darker. One moving light costs a phone far less than five fixed ones.
+ * It is also the only light in the store that casts a live shadow: the product turns, so its shadow on the counter cannot be baked. The shadow is
+ * drawn only on the full quality level and only while a product is on show.
  */
 function ProductKeyLight({ bootstrap, stage, index }: WorldProps) {
   const anchors = useScene((s) => s.anchors);
+  const tier = useScene((s) => s.qualityTier);
   const light = useRef<SpotLight>(null);
   const target = useMemo(() => new Object3D(), []);
   const product = bootstrap.products[index];
@@ -120,22 +130,41 @@ function ProductKeyLight({ bootstrap, stage, index }: WorldProps) {
     const l = light.current;
     if (!l || !mark || !product) return;
     const browsing = stage === "browsing" || stage === "productSelected" || stage === "builderLoading";
-    // Hanging products are lit from in front and above their middle; shelf products from above and a little to one side, so leather shows its shape.
+    // Hanging products are lit from in front and above their middle. Shelf products are lit from nearly overhead and a little to one side: steep
+    // enough that the shadow pools at the foot of the product, where the camera can see it, not behind it.
     const aimY = product.hangs ? mark.y - product.displayHeight / 2 : mark.y + product.displayHeight / 2;
     const k = 1 - Math.exp(-dt * 7);
-    l.position.x += (mark.x + 0.55 - l.position.x) * k;
-    l.position.y += ((product.hangs ? 3.0 : 2.7) - l.position.y) * k;
-    l.position.z += (mark.z + (product.hangs ? 2.2 : 1.05) - l.position.z) * k;
+    l.position.x += (mark.x + (product.hangs ? 0.55 : 0.32) - l.position.x) * k;
+    l.position.y += ((product.hangs ? 3.0 : 2.9) - l.position.y) * k;
+    l.position.z += (mark.z + (product.hangs ? 2.2 : 0.55) - l.position.z) * k;
     target.position.x += (mark.x - target.position.x) * k;
     target.position.y += (aimY - target.position.y) * k;
     target.position.z += (mark.z - target.position.z) * k;
     target.updateMatrixWorld();
     l.intensity = MathUtils.damp(l.intensity, browsing ? (stage === "browsing" ? 26 : 36) : 0, 5, dt);
+    l.shadow.autoUpdate = browsing; // no product on show, no shadow to redraw
   });
   return (
     <>
       <primitive object={target} />
-      <spotLight ref={light} target={target} position={[0, 2.5, -5]} intensity={0} angle={0.33} penumbra={0.9} distance={7} decay={2} color="#fff0dc" />
+      <spotLight
+        ref={light}
+        target={target}
+        position={[0, 2.5, -5]}
+        intensity={0}
+        angle={0.33}
+        penumbra={0.9}
+        distance={7}
+        decay={2}
+        color="#fff0dc"
+        castShadow={tier === 0}
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-near={0.4}
+        shadow-camera-far={6}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.02}
+        shadow-radius={3}
+      />
     </>
   );
 }
@@ -150,6 +179,8 @@ function Stage() {
     scene.environment = env.texture;
     scene.background = new Color("#090705");
     scene.fog = new Fog("#090705", 9, 26);
+    // Development only: lets a test script (or the browser console) inspect the live scene. Never present in a production build.
+    if (process.env.NODE_ENV !== "production") Object.assign(window, { __sanchezScene: { gl, scene } });
     return () => {
       scene.environment = null;
       env.dispose();

@@ -15,9 +15,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import iron_door  # the wrought-iron front door (owner's reference photo, 6 Oct 2026)
 import shop_front  # the timber shop front, brick, setts and lanterns (owner's storyboard, 6 Oct 2026)
 import jesse_workshop  # his sewing table and the wall behind it, from the films on his current site (6 Oct 2026)
+import bake_light  # the room's light and shadow, ray-traced once and saved as a picture (specs/09, 6 Oct 2026)
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 OUT = argv[argv.index("--out") + 1] if "--out" in argv else "."
+BAKE = "--bake" in argv  # ray-trace the room's light again (needed whenever the room or its lights change; a build without it stops if they have)
+BAKE_SIZE = int(argv[argv.index("--bake-size") + 1]) if "--bake-size" in argv else 2048
+BAKE_SAMPLES = int(argv[argv.index("--bake-samples") + 1]) if "--bake-samples" in argv else 256
 PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None  # straight-on picture of one door leaf, for checking against the photo
 os.makedirs(OUT, exist_ok=True)
 
@@ -265,6 +269,7 @@ def build_workshop():
     for x in (-4.5, -1.5, 1.5, 4.5):
         for z in (-1.95, -4.95):
             k.cyl(P["brass"], (x, H - 0.07, z), 0.045, 0.14, verts=16)
+            k.lights.append(("down", (x, H - 0.16, z), 5.0, "#ffcf94"))
             k.cyl(niche_light, (x, H - 0.142, z), 0.034, 0.004, verts=16)
     # a long bench in the middle of the room: woven green leather on a steel frame
     k.bx(woven_leather, -0.5, 0.06, 0.36, 0.47, -3.3, -1.75, 0.02)
@@ -299,7 +304,7 @@ def build_workshop():
                 k.bx(timber, a_, b_, c_, d_, -D + 0.02, -D + 0.1, 0.006)
             k.bx(timber, x - 0.09, x + 0.09, H - 0.34, H - 0.22, -6.9, -5.9, 0.006)
             k.cyl(P["steel"], (x, (2.69 + H - 0.34) / 2, -6.3), 0.012, H - 0.34 - 2.69, verts=8)
-            k.pendant(shade, bulb, P["steel"], x, 2.86, -6.25, H, 0.13)
+            k.pendant(shade, bulb, P["steel"], x, 2.86, -6.25, H, 0.13, cd=4.0)
         else:
             # a thick timber counter on a panelled cabinet, under a marble-lined alcove with a concealed light along its head
             k.bx(joinery, x - 0.6, x + 0.6, 0, 0.955, -D + 0.02, -6.46, 0.006)
@@ -314,6 +319,7 @@ def build_workshop():
             k.bx(joinery, x - 0.66, x + 0.66, 2.5, 2.58, -D + 0.02, -6.76)              # soffit
             k.bx(timber, x - 0.74, x + 0.74, 2.58, 2.66, -D + 0.02, -6.72, 0.006)       # head
             k.bx(niche_light, x - 0.58, x + 0.58, 2.488, 2.5, -6.86, -6.8)              # the light, tucked behind the head
+            k.lights.append(("strip", (x, 2.48, -6.83), 3.5, "#ffcf94", 1.16))
             if pid in ("GLOVES", "THAI_PADS"):
                 # a stone bowl of rolled hand wraps at the end of the counter
                 k.blob(marble, (x + 0.47, 1.075, -6.62), (0.2, 0.09, 0.2))
@@ -329,7 +335,7 @@ def build_workshop():
     # Jesse's sewing table (where he is working when the visitor walks in) and the wall behind him, both taken from his real workshop
     jesse_workshop.sewing_station(k, mat, hexc, P, timber)
     banner = jesse_workshop.workshop_wall(k, mat, hexc, P, timber, joinery, shade, bulb, wall_x=W / 2, ceiling=H - 0.22)
-    k.pendant(shade, bulb, P["steel"], 2.9, 2.05, -3.6, H - 0.22)
+    k.pendant(shade, bulb, P["steel"], 2.9, 2.05, -3.6, H - 0.22, cd=10.0)
     # a second table on the left: hides laid out, thread, a box of offcuts
     k.bx(timber, -4.1, -3.2, 0.87, 0.94, -3.5, -1.7, 0.008)
     for lx, lz in ((-4.02, -3.42), (-3.28, -3.42), (-4.02, -1.78), (-3.28, -1.78)):
@@ -357,7 +363,7 @@ def build_workshop():
     k.cyl(P["leather2"], (5.6, 1.75, -6.35), 0.18, 1.3, verts=20)
     k.cyl(P["steel"], (5.6, 2.9, -6.35), 0.01, 1.0, verts=6)
     # general light: one large pendant in the middle of the room (the bench and the table have their own)
-    k.pendant(shade, bulb, P["steel"], 0.0, 2.5, -3.0, H - 0.22, 0.24)
+    k.pendant(shade, bulb, P["steel"], 0.0, 2.5, -3.0, H - 0.22, 0.24, cd=13.0)
 
     joined = sf.join_by_material(k.made, "WS")
     textured = {"floor_boards": (0.84, 0.84), "aged_timber": (0.6, 0.6), "wall_panelling": (0.96, 0.96), "plaster": (2.4, 2.4),
@@ -369,6 +375,14 @@ def build_workshop():
         if name not in textured:
             while o.data.uv_layers:
                 o.data.uv_layers.remove(o.data.uv_layers[0])
+    # Baked light: everything in this file is fixed, so everything except the glowing parts themselves gets it.
+    glowing = ("lamp_bulb", "niche_light", "task_lamp_glow")
+    fixed = [o for name, o in joined.items() if name not in glowing] + [banner]
+    bake_light.strip_hidden(fixed, B((-W / 2, 0, 0)), B((W / 2, H, -D)))  # opposite corners: Blender's depth axis runs the other way to web z
+    light = bake_light.run(fixed, k.lights, OUT, "workshop-light", B, hexc, os.path.join(os.path.dirname(os.path.abspath(__file__)), "baked"),
+                           size=BAKE_SIZE, samples=BAKE_SAMPLES, bake=BAKE)
+    mark = empty("LIGHTMAP", (0, 0, 0))   # read by the site: how much to multiply the light picture by, and which bake it belongs to
+    mark["scale"], mark["fingerprint"] = float(light["scale"]), light["fingerprint"]
     # Path and character marks (read by the site at run time).
     empty("JESSE_BENCH", (2.25, 0, -3.5))   # at the bench, working
     empty("JESSE_GREET", (1.35, 0, -3.3))   # one step towards the visitor
