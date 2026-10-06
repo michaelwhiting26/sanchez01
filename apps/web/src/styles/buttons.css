@@ -1,0 +1,42 @@
+/* Every labelled call-to-action on the site is a plain button (owner, 6 Oct 2026). This replaces the punch-bag buttons of 30 Sep: no object-shaped
+   buttons anywhere. Main actions are a filled aged-brass bar, the same as "Tap to enter" in the store; secondary actions are the same shape in outline.
+   Loaded last, and !important on the look only, so each button's own older rules cannot bring a rectangle or a bag back. Fonts are left to each button. */
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay) {
+  --bh: 54px;
+  box-sizing: border-box !important;
+  display: inline-flex !important; align-items: center; justify-content: center;
+  min-block-size: var(--bh) !important; block-size: auto !important;
+  min-inline-size: 11rem;
+  padding: 0 1.75rem !important;
+  border: 1px solid #c8954d !important; border-radius: 999px !important; border-image: none !important;
+  background: #c8954d !important; box-shadow: 0 .5rem 1.6rem rgb(0 0 0 / .4) !important;
+  color: #110e0b !important; text-shadow: none !important; filter: none !important;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay)::before,
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay)::after { content: none !important; }
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay) .enq__text { text-shadow: none !important; }
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay):is(:hover, :focus-visible):not(:disabled) {
+  background: #d3a257 !important; border-color: #d3a257 !important; color: #110e0b !important;
+}
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay):active:not(:disabled) { transform: scale(.98); background: #e0af61 !important; }
+html body :is(.bag-punch__btn, .rollBtn, .pg__btn, .ck__btn, .shs__copy, .shs__more, .bl-replay):focus-visible { outline: 2px solid #f3eee5 !important; outline-offset: 4px; }
+/* secondary buttons: the same bar in outline */
+html body :is(.bag-punch__btn--ghost, .pg__btn--ghost, .ck__btn--ghost, .shs__more) { background: transparent !important; color: #f3eee5 !important; box-shadow: none !important; }
+html body :is(.bag-punch__btn--ghost, .pg__btn--ghost, .ck__btn--ghost, .shs__more):is(:hover, :focus-visible):not(:disabled) { background: rgb(200 149 77 / .14) !important; color: #f3eee5 !important; border-color: #e0af61 !important; }
+html body :is(.bag-punch__btn, .pg__btn, .ck__btn):disabled { opacity: .55; cursor: default; }
+/* done / copied state */
+html body .shs__copy.is-done { background: #f3eee5 !important; border-color: #f3eee5 !important; }
+/* a little smaller where space is tight */
+html body :is(.shs__copy, .ck__btn) { --bh: 48px; }
+
+/* Inside the 3D store the label is set like "Tap to enter": small capitals, widely spaced. */
+html body .store-ui .pg__btn { font-family: var(--nf-text, system-ui), sans-serif; font-weight: 700; font-size: .9rem; letter-spacing: .2em; text-transform: uppercase; min-inline-size: 13rem; }
+
+/* The waiting-list Submit on the superseded page was the bag picture on its side. It keeps its place, float and hover roll, as a plain brass bar. */
+html body .orbit-submit { padding: 0 8% !important; color: #110e0b !important; text-shadow: none !important; filter: drop-shadow(0 14px 22px rgb(0 0 0 / .5)) !important; }
+html body .orbit-submit .enq__text { text-shadow: none !important; }
+html body .orbit-submit::before { background: #c8954d !important; border-radius: 999px; }
+html body .orbit-submit:hover:not(:disabled)::before { background: #d3a257 !important; }
+html body .orbit-submit.is-done::before { background: #f3eee5 !important; }
+html body .orbit-submit:disabled:not(.is-done) { opacity: .7; }

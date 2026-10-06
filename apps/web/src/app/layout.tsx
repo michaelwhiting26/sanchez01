@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import "../styles/base.css";
 import "../styles/home.css";
-import "../styles/bag-buttons.css";
+import "../styles/buttons.css";
 import "./globals.css";
 
 const display = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], display: "swap", variable: "--nf-display" });
