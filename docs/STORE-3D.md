@@ -69,7 +69,7 @@ The site reads them at run time. To reframe a product, move its empty and re-run
 | Jesse | The committed `Jesse.glb` (a stand-in skeleton with no seated clips), drawn as a dark silhouette because the character is not owner-approved. He is seated by aiming his joints in code (`three/JesseSeated.tsx`, `three/jesse-pose.ts`). A finished character that carries the clips `sit_sew`, `sit_look_up`, `sit_idle`, `sit_nod` and `sit_return` replaces the file and is played instead, with no code change: see specs/10 section 6 |
 | Voice and sound | None recorded. Captions carry the greeting. `audio` and `voice.*.src` in the config are null; nothing is faked with stock sound |
 | Prices | None confirmed. Every product shows "Price to come" |
-| Builders | Heavy bag goes to the existing `/configure`. The others show a placeholder and the waiting list |
+| Builders | Heavy bag goes to the existing `/configure`. Gloves have their own builder at `/build/gloves` (7 Oct 2026: `components/build/GloveBuilder.tsx`, `GloveStage.tsx`, `lib/gloves/`, model from `tools/gloves/build_glove.py`); it ends at the waiting list, not a payment. The others show a placeholder and the waiting list |
 
 ## Not done yet (in the specification, not in this build)
 - Baked lighting and KTX2 textures (needs the real room and the `ktx` tool; models use Meshopt and WebP today).

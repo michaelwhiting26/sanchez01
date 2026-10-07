@@ -1,0 +1,37 @@
+/* The glove builder. It is the bag's cockpit (cockpit.v3.css) with a few extras: the dock is as tall as each step needs, two rows of sliders for
+   placing a logo or words, and the review's four pictures. Colours, type and buttons are the cockpit's own. */
+.gb[data-gb-step="colours"] { --dock: min(62svh, 416px); }
+.gb[data-gb-step="logos"] { --dock: min(60svh, 356px); }
+.gb[data-gb-step="words"] { --dock: min(66svh, 452px); }
+.gb .ck__dock { overflow-y: auto; align-content: start; padding-block-start: 22px; }
+.gb .gb__canvas, .gb .ck__stage > div { position: absolute; inset: 0; }
+.gb .ck__stage canvas { touch-action: none; cursor: grab; }
+.gb .ck__stage canvas:active { cursor: grabbing; }
+.gb__zones { grid-template-columns: repeat(4, 1fr); }
+.gb__loading, .gb__standin { position: absolute; inset-inline: 0; margin: 0; text-align: center; pointer-events: none; font: 500 10px/1.4 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
+.gb__loading { inset-block-start: 50%; }
+.gb__standin { inset-block-end: 6px; padding-inline: 16px; letter-spacing: .12em; color: rgb(243 234 220 / .38); }
+.gb__note { margin: 0; font-size: 13px; line-height: 1.45; color: rgb(243 234 220 / .7); }
+.gb__add { border-style: dashed; color: #e8a85a; block-size: 38px; }
+.gb__add input { font-size: 16px; }
+.gb__art { display: grid; gap: 8px; min-inline-size: 0; }
+.gb__sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.gb__sliders label { display: grid; gap: 4px; font: 500 10px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: rgb(243 234 220 / .6); }
+.gb__sliders input[type="range"] { inline-size: 100%; block-size: 28px; margin: 0; accent-color: #c8954d; }
+.gb__remove { color: #ff9c8a; }
+.gb__wordrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.gb__wordrow .ck__input { min-inline-size: 0; text-transform: uppercase; }
+.gb__fonts { grid-template-columns: repeat(2, auto); }
+.gb__fonts button { padding-inline: 12px; }
+.gb .pp__parts button[aria-pressed="true"] { border-color: #e8a85a; background: rgb(232 168 90 / .16); }
+
+.gb__sheet { max-block-size: 74svh; }
+.gb[data-sheet="open"] { --sheet-h: 56svh; }
+.gb__shots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-block-end: 12px; }
+.gb__shots img { display: block; inline-size: 100%; block-size: auto; border: 1px solid rgb(243 234 220 / .14); background: #0a0b0d; }
+.gb__list { max-block-size: none; }
+.gb__val { display: inline-flex; align-items: center; gap: 8px; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb__val i { flex: none; inline-size: 14px; block-size: 14px; border-radius: 50%; border: 1px solid rgb(243 234 220 / .4); }
+.gb__actions { flex-wrap: wrap; }
+.gb__actions .ck__btn { text-decoration: none; }
+@media (max-width: 520px) { .gb__shots { grid-template-columns: repeat(2, 1fr); } }

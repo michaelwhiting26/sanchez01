@@ -3,12 +3,13 @@ import type { CollectionPiece, StoreBootstrap, StoreProduct, WallStory } from ".
 /**
  * The store's content. This is the source for GET /api/storefront/bootstrap until the products table (migration 002) is filled from an admin.
  * Evidence rule: no price is confirmed for any product, so every priceFromMinor is null and the UI says "Price to come".
- * Real models exist for the heavy bag and the focus mitts only; the rest are stand-in forms and say so.
+ * Real models exist for the heavy bag and the focus mitts. The gloves are our own illustrative model (tools/gloves/build_glove.py, 7 Oct 2026), not yet
+ * Jesse's pattern. The rest are stand-in forms and say so.
  */
 const S = "/assets/store";
 
 export const STORE_PRODUCTS: readonly StoreProduct[] = [
-  { id: "gloves", slug: "gloves", name: "Custom Gloves", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GLOVES", modelAsset: `${S}/standin-gloves.glb`, builderRoute: "/build/gloves", sortOrder: 1, active: true, standIn: true, hangs: false, displayHeight: 0.36 },
+  { id: "gloves", slug: "gloves", name: "Custom Gloves", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GLOVES", modelAsset: `${S}/gloves.glb`, builderRoute: "/build/gloves", sortOrder: 1, active: true, standIn: false, hangs: false, displayHeight: 0.3 },
   { id: "heavy-bag", slug: "heavy-bag", name: "Heavy Bag", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "BAG", modelAsset: `${S}/heavy-bag.glb`, builderRoute: "/build/heavy-bag", sortOrder: 2, active: true, standIn: false, hangs: true, displayHeight: 1.75 },
   { id: "thai-pads", slug: "thai-pads", name: "Thai Pads", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "THAI_PADS", modelAsset: `${S}/standin-thai-pads.glb`, builderRoute: "/build/thai-pads", sortOrder: 3, active: true, standIn: true, hangs: false, displayHeight: 0.44 },
   { id: "focus-mitts", slug: "focus-mitts", name: "Focus Mitts", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "MITTS", modelAsset: `${S}/focus-mitts.glb`, builderRoute: "/build/focus-mitts", sortOrder: 4, active: true, standIn: false, hangs: false, displayHeight: 0.3, modelRotation: [Math.PI / 2, 0, 0] },
