@@ -3,17 +3,21 @@ import type { CollectionPiece, StoreBootstrap, StoreProduct, WallStory } from ".
 /**
  * The store's content. This is the source for GET /api/storefront/bootstrap until the products table (migration 002) is filled from an admin.
  * Evidence rule: no price is confirmed for any product, so every priceFromMinor is null and the UI says "Price to come".
- * Real models exist for the heavy bag and the focus mitts. The gloves are our own illustrative model (tools/gloves/build_glove.py, 7 Oct 2026), not yet
- * Jesse's pattern. The rest are stand-in forms and say so.
+ * Five products, each with its own place on the wall (owner, 7 Oct 2026): gloves, heavy bag, head guard, focus mitts, groin guard. The Thai pads
+ * and the grouped "Guards" stand-ins are gone until there is something real to show. The two guards stand at the places the room file still calls
+ * THAI_PADS and GUARDS: those are positions in the room, not names a visitor sees.
+ * A product that is not `active` is off the wall and its builder shows the waiting list: the two guards are switched on as their models are finished.
+ * Real models exist for the heavy bag and the focus mitts. The gloves and the two guards are our own illustrative models (tools/gloves,
+ * tools/headguard, tools/groinguard), not yet Jesse's patterns.
  */
 const S = "/assets/store";
 
 export const STORE_PRODUCTS: readonly StoreProduct[] = [
   { id: "gloves", slug: "gloves", name: "Custom Gloves", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GLOVES", modelAsset: `${S}/gloves.glb`, builderRoute: "/build/gloves", sortOrder: 1, active: true, standIn: false, hangs: false, displayHeight: 0.3 },
   { id: "heavy-bag", slug: "heavy-bag", name: "Heavy Bag", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "BAG", modelAsset: `${S}/heavy-bag.glb`, builderRoute: "/build/heavy-bag", sortOrder: 2, active: true, standIn: false, hangs: true, displayHeight: 1.75 },
-  { id: "thai-pads", slug: "thai-pads", name: "Thai Pads", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "THAI_PADS", modelAsset: `${S}/standin-thai-pads.glb`, builderRoute: "/build/thai-pads", sortOrder: 3, active: true, standIn: true, hangs: false, displayHeight: 0.44 },
+  { id: "head-guard", slug: "head-guard", name: "Head Guard", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "THAI_PADS", modelAsset: `${S}/head-guard.glb`, builderRoute: "/build/head-guard", sortOrder: 3, active: false, standIn: false, hangs: false, displayHeight: 0.27 },
   { id: "focus-mitts", slug: "focus-mitts", name: "Focus Mitts", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "MITTS", modelAsset: `${S}/focus-mitts.glb`, builderRoute: "/build/focus-mitts", sortOrder: 4, active: true, standIn: false, hangs: false, displayHeight: 0.3, modelRotation: [Math.PI / 2, 0, 0] },
-  { id: "guards", slug: "guards", name: "Guards", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GUARDS", modelAsset: `${S}/standin-guards.glb`, builderRoute: "/build/guards", sortOrder: 5, active: true, standIn: true, hangs: false, displayHeight: 0.42 },
+  { id: "groin-guard", slug: "groin-guard", name: "Groin Guard", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GUARDS", modelAsset: `${S}/groin-guard.glb`, builderRoute: "/build/groin-guard", sortOrder: 5, active: false, standIn: false, hangs: false, displayHeight: 0.3 },
 ];
 
 /**

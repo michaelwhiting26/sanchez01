@@ -10,7 +10,7 @@ one persistent WebGL canvas, a fixed set of camera moves, and a state machine th
 3. **Jesse greets you** (`greeting`): he is sitting at his sewing machine, working, and has been since the street was in view. He looks up when the visitor stops in front of him; captions carry his lines.
    He ends on a question, and the visitor answers with one of four buttons: a product by name, everything, or looking around.
 3b. **Look around** (`lookingAround`, optional): the camera returns to face Jesse's wall, he steps aside, and a marker on the wall opens a story (a short film with a line about it) over the store. "Back to the products" is always one tap away. It is never a step before buying.
-4. **Swipe through products** (`browsing`): five products at five places on the back wall. Swipe, arrow keys, dots or tapping a product moves the camera sideways (0.65 s). Tapping the product in view, or "Design it", moves in close (`productSelected`); "Design this" opens `/build/<slug>`.
+4. **Swipe through products** (`browsing`): five products at five places on the back wall (7 Oct 2026: gloves, heavy bag, head guard, focus mitts, groin guard). Swipe, arrow keys, dots or tapping a product moves the camera sideways (0.65 s). Tapping the product in view, or "Design it", moves in close (`productSelected`); "Design this" opens `/build/<slug>`.
 
 ## Where things are
 | What | Where |
@@ -69,7 +69,7 @@ The site reads them at run time. To reframe a product, move its empty and re-run
 | Jesse | The committed `Jesse.glb` (a stand-in skeleton with no seated clips), drawn as a dark silhouette because the character is not owner-approved. He is seated by aiming his joints in code (`three/JesseSeated.tsx`, `three/jesse-pose.ts`). A finished character that carries the clips `sit_sew`, `sit_look_up`, `sit_idle`, `sit_nod` and `sit_return` replaces the file and is played instead, with no code change: see specs/10 section 6 |
 | Voice and sound | None recorded. Captions carry the greeting. `audio` and `voice.*.src` in the config are null; nothing is faked with stock sound |
 | Prices | None confirmed. Every product shows "Price to come" |
-| Builders | Heavy bag goes to the existing `/configure`. Gloves have their own builder at `/build/gloves` (7 Oct 2026: `components/build/GloveBuilder.tsx`, `GloveStage.tsx`, `lib/gloves/`, model from `tools/gloves/build_glove.py`); it ends at the waiting list, not a payment. The others show a placeholder and the waiting list |
+| Builders | Heavy bag goes to the existing `/configure`. Gloves have their own builder at `/build/gloves` (7 Oct 2026: `components/build/GloveBuilder.tsx`, `GloveStage.tsx`, `lib/gloves/`, model from `tools/gloves/build_glove.py`); it ends at the waiting list, not a payment. The same builder serves the head guard (`/build/head-guard`) and the groin guard (`/build/groin-guard`), each with its own place on the wall. Focus mitts show a placeholder and the waiting list. Thai pads are off the wall |
 
 ## Not done yet (in the specification, not in this build)
 - Baked lighting and KTX2 textures (needs the real room and the `ktx` tool; models use Meshopt and WebP today).

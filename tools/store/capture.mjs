@@ -39,7 +39,7 @@ for (const [w, h] of [[390, 844], [430, 932]]) {
   await page.click('.store-ui__choice[data-choice="all"]');
   // Part 4: each product in turn (arrow key = one swipe), then the chosen-product moment on the last one.
   await page.waitForSelector('.store[data-stage="browsing"]', { timeout: 15000 });
-  for (const name of ["D-gloves", "E-heavy-bag", "F2-thai-pads", "F-focus-mitts", "G-guards"]) {
+  for (const name of ["D-gloves", "E-heavy-bag", "F2-head-guard", "F-focus-mitts", "G-groin-guard"]) {
     await page.waitForTimeout(name === "D-gloves" ? 3600 : 2100);
     await page.screenshot({ path: `${out}/${name}-${w}x${h}.png` });
     if (name !== "G-guards") await page.keyboard.press("ArrowRight");

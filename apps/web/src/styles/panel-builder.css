@@ -1,4 +1,4 @@
-/* The glove builder. It is the bag's cockpit (cockpit.v3.css) with a few extras: the dock is as tall as each step needs, two rows of sliders for
+/* The panel builder (gloves, head guard). It is the bag's cockpit (cockpit.v3.css) with a few extras: the dock is as tall as each step needs, two rows of sliders for
    placing a logo or words, and the review's four pictures. Colours, type and buttons are the cockpit's own. */
 .gb[data-gb-step="colours"] { --dock: min(62svh, 416px); }
 .gb[data-gb-step="logos"] { --dock: min(60svh, 356px); }
@@ -7,7 +7,7 @@
 .gb .gb__canvas, .gb .ck__stage > div { position: absolute; inset: 0; }
 .gb .ck__stage canvas { touch-action: none; cursor: grab; }
 .gb .ck__stage canvas:active { cursor: grabbing; }
-.gb__zones { grid-template-columns: repeat(4, 1fr); }
+
 .gb__loading, .gb__standin { position: absolute; inset-inline: 0; margin: 0; text-align: center; pointer-events: none; font: 500 10px/1.4 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: rgb(243 234 220 / .5); }
 .gb__loading { inset-block-start: 50%; }
 .gb__standin { inset-block-end: 6px; padding-inline: 16px; letter-spacing: .12em; color: rgb(243 234 220 / .38); }

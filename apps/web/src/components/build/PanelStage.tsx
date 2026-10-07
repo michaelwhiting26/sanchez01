@@ -9,16 +9,13 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { z } from "zod";
-import { hitsMark, pictureSize, placeMark, SAFE_MARGIN, type Placed } from "@/lib/gloves/decal";
-import {
-  ART_PANELS, CLOTH_PANELS, FINISH_RECIPE, FIXED_NODES, GLOVE_ASSETS, GLOVE_FONTS, PANELS, isArtPanel, isPanel,
-  type ArtPanelId, type GloveArt, type GlovePanels, type PanelId,
-} from "@/lib/gloves/schema";
+import { hitsMark, pictureSize, placeMark, SAFE_MARGIN, type Placed } from "@/lib/builder/decal";
+import { FINISH_RECIPE, FONTS, type BuilderArt, type BuilderPanels, type BuilderProduct } from "@/lib/builder/product";
 import { useGltf } from "@/three/use-gltf";
 
 /**
- * The glove on screen. How it works, in plain terms:
- *  - The glove is one file holding a separate piece for every panel. Each piece has its own material, so a colour or finish changes one panel only.
+ * The product on screen (a glove, a head guard: whatever `product` describes). How it works, in plain terms:
+ *  - The model is one file holding a separate piece for every panel. Each piece has its own material, so a colour or finish changes one panel only.
  *  - A baked shading picture (creases, seams, the gap by the thumb) darkens whatever colour is chosen, and a fine grain picture gives the leather its surface.
  *  - Logos and words are not stuck on in 3D. Each art panel has a hidden flat picture the same shape as the leather; marks are drawn on it and it is
  *    wrapped onto the panel. Tapping the glove reports where on that picture the finger landed, which is how a mark lands under the finger.
@@ -30,44 +27,41 @@ const MetaSchema = z.object({
   atlasTilesPerUnit: z.number().positive(),
   panels: z.record(z.string(), z.object({ centroid: vec3, normal: vec3, uvWidthM: z.number().positive().optional(), uvHeightM: z.number().positive().optional() })),
 });
-type GloveMeta = z.infer<typeof MetaSchema>;
+type ModelMeta = z.infer<typeof MetaSchema>;
 
 export type StageMode = "colour" | "art";
-export interface GloveStageHandle {
-  /** Four pictures of the finished glove from fixed angles, as JPEG data URLs. */
+export interface PanelStageHandle {
+  /** Four pictures of the finished design from fixed angles, as JPEG data URLs. */
   capture: () => string[];
 }
-export interface GloveStageProps {
-  panels: GlovePanels;
-  art: readonly GloveArt[];
+export interface PanelStageProps {
+  product: BuilderProduct;
+  panels: BuilderPanels;
+  art: readonly BuilderArt[];
   /** Uploaded pictures by art id. `imagesVersion` changes whenever one is added or removed. */
   images: ReadonlyMap<string, HTMLImageElement>;
   imagesVersion: number;
   mode: StageMode;
   /** The panel the camera should face. */
-  focus: PanelId;
+  focus: string;
   selectedArt: string | null;
   /** The cockpit root, where the site's fonts are defined. */
   fontRoot: RefObject<HTMLElement | null>;
-  onPickPanel: (panel: PanelId) => void;
-  onPlace: (panel: ArtPanelId, u: number, v: number) => void;
+  onPickPanel: (panel: string) => void;
+  onPlace: (panel: string, u: number, v: number) => void;
   onSelectArt: (id: string) => void;
   onReady?: () => void;
 }
 
-/** Which way to look for the parts that are not one flat panel. */
-const FACE_AS: Partial<Record<PanelId, PanelId>> = { PIPING: "HAND_BACK", STITCHING: "HAND_BACK", LACES: "CUFF_PALM", BINDING: "CUFF_BACK", THUMB_STRIP: "THUMB_IN" };
-const REVIEW_VIEWS: readonly PanelId[] = ["HAND_BACK", "THUMB_OUT", "PALM", "CUFF_BACK"];
 const FOV = 30;
 const FLY_SECONDS = 0.9;
 const TAP_SLOP = 7;
-const LINING = "#0c0c0d";
 const BRASS = new Color("#c8954d");
 
-export const GloveStage = forwardRef<GloveStageHandle, GloveStageProps>(function GloveStage(props, ref) {
+export const PanelStage = forwardRef<PanelStageHandle, PanelStageProps>(function PanelStage(props, ref) {
   return (
     <Canvas className="gb__canvas" dpr={[1, 2]} gl={{ antialias: true, alpha: true }} camera={{ fov: FOV, near: 0.02, far: 10, position: [0, 0.16, 0.8] }}>
-      <Glove {...props} handle={ref} />
+      <Model {...props} handle={ref} />
     </Canvas>
   );
 });
@@ -75,27 +69,27 @@ export const GloveStage = forwardRef<GloveStageHandle, GloveStageProps>(function
 interface Built {
   readonly root: Group;
   readonly materials: Map<string, MeshPhysicalMaterial>;
-  readonly pictures: Map<ArtPanelId, { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; texture: CanvasTexture }>;
+  readonly pictures: Map<string, { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; texture: CanvasTexture }>;
   dispose: () => void;
 }
 
-function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, fontRoot, onPickPanel, onPlace, onSelectArt, onReady, handle }: GloveStageProps & { handle: React.ForwardedRef<GloveStageHandle> }) {
+function Model({ product, panels, art, images, imagesVersion, mode, focus, selectedArt, fontRoot, onPickPanel, onPlace, onSelectArt, onReady, handle }: PanelStageProps & { handle: React.ForwardedRef<PanelStageHandle> }) {
   const { gl, scene, camera } = useThree();
-  const gltf = useGltf(GLOVE_ASSETS.model);
-  const meta = useMeta();
-  const shading = useTexture(GLOVE_ASSETS.shading);
-  const grain = useTexture(GLOVE_ASSETS.grain);
+  const gltf = useGltf(product.assets.model);
+  const meta = useMeta(product.assets.meta);
+  const shading = useTexture(product.assets.shading);
+  const grain = useTexture(product.assets.grain);
   const [built, setBuilt] = useState<Built | null>(null);
   const controls = useRef<OrbitControls | null>(null);
   const fly = useRef<{ from: Spherical; to: Spherical; t: number } | null>(null);
-  const pulse = useRef<{ panel: PanelId; t: number } | null>(null);
+  const pulse = useRef<{ panel: string; t: number } | null>(null);
   const placed = useRef(new Map<string, Placed>());
   const reduced = useMemo(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches, []);
 
   const centre = useMemo(() => (meta ? new Vector3().fromArray(meta.bounds.min).add(new Vector3().fromArray(meta.bounds.max)).multiplyScalar(0.5) : new Vector3(0, 0.15, 0)), [meta]);
   const height = meta ? meta.bounds.max[1] - meta.bounds.min[1] : 0.3;
 
-  // Studio light: a soft room reflected in the leather, and one key light that travels with the camera so the glove is lit the same from every side.
+  // Studio light: a soft room reflected in the leather, and one key light that travels with the camera so the model is lit the same from every side.
   useEffect(() => {
     const pmrem = new PMREMGenerator(gl);
     const room = new RoomEnvironment();
@@ -141,15 +135,15 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
     };
   }, [camera, gl]);
 
-  // The distance that fits the whole glove in the stage, whatever its shape (a phone is tall, a desktop is wide).
+  // The distance that fits the whole model in the stage, whatever its shape (a phone is tall, a desktop is wide).
   const size = useThree((s) => s.size);
   const distance = useMemo(() => {
     const half = Math.tan((FOV * Math.PI) / 360);
     const aspect = size.width / Math.max(1, size.height);
-    const tall = (height * 0.8) / half;
-    const wide = (height * 0.44) / (half * aspect);
+    const tall = (height * product.fit.tall) / half;
+    const wide = (height * product.fit.wide) / (half * aspect);
     return Math.max(tall, wide);
-  }, [size.width, size.height, height]);
+  }, [size.width, size.height, height, product.fit]);
   useEffect(() => {
     const c = controls.current;
     if (!c) return;
@@ -158,7 +152,7 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
     c.maxDistance = distance * 1.25;
   }, [centre, distance]);
 
-  // Build the glove: one mesh per panel with its own material, and a clear skin over each art panel that carries the logos and words.
+  // Build the model: one mesh per panel with its own material, and a clear skin over each art panel that carries the logos and words.
   useEffect(() => {
     if (!gltf || !meta || !shading || !grain) return;
     shading.flipY = false;
@@ -173,14 +167,15 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
     const materials = new Map<string, MeshPhysicalMaterial>();
     const pictures: Built["pictures"] = new Map();
     const owned: Array<{ dispose(): void }> = [];
-    for (const name of [...PANELS, ...FIXED_NODES]) {
+    for (const name of [...product.panels, ...product.fixedNodes.map((f) => f.name)]) {
       const source = gltf.scene.getObjectByName(name);
-      if (!(source instanceof Mesh)) throw new Error(`glove model: the part "${name}" is missing from ${GLOVE_ASSETS.model}`);
+      if (!(source instanceof Mesh)) throw new Error(`${product.id} model: the part "${name}" is missing from ${product.assets.model}`);
       const geometry = source.geometry as BufferGeometry;
-      const cloth = isPanel(name) && CLOTH_PANELS.includes(name);
-      const material = new MeshPhysicalMaterial({ aoMap: shading, aoMapIntensity: 1, ...(cloth || name === "LINING" ? {} : { normalMap: grain, normalScale: new Vector2(0.45, 0.45) }) });
-      if (name === "LINING") {
-        material.color.set(LINING);
+      const cloth = product.clothPanels.includes(name);
+      const fixed = product.fixedNodes.find((f) => f.name === name);
+      const material = new MeshPhysicalMaterial({ aoMap: shading, aoMapIntensity: 1, ...(cloth || fixed ? {} : { normalMap: grain, normalScale: new Vector2(0.45, 0.45) }) });
+      if (fixed) {
+        material.color.set(fixed.hex);
         material.roughness = 0.95;
       }
       const mesh = new Mesh(geometry, material);
@@ -191,15 +186,15 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
       root.add(mesh);
       materials.set(name, material);
       owned.push(material);
-      if (isArtPanel(name)) {
+      if (product.artPanels.includes(name)) {
         const info = meta.panels[name];
-        if (!info?.uvWidthM || !info.uvHeightM) throw new Error(`glove model: no size recorded for the art panel "${name}" in ${GLOVE_ASSETS.meta}`);
+        if (!info?.uvWidthM || !info.uvHeightM) throw new Error(`${product.id} model: no size recorded for the art panel "${name}" in ${product.assets.meta}`);
         const { W, H } = pictureSize(info.uvWidthM, info.uvHeightM);
         const canvas = document.createElement("canvas");
         canvas.width = W;
         canvas.height = H;
         const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("glove builder: this browser cannot draw the logo pictures");
+        if (!ctx) throw new Error("builder: this browser cannot draw the logo pictures");
         const texture = new CanvasTexture(canvas);
         texture.flipY = false;
         texture.colorSpace = SRGBColorSpace;
@@ -223,29 +218,30 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
       next.dispose();
       setBuilt(null);
     };
-    // onReady is a notification, not an input: the glove is not rebuilt when the parent re-renders
-  }, [gltf, meta, shading, grain, gl]);
+    // onReady is a notification, not an input: the model is not rebuilt when the parent re-renders
+  }, [gltf, meta, shading, grain, gl, product]);
 
   // Colour and finish: a handful of numbers on one panel's material.
   useEffect(() => {
     if (!built) return;
-    for (const p of PANELS) {
+    for (const p of product.panels) {
       const m = built.materials.get(p);
-      if (!m) continue;
-      m.color.set(panels[p].hex);
-      if (CLOTH_PANELS.includes(p)) {
+      const chosen = panels[p];
+      if (!m || !chosen) continue;
+      m.color.set(chosen.hex);
+      if (product.clothPanels.includes(p)) {
         m.roughness = 0.9;
         m.metalness = 0;
         m.clearcoat = 0;
       } else {
-        const r = FINISH_RECIPE[panels[p].finish];
+        const r = FINISH_RECIPE[chosen.finish];
         m.roughness = r.roughness;
         m.metalness = r.metalness;
         m.clearcoat = r.clearcoat;
         m.clearcoatRoughness = r.clearcoatRoughness;
       }
     }
-  }, [built, panels]);
+  }, [built, panels, product]);
 
   // Logos and words: redraw each panel's flat picture and tell the 3D that it changed.
   const paint = useMemo(() => {
@@ -253,7 +249,7 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
       if (!built) return;
       const style = fontRoot.current ? getComputedStyle(fontRoot.current) : null;
       placed.current.clear();
-      for (const panel of ART_PANELS) {
+      for (const panel of product.artPanels) {
         const pic = built.pictures.get(panel);
         if (!pic) continue;
         const { ctx, canvas } = pic;
@@ -265,7 +261,7 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
           let aspect: number;
           let font = "";
           if (a.kind === "text") {
-            const f = GLOVE_FONTS.find((x) => x.id === a.font) ?? GLOVE_FONTS[0];
+            const f = FONTS.find((x) => x.id === a.font) ?? FONTS[0];
             const family = style?.getPropertyValue(f.cssVar).trim() || f.fallback;
             font = `${f.weight} 100px ${family}`;
             ctx.font = font;
@@ -307,7 +303,7 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
         pic.texture.needsUpdate = true;
       }
     };
-  }, [built, art, images, selectedArt, fontRoot]);
+  }, [built, art, images, selectedArt, fontRoot, product]);
   useEffect(() => {
     paint(true);
     // fonts arrive after first paint on a cold load: draw the words again once they are in
@@ -322,14 +318,14 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
 
   // Where the camera stands to face a panel.
   const viewOf = useMemo(() => {
-    return (panel: PanelId): Spherical => {
-      const n = meta?.panels[FACE_AS[panel] ?? panel]?.normal ?? [0, 0, 1];
+    return (panel: string): Spherical => {
+      const n = meta?.panels[product.faceAs[panel] ?? panel]?.normal ?? [0, 0, 1];
       const s = new Spherical().setFromVector3(new Vector3(n[0], n[1], n[2]).normalize());
       s.phi = Math.min((100 * Math.PI) / 180, Math.max((62 * Math.PI) / 180, s.phi));
       s.radius = distance;
       return s;
     };
-  }, [meta, distance]);
+  }, [meta, distance, product]);
 
   useEffect(() => {
     if (!built) return;
@@ -381,10 +377,10 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
       const out = document.createElement("canvas");
       out.width = out.height = 900;
       const ctx = out.getContext("2d");
-      if (!ctx) throw new Error("glove builder: this browser cannot make the review pictures");
+      if (!ctx) throw new Error("builder: this browser cannot make the review pictures");
       const src = gl.domElement;
       const side = Math.min(src.width, src.height);
-      const shots = REVIEW_VIEWS.map((panel) => {
+      const shots = product.reviewViews.map((panel) => {
         const s = viewOf(panel);
         s.radius = distance * (src.width < src.height ? 0.92 : 1);
         cam.position.setFromSpherical(s).add(centre);
@@ -401,12 +397,12 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
       paint(true);
       return shots;
     },
-  }), [built, camera, gl, scene, paint, viewOf, distance, centre]);
+  }), [built, camera, gl, scene, paint, viewOf, distance, centre, product]);
 
-  /* ---- taps and drags on the glove ---- */
+  /* ---- taps and drags on the model ---- */
   const down = useRef<{ x: number; y: number; dragging: string | null } | null>(null);
-  const artHit = (hits: readonly Intersection[]): { panel: ArtPanelId; u: number; v: number } | null => {
-    for (const h of hits) if (isArtPanel(h.object.name) && h.uv) return { panel: h.object.name, u: h.uv.x, v: h.uv.y };
+  const artHit = (hits: readonly Intersection[]): { panel: string; u: number; v: number } | null => {
+    for (const h of hits) if (product.artPanels.includes(h.object.name) && h.uv) return { panel: h.object.name, u: h.uv.x, v: h.uv.y };
     return null;
   };
   const onDown = (e: ThreeEvent<PointerEvent>): void => {
@@ -450,9 +446,9 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
       return;
     }
     const name = e.intersections[0]?.object.name ?? "";
-    if (isPanel(name)) onPickPanel(name);
+    if (product.panels.includes(name)) onPickPanel(name);
   };
-  // a drag that ends off the glove still has to hand the camera back
+  // a drag that ends off the model still has to hand the camera back
   useEffect(() => {
     const release = (): void => {
       if (down.current?.dragging) down.current = null;
@@ -470,13 +466,13 @@ function Glove({ panels, art, images, imagesVersion, mode, focus, selectedArt, f
   return <primitive object={built.root} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} />;
 }
 
-function useMeta(): GloveMeta | null {
-  const [meta, setMeta] = useState<GloveMeta | null>(null);
+function useMeta(url: string): ModelMeta | null {
+  const [meta, setMeta] = useState<ModelMeta | null>(null);
   useEffect(() => {
     let live = true;
-    fetch(GLOVE_ASSETS.meta)
+    fetch(url)
       .then((r) => {
-        if (!r.ok) throw new Error(`glove model: ${GLOVE_ASSETS.meta} answered ${r.status}`);
+        if (!r.ok) throw new Error(`builder model: ${url} answered ${r.status}`);
         return r.json() as Promise<unknown>;
       })
       .then((raw) => {
@@ -488,7 +484,7 @@ function useMeta(): GloveMeta | null {
     return () => {
       live = false;
     };
-  }, []);
+  }, [url]);
   return meta;
 }
 
@@ -503,7 +499,7 @@ function useTexture(url: string): Texture | null {
         if (live) setTexture(t);
         else t.dispose();
       },
-      (err: unknown) => console.error(`glove model: could not load ${url}`, err),
+      (err: unknown) => console.error(`builder model: could not load ${url}`, err),
     );
     return () => {
       live = false;

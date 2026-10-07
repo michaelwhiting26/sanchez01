@@ -1,4 +1,4 @@
-import { SIZE_MAX, SIZE_MIN } from "./schema";
+import { SIZE_MAX, SIZE_MIN } from "./product";
 
 /**
  * Where a logo or line of words may sit on a panel. Each panel has a flat picture the same shape as the leather; the mark is drawn on that
