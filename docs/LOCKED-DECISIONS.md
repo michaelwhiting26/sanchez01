@@ -9,11 +9,11 @@ The owner's current word on how each part of the site behaves. Anyone changing t
 - **The shop is light; the builders stay dark.** Shop buttons are a filled rust bar from the logo, square-cornered, with the same shape in outline for second actions. This replaces the brass pill for the shop pages only; the builders and the parked pages keep "Buttons are plain" below.
 - **No price, size, delivery time, review or shipping promise is shown** until Jesse confirms it: cards read "Price to come" and step 3 says orders are not open yet. No cart or account icon until there is something to buy.
 - **Pictures:** the cards use the builders' own models on a clear background (`tools/shop/thumbs.mjs`) plus the bag and mitt renders; the tiles use Jesse's own photographs where the project has them. Jesse's product photographs replace these as the owner supplies them.
-- **The 3D store is parked, not deleted** (owner: "don't delete what we've done because I'll use that again"). It runs whole at `/3d-store`, linked from nowhere; `main` on GitHub still holds it as the home page as it stood on 7 Oct 2026 (commit `ba782ee`). Everything under "The 3D store" below still describes it and still applies to it. The scroll site before it is still at `/superseded`.
+- **The 3D store is superseded, not deleted** (owner: "don't delete what we've done because I'll use that again"; "put 3D as superseded"). It runs whole at `/3d-store`, linked as "Superseded: 3D store" in the shop footer; the branch `3d-store-parked` on GitHub holds it as the home page as it stood on 7 Oct 2026 (commit `ba782ee`). Everything under "The 3D store" below still describes it and still applies to it. The scroll site before it is still at `/superseded`.
 - **Jesse as the running character** (the master rule in `CLAUDE.md`) belongs to the scroll site and the 3D store. The shop has no character on it; do not add one without the owner.
-- This work is on the branch `infinitude-shop`.
+- Built on the branch `infinitude-shop`, live on `main` since 7 Oct 2026 (owner's go-ahead).
 
-## The 3D store (owner, 5 Oct 2026; parked at /3d-store since 7 Oct 2026)
+## The 3D store (owner, 5 Oct 2026; superseded, at /3d-store since 7 Oct 2026)
 - **`/3d-store` is the mobile 3D store, Parts 1 to 4** (arrive, walk in, Jesse greets you, swipe through products), built to the owner's engineering specification. See `docs/STORE-3D.md`. One persistent canvas, cinematic camera only, everything driven by the state machine.
 - **The scroll site below is superseded, not deleted.** It lives whole at `/superseded`, linked as "Superseded" in the store footer. Its sections ("Home, top to bottom") still describe that page and still apply to it.
 - **Jesse in the store is a dark silhouette** until his character model is approved; no face is shown. He stays in the room throughout and does not speak on every swipe.

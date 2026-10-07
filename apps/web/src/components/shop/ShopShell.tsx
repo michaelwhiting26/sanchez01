@@ -76,6 +76,7 @@ function ShopFooter() {
               {l.label}
             </Link>
           ))}
+          <Link href="/3d-store">Superseded: 3D store</Link>
         </p>
       </div>
     </footer>
