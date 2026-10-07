@@ -57,8 +57,8 @@ function ShopFooter() {
         </FootCol>
         <FootCol title="Help">
           <Link href="/how-it-works">How it works</Link>
-          <Link href="/contact">Contact</Link>
-          <Link href="/gym-fit-outs">Gyms and clubs</Link>
+          <Link href="/contact">Get a Quote</Link>
+          <Link href="/gym-fit-outs">Gym Fit-Out</Link>
         </FootCol>
         <FootCol title="Follow">
           {SOCIALS.map((s) => (

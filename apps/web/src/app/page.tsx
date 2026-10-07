@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ShopShell } from "@/components/shop/ShopShell";
-import { SHOP_PRODUCTS, SHOP_STEPS, SHOP_TILES } from "@/lib/shop/catalogue";
-import { LOGO_SRC, ORIGIN_LINE } from "@/lib/site";
+import { JESSE_CONSULTATION, JESSE_FEATURES, JESSE_HEADLINE, JESSE_QUOTE_TITLE, SHOP_PRODUCTS, SHOP_STEPS, SHOP_TILES, SHOP_WORK } from "@/lib/shop/catalogue";
+import { ORIGIN_LINE } from "@/lib/site";
 
 /**
- * Home: a plain shop (owner, 7 Oct 2026). Top to bottom: hero, the products you can design in 3D, the range, who makes it, three steps,
- * fully custom work, what is true of every piece, and the ways onward. The 3D store it replaces is parked whole at /3d-store.
+ * Home: a plain shop (owner, 7 Oct 2026). Top to bottom: hero, the products you can design in 3D, the range, Jesse's key features, three steps,
+ * his design consultation, what is true of every piece, and the quote request. Headlines and feature wording are Jesse's own (lib/shop/catalogue.ts). The 3D store it replaces is parked whole at /3d-store.
  */
 export default function HomePage() {
   return (
@@ -16,15 +16,15 @@ export default function HomePage() {
         <div className="sh-wrap sh-hero__in">
           <p className="sh-hero__eyebrow">Sanchez Custom Boxing Equipment</p>
           <h1 className="sh-hero__title">
-            <span>Make it</span> yours
+            <span>{JESSE_HEADLINE}</span> Handmade.
           </h1>
-          <p className="sh-hero__text">Pick your gear, colour every panel, add your logo and your name, and see it in 3D before it is made.</p>
+          <p className="sh-hero__text">{ORIGIN_LINE}</p>
           <div className="sh-actions">
             <Link className="sh-btn" href="/shop">
               Design in 3D
             </Link>
-            <Link className="sh-btn sh-btn--light" href="/how-it-works">
-              How it works
+            <Link className="sh-btn sh-btn--light" href="/contact">
+              {JESSE_CONSULTATION.action}
             </Link>
           </div>
         </div>
@@ -51,14 +51,29 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="sh-wrap sh-sec sh-split">
-        <div>
-          <h2 className="sh-h">Made by hand, one piece at a time</h2>
-          <p className="sh-lead">Sanchez Custom Boxing Equipment is Jesse Sanchez&apos;s workshop.</p>
-          <p>Every piece is cut, stitched and printed by hand, in your colours, with your name and your logo on it.</p>
-          <p className="sh-strong">{ORIGIN_LINE}</p>
+      <section className="sh-wrap sh-sec">
+        <h2 className="sh-h">From the workshop</h2>
+        <div className="sh-work">
+          {SHOP_WORK.map((w) => (
+            <figure key={w.id}>
+              <img src={w.image} alt={w.alt} width={800} height={800} loading="lazy" />
+              <figcaption>{w.label}</figcaption>
+            </figure>
+          ))}
         </div>
-        <img className="sh-split__logo" src={LOGO_SRC} alt="" width={420} height={360} loading="lazy" />
+      </section>
+
+      <section className="sh-wrap sh-sec">
+        <h2 className="sh-h">Key Features</h2>
+        <div className="sh-feats">
+          {JESSE_FEATURES.map((f) => (
+            <article key={f.title} className="sh-feat">
+              <h3>{f.title}</h3>
+              {f.text ? <p>{f.text}</p> : null}
+              <Link href="/contact">{JESSE_CONSULTATION.action}</Link>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="sh-wrap sh-sec sh-simple">
@@ -87,15 +102,14 @@ export default function HomePage() {
       <section className="sh-wrap sh-sec">
         <div className="sh-dark">
           <div>
-            <h2 className="sh-h sh-h--onDark">Fully custom, on request</h2>
-            <p>Want something the builder does not cover? Tell us what you have in mind and Jesse will tell you what can be made.</p>
+            <h2 className="sh-h sh-h--onDark">{JESSE_CONSULTATION.title}</h2>
             <ul className="sh-ticks">
-              <li>Cut and stitched by hand</li>
-              <li>Printed to your design</li>
-              <li>Your colours, your logo, your name</li>
+              {JESSE_CONSULTATION.items.map((i) => (
+                <li key={i}>{i}</li>
+              ))}
             </ul>
             <Link className="sh-btn" href="/contact">
-              Get in touch
+              {JESSE_CONSULTATION.action}
             </Link>
           </div>
           <div className="sh-dark__pics" aria-hidden="true">
@@ -119,16 +133,16 @@ export default function HomePage() {
       </section>
 
       <section className="sh-wrap sh-sec sh-end">
-        <p>Design your own gear in 3D today, or talk to us about kitting out a whole gym.</p>
+        <h2 className="sh-h sh-h--mid">{JESSE_QUOTE_TITLE}</h2>
         <div className="sh-actions sh-actions--mid">
-          <Link className="sh-btn" href="/shop">
+          <Link className="sh-btn" href="/contact">
+            {JESSE_CONSULTATION.action}
+          </Link>
+          <Link className="sh-btn sh-btn--line" href="/shop">
             Design in 3D
           </Link>
           <Link className="sh-btn sh-btn--line" href="/gym-fit-outs">
-            Gyms and clubs
-          </Link>
-          <Link className="sh-btn sh-btn--line" href="/contact">
-            Contact
+            Gym Fit-Out
           </Link>
         </div>
       </section>

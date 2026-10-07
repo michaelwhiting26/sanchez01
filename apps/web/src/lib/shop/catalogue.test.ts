@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { STORE_PRODUCTS } from "../storefront/config";
-import { SHOP_NAV, SHOP_PRODUCTS, SHOP_STEPS, SHOP_TILES } from "./catalogue";
+import { SHOP_NAV, SHOP_PRODUCTS, SHOP_STEPS, SHOP_TILES, SHOP_WORK } from "./catalogue";
 
 const PUBLIC = fileURLToPath(new URL("../../../public", import.meta.url));
 const onDisk = (src: string): boolean => existsSync(PUBLIC + src);
@@ -32,6 +32,16 @@ describe("the shop catalogue", () => {
       expect(t.href.startsWith("/")).toBe(true);
       if (t.fill) expect(t.alt.length, t.id).toBeGreaterThan(10); // a photograph says what it shows; a product picture beside its label does not repeat it
     }
+  });
+
+  it("shows only workshop pieces whose photograph exists and that carry no person's full name", () => {
+    expect(new Set(SHOP_WORK.map((w) => w.id)).size).toBe(SHOP_WORK.length);
+    for (const w of SHOP_WORK) {
+      expect(onDisk(w.image), w.image).toBe(true);
+      expect(w.alt.length, w.id).toBeGreaterThan(10);
+      expect(w.image, w.id).not.toMatch(/roach-pair|roach-side|freddie-front|roach-front|bowman|christian|ennor|savva|ttl/);
+    }
+    expect(SHOP_PRODUCTS.map((p) => p.image.src).join(" ")).not.toMatch(/roach|bowman|christian|ennor|savva|ttl/);
   });
 
   it("states no price, timing or delivery promise", () => {

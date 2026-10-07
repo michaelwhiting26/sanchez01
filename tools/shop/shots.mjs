@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 
 const out = process.argv[2];
 const base = process.argv[3] ?? "http://localhost:3002";
-const PAGES = [["home", "/"], ["shop", "/shop"], ["how", "/how-it-works"], ["contact", "/contact"]];
+const PAGES = [["home", "/"], ["shop", "/shop"], ["how", "/how-it-works"], ["contact", "/contact"], ["gym", "/gym-fit-outs"]];
 const browser = await chromium.launch();
 for (const [size, width, height] of [["phone", 390, 844], ["desk", 1440, 900]]) {
   for (const [name, path] of PAGES) {

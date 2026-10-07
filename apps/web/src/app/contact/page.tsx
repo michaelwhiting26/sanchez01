@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageShell } from "@/components/pages/PageShell";
+import { JESSE_QUOTE_TITLE } from "@/lib/shop/catalogue";
 import { SOCIALS } from "@/lib/site";
 
 export const metadata = { title: "Contact | Sanchez Custom Boxing" };
@@ -7,8 +8,8 @@ export const metadata = { title: "Contact | Sanchez Custom Boxing" };
 /** Contact: Instagram is the live channel. No email or phone is shown until Jesse supplies them (evidence rule). */
 export default function ContactPage() {
   return (
-    <PageShell eyebrow="Get in touch" title="Contact">
-      <p className="pg__lead">The quickest way to reach us is Instagram. A contact form and email address will go here once Jesse confirms them.</p>
+    <PageShell eyebrow="Get a Quote" title={JESSE_QUOTE_TITLE}>
+      <p className="pg__lead">The quickest way to reach Jesse is Instagram. The quote form and an email address will go here once he confirms where requests should be sent.</p>
       <ul className="pg__list">
         {SOCIALS.map((s) => (
           <li key={s.href}>

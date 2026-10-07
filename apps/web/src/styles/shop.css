@@ -69,9 +69,9 @@ body:has(.shop) { background: #14100d; }
 .sh-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgb(20 16 13 / .94) 8%, rgb(20 16 13 / .35) 60%, rgb(20 16 13 / .2)); }
 .sh-hero__in { position: relative; z-index: 1; padding-block: 36px 40px; inline-size: 100%; box-sizing: border-box; }
 .shop .sh-hero__eyebrow { margin: 0 0 8px; font: italic 800 clamp(17px, 4.6vw, 26px)/1 var(--sh-display); text-transform: uppercase; letter-spacing: .04em; color: #e9694c; }
-.sh-hero__title { margin: 0 0 14px; font: italic 800 clamp(64px, 19vw, 150px)/.84 var(--sh-display); text-transform: uppercase; color: var(--sh-red); }
+.sh-hero__title { margin: 0 0 14px; font: italic 800 clamp(54px, 15.5vw, 140px)/.86 var(--sh-display); text-transform: uppercase; color: var(--sh-red); }
 .sh-hero__title span { display: block; color: transparent; -webkit-text-stroke: 2px #fff; }
-.shop .sh-hero__text { max-inline-size: 30em; font-size: 17px; line-height: 1.5; color: rgb(255 255 255 / .9); margin: 0; }
+.shop .sh-hero__text { max-inline-size: 30em; font-weight: 600; font-size: 18px; line-height: 1.5; color: rgb(255 255 255 / .92); margin: 0; }
 
 /* product cards */
 .sh-row { display: grid; grid-auto-flow: column; grid-auto-columns: 62%; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-block-end: 8px; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; }
@@ -104,6 +104,21 @@ body:has(.shop) { background: #14100d; }
 .sh-split .sh-h { text-align: start; }
 .sh-split__logo { justify-self: center; inline-size: min(60%, 320px); }
 
+/* from the workshop: Jesse's own photographs */
+.sh-work { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sh-work figure { margin: 0; background: #fff; border: 1px solid var(--sh-line); border-radius: 4px; overflow: hidden; }
+.sh-work img { display: block; inline-size: 100%; aspect-ratio: 1; block-size: auto; object-fit: contain; padding: 6%; box-sizing: border-box; background: radial-gradient(circle at 50% 45%, #fff 30%, #efebe3); }
+.sh-work figcaption { padding: 10px 8px; border-block-start: 1px solid var(--sh-line); font: 600 14px/1.2 var(--sh-text); text-align: center; }
+
+/* key features */
+.sh-feats { display: grid; gap: 14px; }
+.sh-feat { display: flex; flex-direction: column; gap: 10px; padding: 22px; background: #fff; border: 1px solid var(--sh-line); border-radius: 8px; border-block-start: 4px solid var(--sh-red); }
+.sh-feat h3 { margin: 0; font: italic 800 24px/1.05 var(--sh-display); text-transform: uppercase; }
+.shop .sh-feat p { margin: 0; font-size: 15px; color: var(--sh-ink-2); }
+.sh-feat a { margin-block-start: auto; padding-block-start: 6px; font: 700 14px/1 var(--sh-text); color: var(--sh-red); text-decoration: none; text-transform: uppercase; letter-spacing: .06em; }
+.sh-feat a:hover { text-decoration: underline; }
+.sh-h--mid { text-align: center !important; }
+
 /* three steps */
 .sh-steps { list-style: none; margin: 30px 0 0; padding: 0; display: grid; gap: 26px; text-align: center; }
 .sh-steps__n { display: grid; place-items: center; inline-size: 96px; block-size: 96px; margin: 0 auto 14px; border-radius: 12px; background: #fff; border: 1px solid var(--sh-line); box-shadow: 0 16px 30px rgb(20 16 13 / .08); font: italic 800 54px/1 var(--sh-display); color: var(--sh-red); }
@@ -112,7 +127,7 @@ body:has(.shop) { background: #14100d; }
 
 /* dark panel */
 .sh-dark { display: grid; gap: 26px; padding: 30px 22px; border-radius: 8px; background: var(--sh-deep); color: rgb(255 255 255 / .9); overflow: hidden; }
-.sh-ticks { list-style: none; margin: 18px 0 22px; padding: 0; display: grid; gap: 12px; font-weight: 700; font-size: 18px; color: #fff; }
+.sh-ticks { list-style: none; margin: 4px 0 24px; padding: 0; display: grid; gap: 12px; font-weight: 700; font-size: 18px; color: #fff; }
 .sh-ticks li { display: flex; align-items: center; gap: 12px; }
 .sh-ticks li::before { content: "✓"; display: grid; place-items: center; flex: none; inline-size: 24px; block-size: 24px; border-radius: 50%; background: var(--sh-red); color: #fff; font-size: 14px; }
 .sh-dark__pics { display: grid; grid-template-columns: repeat(3, 1fr); transform: skewX(-6deg); margin-inline: 10px; }
@@ -167,6 +182,8 @@ html body .shop .pg__btn--ghost { background: #fff !important; color: var(--sh-i
   .sh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
   .sh-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
   .sh-steps { grid-template-columns: repeat(3, 1fr); }
+  .sh-feats { grid-template-columns: repeat(2, 1fr); gap: 22px; }
+  .sh-work { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
   .sh-split { grid-template-columns: 1.2fr 1fr; gap: 40px; }
   .sh-dark { grid-template-columns: 1fr 1.1fr; align-items: center; padding: 50px; }
   .sh-true { grid-template-columns: 1fr 1.2fr; padding: 44px 60px; }
@@ -186,6 +203,7 @@ html body .shop .pg__btn--ghost { background: #fff !important; color: var(--sh-i
   .sh-row { grid-auto-flow: row; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-columns: auto; overflow: visible; margin-inline: 0; padding-inline: 0; gap: 24px; }
   .sh-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .sh-hero { align-items: center; min-block-size: 640px; }
+  .sh-feats { grid-template-columns: repeat(4, 1fr); }
   .sh-hero::after { background: linear-gradient(to right, rgb(20 16 13 / .92) 20%, rgb(20 16 13 / .3) 70%, rgb(20 16 13 / .15)); }
 }
 @media (prefers-reduced-motion: reduce) {
