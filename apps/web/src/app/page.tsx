@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ShopShell } from "@/components/shop/ShopShell";
-import { JESSE_CONSULTATION, JESSE_FEATURES, JESSE_HEADLINE, JESSE_QUOTE_TITLE, SHOP_PRODUCTS, SHOP_STEPS, SHOP_TILES, SHOP_WORK } from "@/lib/shop/catalogue";
+import { WorkGallery } from "@/components/shop/WorkGallery";
+import { JESSE_CONSULTATION, JESSE_FEATURES, JESSE_HEADLINE, JESSE_QUOTE_TITLE, SHOP_PRODUCTS, SHOP_STEPS } from "@/lib/shop/catalogue";
 import { ORIGIN_LINE } from "@/lib/site";
 
 /**
- * Home: a plain shop (owner, 7 Oct 2026). Top to bottom: hero, the products you can design in 3D, the range, Jesse's key features, three steps,
- * his design consultation, what is true of every piece, and the quote request. Headlines and feature wording are Jesse's own (lib/shop/catalogue.ts). The 3D store it replaces is parked whole at /3d-store.
+ * Home: a plain shop (owner, 7 Oct 2026). Top to bottom: hero, the range slider over the workshop pictures, Jesse's key features, three steps,
+ * his design consultation, what is true of every piece, the products you can design in 3D (owner, 7 Oct 2026: at the bottom), and the quote
+ * request. Headlines and feature wording are Jesse's own (lib/shop/catalogue.ts). The 3D store it replaces is parked whole at /3d-store.
  */
 export default function HomePage() {
   return (
@@ -31,36 +33,7 @@ export default function HomePage() {
       </section>
 
       <section className="sh-wrap sh-sec">
-        <h2 className="sh-h">Design in 3D</h2>
-        <div className="sh-row">
-          {SHOP_PRODUCTS.map((p) => (
-            <ProductCard key={p.slug} product={p} compact />
-          ))}
-        </div>
-      </section>
-
-      <section className="sh-wrap sh-sec">
-        <h2 className="sh-h">Our range</h2>
-        <div className="sh-tiles">
-          {SHOP_TILES.map((t) => (
-            <Link key={t.id} href={t.href} className="sh-tile" data-fill={t.fill || undefined}>
-              <img src={t.image} alt={t.alt} loading="lazy" />
-              <span>{t.label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="sh-wrap sh-sec">
-        <h2 className="sh-h">From the workshop</h2>
-        <div className="sh-work">
-          {SHOP_WORK.map((w) => (
-            <figure key={w.id}>
-              <img src={w.image} alt={w.alt} width={800} height={800} loading="lazy" />
-              <figcaption>{w.label}</figcaption>
-            </figure>
-          ))}
-        </div>
+        <WorkGallery />
       </section>
 
       <section className="sh-wrap sh-sec">
@@ -129,6 +102,15 @@ export default function HomePage() {
             <li>See it in 3D before it is made</li>
           </ul>
           <img src="/assets/store/collection/bag-range.webp" alt="Jesse Sanchez standing among a row of his heavy bags in a gym" width={560} height={560} loading="lazy" />
+        </div>
+      </section>
+
+      <section className="sh-wrap sh-sec">
+        <h2 className="sh-h">Design in 3D</h2>
+        <div className="sh-row">
+          {SHOP_PRODUCTS.map((p) => (
+            <ProductCard key={p.slug} product={p} compact />
+          ))}
         </div>
       </section>
 

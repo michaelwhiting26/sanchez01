@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { STORE_PRODUCTS } from "../storefront/config";
-import { SHOP_NAV, SHOP_PRODUCTS, SHOP_STEPS, SHOP_TILES, SHOP_WORK } from "./catalogue";
+import { SHOP_NAV, SHOP_PRODUCTS, SHOP_RANGE, SHOP_STEPS, SHOP_WORK } from "./catalogue";
 
 const PUBLIC = fileURLToPath(new URL("../../../public", import.meta.url));
 const onDisk = (src: string): boolean => existsSync(PUBLIC + src);
@@ -25,13 +25,9 @@ describe("the shop catalogue", () => {
     expect(SHOP_PRODUCTS.filter((p) => !p.ready).map((p) => p.slug)).toEqual(["focus-mitts"]);
   });
 
-  it("gives every tile a picture that exists and somewhere to go", () => {
-    expect(new Set(SHOP_TILES.map((t) => t.id)).size).toBe(SHOP_TILES.length);
-    for (const t of SHOP_TILES) {
-      expect(onDisk(t.image), t.image).toBe(true);
-      expect(t.href.startsWith("/")).toBe(true);
-      if (t.fill) expect(t.alt.length, t.id).toBeGreaterThan(10); // a photograph says what it shows; a product picture beside its label does not repeat it
-    }
+  it("has something to show at every stop on the range slider", () => {
+    expect(SHOP_RANGE[0]?.id).toBe("all");
+    for (const r of SHOP_RANGE.slice(1)) expect(SHOP_WORK.some((w) => w.kind === r.id), r.id).toBe(true);
   });
 
   it("shows only workshop pieces whose photograph exists and that carry no person's full name", () => {

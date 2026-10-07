@@ -47,46 +47,55 @@ export const SHOP_PRODUCTS: readonly ShopProduct[] = STORE_PRODUCTS.filter((p) =
     return image ? [{ slug: p.slug, name: p.name, line: LINES[p.slug] ?? "", image, href: p.builderRoute, ready: !NO_BUILDER_YET.has(p.slug) }] : [];
   });
 
-export interface ShopTile {
-  readonly id: string;
-  readonly label: string;
-  readonly href: string;
-  readonly image: string;
-  readonly alt: string;
-  /** A photograph fills the tile; a product picture on a clear background sits inside it. */
-  readonly fill: boolean;
-}
+/** The stops on the range slider. "all" shows everything; each of the others shows one kind of product. */
+export const SHOP_RANGE = [
+  { id: "all", label: "Everything" },
+  { id: "gloves", label: "Gloves" },
+  { id: "heavy-bags", label: "Heavy bags" },
+  { id: "focus-mitts", label: "Focus mitts" },
+  { id: "head-guards", label: "Head guards" },
+  { id: "groin-guards", label: "Groin guards" },
+  { id: "gyms", label: "Gym fit-outs" },
+] as const;
 
-/** The range, as picture tiles. Photographs are Jesse's own (already in the project); the rest are the builders' models until his photographs arrive. */
-export const SHOP_TILES: readonly ShopTile[] = [
-  { id: "gloves", label: "Gloves", href: "/build/gloves", image: `${P}/gloves.webp`, alt: "", fill: false },
-  { id: "heavy-bags", label: "Heavy bags", href: "/build/heavy-bag", image: "/assets/store/collection/bag-range.webp", alt: "A row of Sanchez heavy bags in a gym", fill: true },
-  { id: "focus-mitts", label: "Focus mitts", href: "/build/focus-mitts", image: "/assets/store/collection/mitt-detail.webp", alt: "Close detail of a Sanchez focus mitt: tan leather over a green ribbed pocket", fill: true },
-  { id: "head-guards", label: "Head guards", href: "/build/head-guard", image: `${P}/head-guard.webp`, alt: "", fill: false },
-  { id: "groin-guards", label: "Groin guards", href: "/build/groin-guard", image: `${P}/groin-guard.webp`, alt: "", fill: false },
-  { id: "gyms", label: "Gym fit-outs", href: "/gym-fit-outs", image: "/assets/store/collection/bag-white.webp", alt: "Sanchez heavy bags standing together, black, white and tricolour", fill: true },
-];
+export type RangeId = (typeof SHOP_RANGE)[number]["id"];
 
 export interface WorkPiece {
   readonly id: string;
+  readonly kind: Exclude<RangeId, "all">;
   readonly label: string;
   readonly image: string;
   readonly alt: string;
+  /** A photograph with its own background fills the frame; a cut-out sits inside it. */
+  readonly fill?: boolean;
+  /** Where the piece leads, when there is somewhere to go (its 3D builder, or the gym page). */
+  readonly href?: string;
 }
+
+const B = "/assets/store/collection";
 
 /**
  * From the workshop: finished pieces Jesse has made, from his own photographs. Only pieces that carry no person's full name are shown; the pairs
  * lettered for named people (in the same folder) wait for each person's written consent. Labels say only what the photograph shows.
+ * Gloves and head guards have no photograph yet, so each shows the builder's own model and says so. TODO(owner): Jesse's photographs of both.
  */
 export const SHOP_WORK: readonly WorkPiece[] = [
-  { id: "mitts-brown-pair", label: "Focus mitts", image: `${W}/focus-mitts-brown-zv-pair.webp`, alt: "Brown leather focus mitts, one face down, one showing the Sanchez badge and stitched initials" },
-  { id: "mitts-shamrock-gloss", label: "Striking face, gloss", image: `${W}/focus-mitts-shamrock-face-gloss.webp`, alt: "The striking face of a focus mitt in gloss green with a stitched shamrock" },
-  { id: "groin-guards-set", label: "Groin guards", image: `${W}/groin-guard-sh-set.webp`, alt: "Two red and blue groin guards with white lettering and a cross on the front" },
-  { id: "mitts-red-white-blue", label: "Focus mitts", image: `${W}/focus-mitts-red-white-blue-pair.webp`, alt: "A pair of focus mitts in red, white and blue leather" },
-  { id: "mitts-brown-side", label: "Lacing, side on", image: `${W}/focus-mitts-brown-zv-side-pair.webp`, alt: "Two brown focus mitts back to back, showing the laced edge" },
-  { id: "mitts-shamrock-matte", label: "Striking face, matte", image: `${W}/focus-mitts-shamrock-face-matte-left.webp`, alt: "The striking face of a focus mitt in matte green with a stitched shamrock" },
-  { id: "mitts-hand-opening", label: "Hand opening", image: `${W}/focus-mitts-freddie-roach-hand-opening.webp`, alt: "A focus mitt seen from the wrist, showing the hand opening and the laced rim" },
-  { id: "groin-guard-large", label: "Groin guard", image: `${W}/groin-guard-sh-large.webp`, alt: "A red and blue groin guard with white lettering, seen from the front" },
+  { id: "mitts-brown-pair", kind: "focus-mitts", label: "Focus mitts", image: `${W}/focus-mitts-brown-zv-pair.webp`, alt: "Brown leather focus mitts, one face down, one showing the Sanchez badge and stitched initials" },
+  { id: "bags-gym-row", kind: "heavy-bags", label: "Heavy bags", image: `${B}/bag-range.webp`, alt: "Jesse Sanchez standing among a row of his heavy bags in a gym", fill: true, href: "/build/heavy-bag" },
+  { id: "groin-guards-set", kind: "groin-guards", label: "Groin guards", image: `${W}/groin-guard-sh-set.webp`, alt: "Two red and blue groin guards with white lettering and a cross on the front", href: "/build/groin-guard" },
+  { id: "mitts-shamrock-gloss", kind: "focus-mitts", label: "Striking face, gloss", image: `${W}/focus-mitts-shamrock-face-gloss.webp`, alt: "The striking face of a focus mitt in gloss green with a stitched shamrock" },
+  { id: "gloves-model", kind: "gloves", label: "Gloves, 3D model", image: `${P}/gloves.webp`, alt: "A black boxing glove with brass piping, from the 3D builder", href: "/build/gloves" },
+  { id: "mitts-red-white-blue", kind: "focus-mitts", label: "Focus mitts", image: `${W}/focus-mitts-red-white-blue-pair.webp`, alt: "A pair of focus mitts in red, white and blue leather" },
+  { id: "bag-tricolour", kind: "heavy-bags", label: "Heavy bag, red, white and green", image: `${B}/bag-tricolour.webp`, alt: "A Sanchez heavy bag in red, white and green", fill: true, href: "/build/heavy-bag" },
+  { id: "head-guard-model", kind: "head-guards", label: "Head guard, 3D model", image: `${P}/head-guard.webp`, alt: "A black head guard with a brass-edged face opening, from the 3D builder", href: "/build/head-guard" },
+  { id: "mitts-brown-side", kind: "focus-mitts", label: "Lacing, side on", image: `${W}/focus-mitts-brown-zv-side-pair.webp`, alt: "Two brown focus mitts back to back, showing the laced edge" },
+  { id: "groin-guard-large", kind: "groin-guards", label: "Groin guard", image: `${W}/groin-guard-sh-large.webp`, alt: "A red and blue groin guard with white lettering, seen from the front", href: "/build/groin-guard" },
+  { id: "mitts-shamrock-matte", kind: "focus-mitts", label: "Striking face, matte", image: `${W}/focus-mitts-shamrock-face-matte-left.webp`, alt: "The striking face of a focus mitt in matte green with a stitched shamrock" },
+  { id: "gym-bags", kind: "gyms", label: "Bags for a gym", image: `${B}/bag-white.webp`, alt: "Sanchez heavy bags standing together, black, white and tricolour", fill: true, href: "/gym-fit-outs" },
+  { id: "mitts-hand-opening", kind: "focus-mitts", label: "Hand opening", image: `${W}/focus-mitts-freddie-roach-hand-opening.webp`, alt: "A focus mitt seen from the wrist, showing the hand opening and the laced rim" },
+  { id: "groin-guard-small", kind: "groin-guards", label: "Groin guard, small", image: `${W}/groin-guard-sh-small.webp`, alt: "A smaller red and blue groin guard with white lettering", href: "/build/groin-guard" },
+  { id: "mitts-brown-front", kind: "focus-mitts", label: "Focus mitt, back", image: `${W}/focus-mitts-brown-zv-front.webp`, alt: "The back of a brown focus mitt with the Sanchez badge and stitched initials" },
+  { id: "mitts-shamrock-gloss-alt", kind: "focus-mitts", label: "Striking face, gloss", image: `${W}/focus-mitts-shamrock-face-gloss-alt.webp`, alt: "A second view of the gloss green striking face with its shamrock" },
 ];
 
 export const SHOP_NAV = [

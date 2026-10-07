@@ -91,13 +91,14 @@ body:has(.shop) { background: #14100d; }
 .sh-card__go { margin-block-start: 6px; padding: 11px 8px; border-radius: 6px; background: var(--sh-red); color: #fff; font: 700 14px/1 var(--sh-text); transition: background-color .2s ease-out; }
 .sh-card:hover .sh-card__go { background: var(--sh-red-2); }
 
-/* range tiles */
-.sh-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.sh-tile { position: relative; display: block; aspect-ratio: 16 / 10.5; border-radius: 6px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #4a3a2f, #17120f 75%); text-decoration: none; }
-.sh-tile img { position: absolute; inset: 8% 0 22%; margin: auto; inline-size: auto; max-block-size: 70%; block-size: 70% !important; object-fit: contain; transition: transform .6s cubic-bezier(.075, .82, .165, 1); }
-.sh-tile[data-fill] img { inset: 0; inline-size: 100%; max-block-size: none; block-size: 100% !important; object-fit: cover; }
-.sh-tile:hover img { transform: scale(1.05); }
-.sh-tile span { position: absolute; inset-inline: 0; inset-block-end: 0; padding: 26px 8px 9px; background: linear-gradient(to top, var(--sh-deep) 46%, transparent); color: #fff !important; font: italic 800 clamp(18px, 4.8vw, 27px)/1 var(--sh-display); text-transform: uppercase; text-align: center; }
+/* range slider: a rail of stops and a pill that slides to the one in use */
+.sh-range { margin: 0 -16px 26px; padding-inline: 16px; overflow-x: auto; scrollbar-width: none; text-align: center; }
+.sh-range::-webkit-scrollbar { display: none; }
+.sh-range__rail { position: relative; display: inline-flex; gap: 2px; padding: 5px; background: #fff; border: 1px solid var(--sh-line); border-radius: 999px; box-shadow: inset 0 1px 3px rgb(20 16 13 / .06); }
+.sh-range__pill { position: absolute; inset-block: 5px; inset-inline-start: 0; border-radius: 999px; background: var(--sh-red); box-shadow: 0 4px 12px rgb(178 58 34 / .35); transition: transform .45s cubic-bezier(.075, .82, .165, 1), inline-size .45s cubic-bezier(.075, .82, .165, 1), opacity .2s ease-out; }
+.sh-range__stop { position: relative; z-index: 1; min-block-size: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: none; color: var(--sh-ink); font: 700 15px/1 var(--sh-text); white-space: nowrap; cursor: pointer; transition: color .2s ease-out; }
+.sh-range__stop[aria-checked="true"] { color: #fff; }
+.sh-range__stop:not([aria-checked="true"]):hover { color: var(--sh-red); }
 
 /* who makes it */
 .sh-split { display: grid; gap: 20px; align-items: center; }
@@ -108,6 +109,10 @@ body:has(.shop) { background: #14100d; }
 .sh-work { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .sh-work figure { margin: 0; background: #fff; border: 1px solid var(--sh-line); border-radius: 4px; overflow: hidden; }
 .sh-work img { display: block; inline-size: 100%; aspect-ratio: 1; block-size: auto; object-fit: contain; padding: 6%; box-sizing: border-box; background: radial-gradient(circle at 50% 45%, #fff 30%, #efebe3); }
+.sh-work img[data-fill] { object-fit: cover; padding: 0; }
+.sh-work a { display: block; text-decoration: none; }
+.sh-work figure { transition: box-shadow .2s ease-out, transform .2s ease-out; }
+.sh-work figure:has(a):hover { box-shadow: 0 14px 30px rgb(20 16 13 / .12); transform: translateY(-2px); }
 .sh-work figcaption { padding: 10px 8px; border-block-start: 1px solid var(--sh-line); font: 600 14px/1.2 var(--sh-text); text-align: center; }
 
 /* key features */
@@ -180,7 +185,7 @@ html body .shop .pg__btn--ghost { background: #fff !important; color: var(--sh-i
   .sh-wrap { padding-inline: 32px; }
   .sh-row { grid-auto-columns: 30%; margin-inline: -32px; padding-inline: 32px; }
   .sh-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
-  .sh-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+  .sh-range { margin-inline: 0; padding-inline: 0; }
   .sh-steps { grid-template-columns: repeat(3, 1fr); }
   .sh-feats { grid-template-columns: repeat(2, 1fr); gap: 22px; }
   .sh-work { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
