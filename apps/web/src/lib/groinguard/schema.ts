@@ -63,9 +63,10 @@ export const GROINGUARD_PRODUCT: BuilderProduct = {
   fixedNodes: [{ name: "BUCKLES", hex: ELASTIC_BLACK }],
   clothPanels: ["ELASTIC", "STITCHING"],
   artPanels: ["WAIST_FRONT", "FLAP"],
-  artStart: { WAIST_FRONT: { u: 0.5, v: 0.5 }, FLAP: { u: 0.5, v: 0.5 } },
+  // the flap carries a stitched box-and-cross at its right-hand end (seen from behind), so a new mark starts on the clear left part
+  artStart: { WAIST_FRONT: { u: 0.5, v: 0.5 }, FLAP: { u: 0.36, v: 0.5 } },
   logoStart: { panel: "WAIST_FRONT", size: 0.5 },
-  wordsStart: { panel: "FLAP", size: 0.3 },
+  wordsStart: { panel: "FLAP", size: 0.2 },
   zones: ZONES,
   colourwayZone: "front",
   defaults: DEFAULTS,
