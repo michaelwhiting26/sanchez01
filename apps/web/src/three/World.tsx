@@ -1,9 +1,11 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
-import { BufferAttribute, BufferGeometry, Color, Fog, MathUtils, Object3D, PMREMGenerator, type DirectionalLight, type HemisphereLight, type Points, type PointLight, type SpotLight } from "three";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BufferAttribute, BufferGeometry, Color, Fog, MathUtils, Mesh, Object3D, PMREMGenerator, type DirectionalLight, type Material, type Texture, type WebGLRenderer, type HemisphereLight, type Points, type PointLight, type SpotLight } from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { assetManager } from "@/experience/asset-manager";
+import { loadLightMap } from "@/experience/light-map";
 import { CinematicCamera } from "./CinematicCamera";
 import { Exterior } from "./Exterior";
 import { Jesse } from "./Jesse";
@@ -12,6 +14,7 @@ import { ProductWall } from "./ProductWall";
 import { WallSpots } from "./WallSpots";
 import { Workshop } from "./Workshop";
 import { useScene } from "./scene-store";
+import { useGltf } from "./use-gltf";
 import type { WorldProps } from "./types";
 
 /**
@@ -19,11 +22,17 @@ import type { WorldProps } from "./types";
  * The workshop's light and shadow are baked (specs/09): ray-traced once in Blender and read from a picture, see Workshop.tsx. What is worked out live
  * is only what moves or shines: faint lights at the fixtures for highlights on brass, steel and leather, the light on the product in view with its
  * one real shadow, and a little fill for Jesse and the products. The street is still lit live.
+ *
+ * Nothing is drawn until the street and the room have been prepared on the graphics card (see WarmUp). A phone takes seconds to do that, and
+ * drawing while it happens is what used to leave a black screen behind the interface; a still of the shop front covers the wait instead.
  */
 export default function World(props: WorldProps) {
+  const [warm, setWarm] = useState(false);
   return (
-    <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} camera={{ fov: 50, near: 0.1, far: 40, position: [0.45, 1.62, 7.65] }}>
+    <Canvas shadows frameloop={warm ? "always" : "never"} dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} camera={{ fov: 50, near: 0.1, far: 40, position: [0.45, 1.62, 7.65] }}>
       <Stage />
+      <WarmUp {...props} warm={warm} onWarm={() => setWarm(true)} />
+      <WarmAhead {...props} />
       <Ambience {...props} />
       <RoomLights {...props} />
       <ProductKeyLight {...props} />
@@ -145,6 +154,10 @@ function ProductKeyLight({ bootstrap, stage, index }: WorldProps) {
     target.updateMatrixWorld();
     l.intensity = MathUtils.damp(l.intensity, browsing ? (stage === "browsing" ? 26 : 36) : 0, 5, dt);
     l.shadow.autoUpdate = browsing; // no product on show, no shadow to redraw
+    // The shadow's own picture must exist before anything that reads it is drawn. It is only made by drawing the shadow once, and with updates
+    // switched off (above) that would never happen if the room was ready before the first frame. Every surface that receives this shadow then
+    // fails to draw on a strict graphics chip: the room stayed black until the visitor reached the products. Ask for one draw until it exists.
+    if (l.castShadow && !l.shadow.map) l.shadow.needsUpdate = true;
   });
   return (
     <>
@@ -169,6 +182,115 @@ function ProductKeyLight({ bootstrap, stage, index }: WorldProps) {
       />
     </>
   );
+}
+
+const nextFrame = (): Promise<void> => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+const frames = async (n: number): Promise<void> => {
+  for (let i = 0; i < n; i++) await nextFrame();
+};
+
+/** Every picture the materials under `root` use. */
+function texturesOf(root: Object3D): Texture[] {
+  const found = new Set<Texture>();
+  root.traverse((o) => {
+    if (!(o instanceof Mesh)) return;
+    const materials: Material[] = Array.isArray(o.material) ? (o.material as Material[]) : [o.material as Material];
+    for (const m of materials) for (const value of Object.values(m)) if (isTexture(value)) found.add(value);
+  });
+  return [...found];
+}
+const isTexture = (v: unknown): v is Texture => typeof v === "object" && v !== null && (v as { isTexture?: boolean }).isTexture === true;
+
+/** Sends pictures to the graphics card one per frame, so no single frame carries the whole load. */
+async function upload(gl: WebGLRenderer, textures: readonly Texture[], live: () => boolean): Promise<void> {
+  for (const t of textures) {
+    if (!live()) return;
+    if (t.image) gl.initTexture(t);
+    await nextFrame();
+  }
+}
+
+/**
+ * Prepares the street and the room before the first frame is drawn. A 3D file that has downloaded is not yet drawable: the phone still has to
+ * build a shader for every kind of surface and copy every picture to its graphics card, and it does that the first time each thing is drawn.
+ * Left alone, that work lands in the first frames and in the walk through the door, where the visitor sees it as a black or frozen screen.
+ * Here it is done up front, off the visitor's clock: shaders are built in the background where the phone supports it (`compileAsync`),
+ * pictures go up one per frame, and only then does drawing start. `onDrawn` fires after real frames are on screen.
+ */
+function WarmUp({ bootstrap, warm, onWarm, onDrawn }: WorldProps & { warm: boolean; onWarm: () => void }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  // asked for only until the warm-up is done: afterwards the street is released when the visitor walks in, and must not be fetched back
+  const exterior = useGltf(warm ? null : bootstrap.scene.exterior);
+  const workshop = useGltf(warm ? null : bootstrap.scene.workshop);
+  const marked = useScene((s) => s.workshopReady);
+  const [lit, setLit] = useState(false);
+  const callbacks = useRef({ onWarm, onDrawn });
+  callbacks.current = { onWarm, onDrawn };
+
+  useEffect(() => {
+    let live = true;
+    void loadLightMap(bootstrap.scene.workshopLight)
+      .then(() => live && setLit(true))
+      .catch(() => undefined); // a failed download is handled where the files are fetched (StoreExperience falls back)
+    return () => {
+      live = false;
+    };
+  }, [bootstrap.scene.workshopLight]);
+
+  useEffect(() => {
+    if (warm || !exterior || !workshop || !marked || !lit) return;
+    let live = true;
+    void (async () => {
+      await frames(2); // both files are in the scene and the baked light is on its surfaces
+      await gl.compileAsync(scene, camera);
+      await upload(gl, texturesOf(scene), () => live);
+    })()
+      .catch((error: unknown) => console.error("Store: the scene could not be prepared ahead of drawing; it will be prepared as it is drawn instead.", error))
+      .then(async () => {
+        if (!live) return;
+        callbacks.current.onWarm(); // from here this effect is torn down (warm has changed), so nothing below may depend on `live`
+        await frames(3); // drawing has started: these are real frames
+        callbacks.current.onDrawn();
+      });
+    return () => {
+      live = false;
+    };
+  }, [warm, exterior, workshop, marked, lit, gl, scene, camera]);
+  return null;
+}
+
+/**
+ * While the visitor stands on the street, gets Jesse and every product ready for the room: downloaded, shaders built, pictures uploaded.
+ * They used to start downloading only when the door was tapped, so the greeting could begin before he had arrived.
+ */
+function WarmAhead({ bootstrap, stage }: WorldProps) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const started = useRef(false);
+  useEffect(() => {
+    if (stage === "boot" || started.current) return;
+    started.current = true;
+    let live = true;
+    void (async () => {
+      for (const url of [bootstrap.scene.jesse, ...bootstrap.products.map((p) => p.modelAsset)]) {
+        try {
+          const gltf = await assetManager.load(url);
+          if (!live) return;
+          await gl.compileAsync(gltf.scene, camera, scene);
+          await upload(gl, texturesOf(gltf.scene), () => live);
+        } catch (error) {
+          console.warn(`Store: ${url} could not be prepared ahead of time; it will be prepared when it is first drawn.`, error);
+        }
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [stage, bootstrap, gl, scene, camera]);
+  return null;
 }
 
 /** Background, depth haze and reflections, set up once. */

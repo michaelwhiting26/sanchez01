@@ -26,6 +26,28 @@ one persistent WebGL canvas, a fixed set of camera moves, and a state machine th
 | Scripts that make the 3D files | `tools/store/build_store.py` (calls `iron_door.py`), `tools/store/decimate_glb.py` |
 | Phone-size captures for sign-off | `node tools/store/capture.mjs` (390x844 and 430x932, dev server running) |
 
+## First load: never blank, and "ready" means drawn (7 Oct 2026)
+The fault: on a phone the screen could be black behind "Tap to enter" and stay black through the walk-in and Jesse's greeting, the picture only
+returning at the products. Two causes, both fixed in `three/World.tsx` and `components/store/StoreExperience.tsx`.
+
+1. **The product light's shadow picture was sometimes never made.** That light is the one live shadow in the store, and its updates are switched
+   off while no product is on show. A shadow's picture is only created by drawing it once. If the room file was ready before the very first frame
+   (files cached, slow first frame: a phone), the switch-off came first, the picture never existed, and every surface that receives that shadow
+   failed to draw (the browser logs "GL_INVALID_OPERATION ... sampler type (shadow)"). `ProductKeyLight` now asks for one draw until the picture
+   exists. Do not remove that line.
+2. **"Ready" meant downloaded, not drawable.** A phone still has to build a shader for every kind of surface and copy every picture to its
+   graphics card, and did so inside the first frames. `WarmUp` now does that before any frame is drawn (shaders in the background where the phone
+   supports it, pictures one per frame), and the door can only be tapped after real frames are on screen. `WarmAhead` does the same for Jesse and
+   the products while the visitor is on the street.
+
+While all that happens the visitor sees a still of the shop front, in the page from the first byte, which fades out when the 3D is behind it.
+The still is taken from the live scene: run `node tools/store/poster.mjs` again whenever the street or the arrival camera changes.
+To time a load on a slowed-down phone and see every half second of it: `node tools/store/trace-load.mjs <outDir> <url>`.
+
+What has to arrive before the door opens (over the wire, 7 Oct 2026): room 2.8 MB, street 0.6 MB, baked light 0.6 MB. Then Jesse 2.4 MB and the
+products 1.6 MB. Nothing has been compressed further: the options that would shrink these (smaller pictures in the room file, a reduced Jesse)
+change how things look and need the owner's say.
+
 ## Baking the room's light
 The room must be baked again whenever its shape or its lights change. A build without `--bake` stops with "STALE BAKED LIGHT" if they have.
 

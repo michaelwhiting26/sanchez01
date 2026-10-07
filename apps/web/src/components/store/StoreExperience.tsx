@@ -23,6 +23,7 @@ import "../../styles/store.css";
 const World = dynamic(() => import("@/three/World"), { ssr: false });
 
 const SEEN_KEY = "sz_store_seen";
+const POSTER = { tall: "/assets/store/poster-tall.webp", wide: "/assets/store/poster-wide.webp" } as const;
 
 /** Parts 1 to 4 of the store on one screen: the 3D world, the thin interface over it, and the state machine that both obey. */
 export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
@@ -42,7 +43,11 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   const stageEl = useRef<HTMLDivElement>(null);
   const audio = useMemo(() => new AudioController(), []);
 
-  // Decide once whether this device gets the 3D store, and fetch the street and the room before the door can be tapped.
+  const [posterGone, setPosterGone] = useState(false);
+  const seenBefore = useRef(false);
+
+  // Decide once whether this device gets the 3D store, and fetch the street and the room. The door opens when they are DRAWN (onDrawn below),
+  // not when they have downloaded: a phone needs seconds between the two, and that gap used to be a black screen behind the interface.
   useEffect(() => {
     const use3d = supportsWebGL2() && !wantsLightExperience();
     setMode(use3d ? "3d" : "fallback");
@@ -56,17 +61,24 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     } catch {
       /* storage blocked: treat as a first visit */
     }
-    void Promise.all([assetManager.load(bootstrap.scene.exterior), assetManager.load(bootstrap.scene.workshop), loadLightMap(bootstrap.scene.workshopLight)])
-      .then(() => {
-        if (!live) return;
-        send({ type: "READY", returningCustomer: seen });
-        track("store_loaded", { returning: seen });
-      })
-      .catch(() => live && setMode("fallback"));
+    seenBefore.current = seen;
+    void Promise.all([assetManager.load(bootstrap.scene.exterior), assetManager.load(bootstrap.scene.workshop), loadLightMap(bootstrap.scene.workshopLight)]).catch(
+      () => live && setMode("fallback"),
+    );
     return () => {
       live = false;
     };
-  }, [bootstrap.scene.exterior, bootstrap.scene.workshop, bootstrap.scene.workshopLight, send]);
+  }, [bootstrap.scene.exterior, bootstrap.scene.workshop, bootstrap.scene.workshopLight]);
+
+  const onDrawn = useCallback(() => {
+    send({ type: "READY", returningCustomer: seenBefore.current });
+    track("store_loaded", { returning: seenBefore.current });
+  }, [send]);
+
+  // The visitor is looking at the street: fetch what the room needs now, so Jesse and the products are there before the door is tapped.
+  useEffect(() => {
+    if (stage === "arrive") assetManager.preload([bootstrap.scene.jesse, ...bootstrap.products.map((p) => p.modelAsset)]);
+  }, [stage, bootstrap]);
 
   useEffect(() => () => audio.dispose(), [audio]);
 
@@ -80,8 +92,6 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
     if (stage !== "arrive") return;
     send({ type: "ENTER" });
     track("door_entered");
-    // While the camera walks in, fetch what the room needs next (spec: streaming). The visitor never sees a loading screen after this tap.
-    assetManager.preload([bootstrap.scene.jesse, ...bootstrap.products.map((p) => p.modelAsset)]);
     try {
       localStorage.setItem(SEEN_KEY, "1");
     } catch {
@@ -268,8 +278,16 @@ export function StoreExperience({ bootstrap }: { bootstrap: StoreBootstrap }) {
   return (
     <div className="store" ref={stageEl} data-stage={stage}>
       <div className="store__canvas" aria-hidden="true">
-        {mode === "3d" ? <World bootstrap={bootstrap} stage={stage} index={index} returning={returningCustomer} reducedMotion={reducedMotion} send={send} onOpenStory={onOpenStory} /> : null}
+        {mode === "3d" ? <World bootstrap={bootstrap} stage={stage} index={index} returning={returningCustomer} reducedMotion={reducedMotion} send={send} onOpenStory={onOpenStory} onDrawn={onDrawn} /> : null}
       </div>
+      {/* A still of the shop front, in the page from the first byte: the screen is never blank while the 3D downloads and is prepared. It fades
+          out once real frames are behind it. Made from the live scene by tools/store/poster.mjs. */}
+      {posterGone ? null : (
+        <picture className="store__poster" data-gone={stage === "boot" ? undefined : ""} aria-hidden="true" onTransitionEnd={() => setPosterGone(true)}>
+          <source media="(orientation: landscape)" srcSet={POSTER.wide} />
+          <img src={POSTER.tall} alt="" fetchPriority="high" decoding="sync" />
+        </picture>
+      )}
       <StoreUI
         bootstrap={bootstrap}
         stage={stage}

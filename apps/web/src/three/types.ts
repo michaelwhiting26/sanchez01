@@ -11,6 +11,8 @@ export interface WorldProps {
   readonly send: (event: StoreEventObject) => void;
   /** The visitor tapped something on the wall while looking around: open its story over the store. */
   readonly onOpenStory: (id: string) => void;
+  /** The street and the room have been built on the graphics card and real frames are on screen: only now may the door open. */
+  readonly onDrawn: () => void;
 }
 
 export const INSIDE: ReadonlySet<StoreStage> = new Set<StoreStage>(["greeting", "browsing", "lookingAround", "productSelected", "builderLoading"]);

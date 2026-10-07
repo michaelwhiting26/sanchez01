@@ -3,6 +3,10 @@
 .store, .store-fallback { position: relative; block-size: 100svh; block-size: 100dvh; min-block-size: 30rem; overflow: hidden; background: #090705; color: #f3ece2; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
 .store__canvas { position: absolute; inset: 0; }
 .store__canvas canvas { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
+/* The still that covers the 3D until it is drawn (StoreExperience.tsx). It sits over the canvas and under the interface. */
+.store__poster { position: absolute; inset: 0; pointer-events: none; opacity: 1; transition: opacity .7s ease; }
+.store__poster img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; }
+.store__poster[data-gone] { opacity: 0; }
 .store-ui { position: absolute; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom)); font-family: var(--nf-text, system-ui), sans-serif; }
 .store-ui button, .store-ui a { pointer-events: auto; }
 
