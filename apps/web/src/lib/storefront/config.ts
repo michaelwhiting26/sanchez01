@@ -15,9 +15,9 @@ const S = "/assets/store";
 export const STORE_PRODUCTS: readonly StoreProduct[] = [
   { id: "gloves", slug: "gloves", name: "Custom Gloves", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GLOVES", modelAsset: `${S}/gloves.glb`, builderRoute: "/build/gloves", sortOrder: 1, active: true, standIn: false, hangs: false, displayHeight: 0.3 },
   { id: "heavy-bag", slug: "heavy-bag", name: "Heavy Bag", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "BAG", modelAsset: `${S}/heavy-bag.glb`, builderRoute: "/build/heavy-bag", sortOrder: 2, active: true, standIn: false, hangs: true, displayHeight: 1.75 },
-  { id: "head-guard", slug: "head-guard", name: "Head Guard", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "THAI_PADS", modelAsset: `${S}/head-guard.glb`, builderRoute: "/build/head-guard", sortOrder: 3, active: false, standIn: false, hangs: false, displayHeight: 0.27 },
+  { id: "head-guard", slug: "head-guard", name: "Head Guard", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "THAI_PADS", modelAsset: `${S}/head-guard.glb`, builderRoute: "/build/head-guard", sortOrder: 3, active: true, standIn: false, hangs: false, displayHeight: 0.27 },
   { id: "focus-mitts", slug: "focus-mitts", name: "Focus Mitts", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "MITTS", modelAsset: `${S}/focus-mitts.glb`, builderRoute: "/build/focus-mitts", sortOrder: 4, active: true, standIn: false, hangs: false, displayHeight: 0.3, modelRotation: [Math.PI / 2, 0, 0] },
-  { id: "groin-guard", slug: "groin-guard", name: "Groin Guard", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GUARDS", modelAsset: `${S}/groin-guard.glb`, builderRoute: "/build/groin-guard", sortOrder: 5, active: false, standIn: false, hangs: false, displayHeight: 0.3 },
+  { id: "groin-guard", slug: "groin-guard", name: "Groin Guard", tagline: "Handmade in Pattaya", priceFromMinor: null, currency: "AUD", cameraAnchor: "GUARDS", modelAsset: `${S}/groin-guard.glb`, builderRoute: "/build/groin-guard", sortOrder: 5, active: true, standIn: false, hangs: false, displayHeight: 0.3 },
 ];
 
 /**

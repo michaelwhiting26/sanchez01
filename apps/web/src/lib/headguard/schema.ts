@@ -40,7 +40,7 @@ export const HEADGUARD_PRODUCT: BuilderProduct = {
   id: "head-guard",
   copy: {
     heading: "Design your head guard",
-    priceLabel: "Custom head guard",
+    priceLabel: "Head guard",
     reviewTitle: "Your head guard",
     noun: "head guard",
     standIn: "Illustrative head guard shape. Jesse's own pattern replaces it when it is supplied.",

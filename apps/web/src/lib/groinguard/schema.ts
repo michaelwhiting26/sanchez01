@@ -41,7 +41,7 @@ export const GROINGUARD_PRODUCT: BuilderProduct = {
   id: "groin-guard",
   copy: {
     heading: "Design your groin guard",
-    priceLabel: "Custom groin guard",
+    priceLabel: "Groin guard",
     reviewTitle: "Your groin guard",
     noun: "guard",
     standIn: "Illustrative groin guard shape. Jesse's own pattern replaces it when it is supplied.",
