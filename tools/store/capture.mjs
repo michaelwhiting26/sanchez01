@@ -14,7 +14,7 @@ for (const [w, h] of [[390, 844], [430, 932]]) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
-  await page.goto(base, { waitUntil: "networkidle" });
+  await page.goto(`${base}/3d-store`, { waitUntil: "networkidle" });
   await page.waitForSelector('.store[data-stage="arrive"]', { timeout: 30000 });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${out}/A-arrive-${w}x${h}.png` });

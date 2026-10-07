@@ -22,7 +22,7 @@ page.on("console", (m) => (m.type() === "error" || /context|lost/i.test(m.text()
 page.on("pageerror", (e) => log.push(`${T()} pageerror ${String(e).slice(0, 160)}`));
 const sizes = [];
 page.on("response", async (r) => { const u = r.url(); if (/\.(glb|webp|js)(\?|$)/.test(u) && !/_next\/image/.test(u)) { const b = await r.body().catch(() => null); sizes.push([T(), u.split("/").slice(-1)[0].slice(0, 44), b ? b.length : -1, r.headers()["content-encoding"] ?? "-"]); } });
-page.goto(base, { waitUntil: "commit" }).catch(() => undefined);
+page.goto(`${base}/3d-store`, { waitUntil: "commit" }).catch(() => undefined);
 let lastStage = "", tapped = false, n = 0;
 while (Date.now() - t0 < 60000) {
   const stage = await page.evaluate(() => document.querySelector(".store")?.getAttribute("data-stage") ?? "(no store)").catch(() => "(nav)");

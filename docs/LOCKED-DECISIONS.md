@@ -2,8 +2,19 @@
 
 The owner's current word on how each part of the site behaves. Anyone changing these parts (human or agent) reads this first and does not undo a line here without the owner saying so. Newest decision wins; when one changes, edit the line (do not append a contradicting rule elsewhere).
 
-## Home is the 3D store (owner, 5 Oct 2026)
-- **`/` is the mobile 3D store, Parts 1 to 4** (arrive, walk in, Jesse greets you, swipe through products), built to the owner's engineering specification. See `docs/STORE-3D.md`. One persistent canvas, cinematic camera only, everything driven by the state machine.
+## Home is a plain shop (owner, 7 Oct 2026)
+- **The site is a plain shop on the pattern of Infinitude Fight.** The owner showed Jesse the 3D store over lunch; Jesse said it felt like a video game and asked for a site "exactly like Infinitude Fight". So: a top strip, a header with "Design in 3D", a hero, a row of products each marked 3D, picture tiles for the range, three steps, a dark "fully custom" panel, a short list of what is true of every piece, a four-column footer (`app/page.tsx`, `components/shop`, `styles/shop.css`, content in `lib/shop/catalogue.ts`). `/shop` is the product grid; `/how-it-works` the three steps.
+- **Only the pattern is theirs.** Every word, picture, colour and line of code is ours. Nothing of theirs is copied in, and none may be (same rule as the builders, below).
+- **A product page is its 3D builder**, as on their site: "Customise now" opens `/build/<product>` (the heavy bag opens `/configure`). The builders are unchanged apart from "Back to shop".
+- **The shop is light; the builders stay dark.** Shop buttons are a filled rust bar from the logo, square-cornered, with the same shape in outline for second actions. This replaces the brass pill for the shop pages only; the builders and the parked pages keep "Buttons are plain" below.
+- **No price, size, delivery time, review or shipping promise is shown** until Jesse confirms it: cards read "Price to come" and step 3 says orders are not open yet. No cart or account icon until there is something to buy.
+- **Pictures:** the cards use the builders' own models on a clear background (`tools/shop/thumbs.mjs`) plus the bag and mitt renders; the tiles use Jesse's own photographs where the project has them. Jesse's product photographs replace these as the owner supplies them.
+- **The 3D store is parked, not deleted** (owner: "don't delete what we've done because I'll use that again"). It runs whole at `/3d-store`, linked from nowhere; `main` on GitHub still holds it as the home page as it stood on 7 Oct 2026 (commit `ba782ee`). Everything under "The 3D store" below still describes it and still applies to it. The scroll site before it is still at `/superseded`.
+- **Jesse as the running character** (the master rule in `CLAUDE.md`) belongs to the scroll site and the 3D store. The shop has no character on it; do not add one without the owner.
+- This work is on the branch `infinitude-shop`.
+
+## The 3D store (owner, 5 Oct 2026; parked at /3d-store since 7 Oct 2026)
+- **`/3d-store` is the mobile 3D store, Parts 1 to 4** (arrive, walk in, Jesse greets you, swipe through products), built to the owner's engineering specification. See `docs/STORE-3D.md`. One persistent canvas, cinematic camera only, everything driven by the state machine.
 - **The scroll site below is superseded, not deleted.** It lives whole at `/superseded`, linked as "Superseded" in the store footer. Its sections ("Home, top to bottom") still describe that page and still apply to it.
 - **Jesse in the store is a dark silhouette** until his character model is approved; no face is shown. He stays in the room throughout and does not speak on every swipe.
 - **Realism pass, phase by phase (owner, 6 Oct 2026).** The store is being taken from grey-box to the owner's storyboard (`specs/08` in the Dropbox project folder and the storyboard image of the same date), one phase at a time, each signed off from phone-size captures before the next starts.

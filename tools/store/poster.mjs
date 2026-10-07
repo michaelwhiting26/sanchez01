@@ -18,7 +18,7 @@ const browser = await chromium.launch({ args: ["--use-angle=metal", "--enable-gp
 for (const s of SHOTS) {
   const page = await browser.newPage({ viewport: { width: s.width, height: s.height }, deviceScaleFactor: s.scale, isMobile: s.width < 800, hasTouch: s.width < 800 });
   // the development quality hold keeps the full level on a test browser, so the still is never taken on the reduced one
-  await page.goto(`${base}/?quality=full`, { waitUntil: "networkidle" });
+  await page.goto(`${base}/3d-store?quality=full`, { waitUntil: "networkidle" });
   await page.waitForSelector('.store[data-stage="arrive"]', { timeout: 60000 });
   // only the 3D: no interface, and not an older copy of this still
   await page.addStyleTag({ content: ".store-ui, .store__poster, nextjs-portal { visibility: hidden !important; }" });

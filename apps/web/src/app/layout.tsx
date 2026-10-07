@@ -5,12 +5,12 @@ import "../styles/home.css";
 import "../styles/buttons.css";
 import "./globals.css";
 
-const display = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], display: "swap", variable: "--nf-display" });
+const display = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], style: ["normal", "italic"], display: "swap", variable: "--nf-display" });
 const text = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--nf-text" });
 
 export const metadata: Metadata = {
   title: "Sanchez Custom Boxing Equipment | Designed in Sydney. Handmade in Pattaya.",
-  description: "Custom boxing bags and gym fit-outs, cut, stitched and printed by hand. Designed in Sydney. Handmade in Pattaya.",
+  description: "Custom boxing gloves, bags, guards and gym fit-outs, cut, stitched and printed by hand. Designed in Sydney. Handmade in Pattaya.",
   robots: { index: false, follow: false }, // prototype phase: stays out of search until launch (business TODO)
 };
 

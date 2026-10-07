@@ -199,7 +199,7 @@ function Builder({ product }: { product: BuilderProduct }) {
           </ol>
           <p className="ck__price">{product.copy.priceLabel} · <strong>Price to come</strong></p>
         </div>
-        <Link href="/" className="ck__save">Back</Link>
+        <Link href="/shop" className="ck__save">Back to shop</Link>
       </header>
 
       {!review && (
