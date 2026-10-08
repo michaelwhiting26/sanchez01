@@ -83,7 +83,7 @@ export function priceBag(config: BagConfig, book: PriceBook): PriceResult {
     (config.fill !== "filled" || need("fill", "Filled", book.filled)) &&
     (config.makersMark || need("makers-mark", "Maker's mark removal", book.makersMarkRemoval)) &&
     config.extras.every((e) => need(`extra-${e}`, `Extra: ${e}`, book.extras[e]));
-  if (!ok) return { status: "unpriced", reason: "Prices are not set yet (business TODO #23)." };
+  if (!ok) return { status: "unpriced", reason: "Prices are not set yet." };
   const unit = Math.max(0, lines.reduce((a, l) => a + l.unitMinor, 0));
   let pct = 0;
   for (const t of book.tiers) if (config.quantity >= t.from) pct = t.pct;

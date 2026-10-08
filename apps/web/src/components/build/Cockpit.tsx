@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BagPreview, type BagHandle } from "./BagPreview";
 import { SCENES, type SceneId } from "@/lib/bag/engine";
@@ -13,7 +14,8 @@ import { ShareSheet } from "./ShareSheet";
 import { PartsPanel, partsSpec } from "./PartsPanel";
 import type { PartKey, Parts } from "@/lib/configurator/schema";
 import { activeSteps, BOOLEAN_KEYS, GROUPS, STEPS, stepForKey, type StepDef, type StepId, type StepState } from "@/lib/configurator/steps";
-import { LOGO_SRC } from "@/lib/site";
+import { designDetails, stashDesign } from "@/lib/quote-handoff";
+import { CONTACT_HREF, LOGO_SRC } from "@/lib/site";
 import "../../styles/cockpit.v3.css";
 
 const colourName = (id: string): string => COLOURS.find((c) => c.id === id)?.name ?? id;
@@ -64,6 +66,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
   const [activePart, setActivePart] = useState<PartKey>("panelL");
   const [exploded, setExploded] = useState(false);
   const [specCopied, setSpecCopied] = useState(false);
+  const router = useRouter();
   const bag = useRef<BagHandle>(null);
   const sheetEl = useRef<HTMLElement>(null);
   const rootEl = useRef<HTMLDivElement>(null);
@@ -227,6 +230,13 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
     setActivePart(p);
     if (def.answer.kind !== "parts" && steps.some((s) => s.id === "parts")) setStepId("parts");
   };
+  /** No price is set yet, so the finished bag goes to Jesse as a quote request: every answer, one a line, into the quote form. */
+  const sendForQuote = (): void => {
+    const lines = steps.filter((st) => st.answer.kind !== "review").map((st) => `${st.label}: ${summary(st, cfg)}`);
+    if (cfg.parts) lines.push(partsSpec(cfg.parts));
+    if (stashDesign({ product: "heavy-bag", details: designDetails("Your heavy bag", lines.join("\n")) })) router.push(CONTACT_HREF);
+    else setError("The design could not be passed on from this device. Please describe it in the quote form.");
+  };
   const copySpec = (): void => {
     if (!cfg.parts) return;
     void navigator.clipboard?.writeText(partsSpec(cfg.parts as Parts)).then(() => { setSpecCopied(true); window.setTimeout(() => setSpecCopied(false), 1800); }).catch(() => undefined);
@@ -321,12 +331,14 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
               </ul>
               {skippedLeft.length > 0 && <p className="ck__note">Skipped: {skippedLeft.map((s) => s.label).join(", ")}. The defaults are in your bag.</p>}
               {errors.map((i) => <p key={i.code} className="ck__note ck__note--err" role="alert">{i.message} <button type="button" onClick={() => jump(stepForKey(i.path), true)}>Fix</button></p>)}
-              {price?.status === "unpriced" && <p className="ck__note">{price.reason} Ordering opens once prices are set.</p>}
+              {price?.status === "unpriced" && <p className="ck__note">{price.reason} Send this bag to Jesse and he will quote it.</p>}
               {error && <p className="ck__note ck__note--err" role="alert">{error}</p>}
               <div className="ck__sheetrow">
                 <button type="button" className="ck__btn ck__btn--ghost" onClick={back}>Back</button>
                 <select aria-label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select>
-                <button type="button" className="ck__btn ck__btn--pay" disabled={!canPay || busy} onClick={() => void startCheckout()}>{busy ? "One moment…" : `Make it mine · ${priceText}`}</button>
+                {price?.status === "unpriced"
+                  ? <button type="button" className="ck__btn ck__btn--pay" onClick={sendForQuote}>Send to Jesse for a quote</button>
+                  : <button type="button" className="ck__btn ck__btn--pay" disabled={!canPay || busy} onClick={() => void startCheckout()}>{busy ? "One moment…" : `Make it mine · ${priceText}`}</button>}
               </div>
             </>
           )}

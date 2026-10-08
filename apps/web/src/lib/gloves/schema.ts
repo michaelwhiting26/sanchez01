@@ -41,7 +41,7 @@ export const GLOVE_PRODUCT: BuilderProduct = {
     reviewTitle: "Your gloves",
     noun: "glove",
     standIn: "Illustrative glove shape. Jesse's own pattern replaces it when it is supplied.",
-    reviewNote: "Both gloves are made the same, as a mirrored pair. Price to come. Custom glove orders are not open yet: join the list and we will tell you when they are.",
+    reviewNote: "Both gloves are made the same, as a mirrored pair. Price to come. Online ordering is not open yet: send this design to Jesse and he will quote it.",
   },
   saveKey: "sanchez.glove.v1",
   fileStem: "sanchez-custom-gloves",

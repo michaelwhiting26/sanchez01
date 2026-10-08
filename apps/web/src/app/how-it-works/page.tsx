@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShopShell } from "@/components/shop/ShopShell";
 import { SHOP_STEPS } from "@/lib/shop/catalogue";
-import { WAITLIST_HREF } from "@/lib/catalogue";
+import { CONTACT_HREF } from "@/lib/site";
 
 export const metadata = { title: "How it works | Sanchez Custom Boxing" };
 
@@ -36,8 +36,8 @@ export default function HowItWorksPage() {
           <Link className="sh-btn" href="/shop">
             Design in 3D
           </Link>
-          <Link className="sh-btn sh-btn--line" href={WAITLIST_HREF}>
-            Join the list
+          <Link className="sh-btn sh-btn--line" href={CONTACT_HREF}>
+            Get a Quote
           </Link>
         </div>
       </section>

@@ -15,7 +15,7 @@ export function ProductCard({ product, compact = false }: { product: ShopProduct
           <>
             <span className="sh-card__line">{product.line}</span>
             <span className="sh-card__price">Price to come</span>
-            <span className="sh-card__go">{product.ready ? "Customise now" : "Join the list"}</span>
+            <span className="sh-card__go">{product.ready ? "Customise now" : "Get a Quote"}</span>
           </>
         )}
       </span>

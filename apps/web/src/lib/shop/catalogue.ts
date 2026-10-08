@@ -17,7 +17,7 @@ export interface ShopProduct {
   readonly line: string;
   readonly image: { readonly src: string; readonly alt: string; readonly width: number; readonly height: number };
   readonly href: string;
-  /** False while the product has no 3D builder yet: the card says so and leads to the waiting list page. */
+  /** False while the product has no 3D builder yet: the card says so and leads to its page, which offers a quote. */
   readonly ready: boolean;
 }
 
@@ -161,7 +161,7 @@ export const SHOP_NAV = [
 export const SHOP_STEPS = [
   { n: "1", title: "Pick a product", text: "Gloves, a heavy bag, a head guard or a groin guard." },
   { n: "2", title: "Create your design", text: "Colour each panel, add your logo and your name, and turn it round in 3D." },
-  { n: "3", title: "Send it to the workshop", text: "Orders are not open yet. Join the list and we will tell you the day they are." },
+  { n: "3", title: "Send it to Jesse", text: "Your design goes to Jesse for a quote. Online ordering is not open yet." },
 ] as const;
 
 /**

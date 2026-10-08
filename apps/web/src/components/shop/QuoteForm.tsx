@@ -1,16 +1,25 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { QUOTE_PRODUCTS, quoteSchema, type QuoteField, type QuoteResult } from "@/lib/quote";
+import { clearDesign, readDesign, type DesignHandoff } from "@/lib/quote-handoff";
 
 const FIELDS: readonly QuoteField[] = ["name", "contact", "product", "details"];
 
-/** The quote request on /contact: name, a way to reply, the product and what is wanted. Checked here and again on the server (/api/quote). */
+/**
+ * The quote request on /contact: name, a way to reply, the product and what is wanted. Checked here and again on the server (/api/quote).
+ * A visitor arriving from a 3D builder finds the product chosen and the design written in; they can add to it before sending.
+ */
 export function QuoteForm() {
   const id = useId();
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; field?: QuoteField } | null>(null);
+  const [design, setDesign] = useState<DesignHandoff | null>(null);
+
+  useEffect(() => {
+    setDesign(readDesign()); // session storage is only there in the browser, so the design arrives after the first paint
+  }, []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -40,6 +49,7 @@ export function QuoteForm() {
         fail(json.message, json.field);
         return;
       }
+      clearDesign();
       setDone(true);
     } catch {
       fail("Could not reach us. Please try again.");
@@ -60,7 +70,8 @@ export function QuoteForm() {
   const invalid = (f: QuoteField) => (error?.field === f ? { "aria-invalid": true, "aria-describedby": `${id}-msg` } : {});
 
   return (
-    <form className="sh-form" onSubmit={(e) => void onSubmit(e)} noValidate>
+    <form key={design ? "design" : "blank"} className="sh-form" onSubmit={(e) => void onSubmit(e)} noValidate>
+      {design ? <p className="sh-form__design">Your 3D design is filled in below. Add anything else Jesse should know, such as size or weight.</p> : null}
       <div className="sh-form__field">
         <label htmlFor={`${id}-name`}>Name</label>
         <input id={`${id}-name`} name="name" type="text" autoComplete="name" maxLength={120} required {...invalid("name")} />
@@ -71,7 +82,7 @@ export function QuoteForm() {
       </div>
       <div className="sh-form__field">
         <label htmlFor={`${id}-product`}>Product</label>
-        <select id={`${id}-product`} name="product" defaultValue="" required {...invalid("product")}>
+        <select id={`${id}-product`} name="product" defaultValue={design?.product ?? ""} required {...invalid("product")}>
           <option value="" disabled>
             Choose one
           </option>
@@ -84,7 +95,7 @@ export function QuoteForm() {
       </div>
       <div className="sh-form__field">
         <label htmlFor={`${id}-details`}>What do you want made?</label>
-        <textarea id={`${id}-details`} name="details" rows={6} maxLength={4000} required {...invalid("details")} />
+        <textarea id={`${id}-details`} name="details" rows={design ? 12 : 6} maxLength={4000} defaultValue={design?.details ?? ""} required {...invalid("details")} />
       </div>
       <div className="sh-form__trap" aria-hidden="true">
         <label htmlFor={`${id}-company`}>Company</label>

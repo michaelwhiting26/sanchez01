@@ -181,6 +181,7 @@ body:has(.shop) { background: #14100d; }
 /* the quote request form (/contact) */
 .sh-form { display: grid; gap: 18px; margin-block-end: 40px; padding: 22px; background: #fff; border: 1px solid var(--sh-line); border-radius: 8px; }
 .sh-form__field { display: grid; gap: 7px; }
+.shop .sh-form__design { margin: 0; padding: 12px 14px; background: var(--sh-bg); border-inline-start: 4px solid var(--sh-red); border-radius: 4px; font-size: 15px; }
 .sh-form label { font: 700 14px/1.2 var(--sh-text); }
 .sh-form :is(input, select, textarea) { inline-size: 100%; box-sizing: border-box; min-block-size: 50px; padding: 12px 14px; background: #fff; color: var(--sh-ink); border: 1px solid #b9b0a2; border-radius: 6px; font: 400 16px/1.4 var(--sh-text); }
 .sh-form textarea { resize: vertical; min-block-size: 140px; }

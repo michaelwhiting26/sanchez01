@@ -44,7 +44,7 @@ export const HEADGUARD_PRODUCT: BuilderProduct = {
     reviewTitle: "Your head guard",
     noun: "head guard",
     standIn: "Illustrative head guard shape. Jesse's own pattern replaces it when it is supplied.",
-    reviewNote: "Price to come. Custom head guard orders are not open yet: join the list and we will tell you when they are.",
+    reviewNote: "Price to come. Online ordering is not open yet: send this design to Jesse and he will quote it.",
   },
   saveKey: "sanchez.headguard.v1",
   fileStem: "sanchez-custom-head-guard",

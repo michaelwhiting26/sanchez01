@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { WAITLIST_HREF } from "@/lib/catalogue";
 import type { Finish } from "@/lib/configurator/schema";
 import {
   FINISH_LIST, FINISH_NAMES, FONTS, PALETTE, SIZE_MAX, SIZE_MIN, TEXT_MAX, THREAD_COLOURS, UPLOAD_MAX_BYTES, UPLOAD_TYPES, builderSpec, look as makeLook, zoneOf,
@@ -10,7 +10,8 @@ import {
 } from "@/lib/builder/product";
 import { builderFor } from "@/lib/builder/registry";
 import { loadDesign, saveDesign } from "@/lib/builder/save";
-import { LOGO_SRC } from "@/lib/site";
+import { designDetails, quoteProductFor, stashDesign } from "@/lib/quote-handoff";
+import { CONTACT_HREF, LOGO_SRC } from "@/lib/site";
 import type { PanelStageHandle } from "./PanelStage";
 import "../../styles/cockpit.v3.css";
 import "../../styles/panel-builder.css";
@@ -32,18 +33,19 @@ const newId = (): string => (typeof crypto !== "undefined" && "randomUUID" in cr
  * The panel builder: one screen for every product that is made of coloured panels (gloves, the head guard). What differs between products is data
  * (lib/builder/product.ts), not this screen. Same cockpit as the bag: the product fills the screen, the camera turns to the panel being decided, and
  * one thin dock asks one thing at a time. Four steps: colour every panel, add logos, add words, then review four pictures of the finished design.
- * Nothing is sold here yet: no price is confirmed and these orders are not open, so the last step leads to the waiting list.
+ * Nothing is sold here yet: no price is confirmed, so the last step sends the design to the quote form (owner, 8 Oct 2026).
  * An uploaded logo never leaves the visitor's device.
  */
 export function PanelBuilder({ slug }: { slug: string }) {
   const found = builderFor(slug);
   if (!found) throw new Error(`panel builder: no product is set up for "${slug}"`);
-  return <Builder product={found} />;
+  return <Builder product={found} slug={slug} />;
 }
 
 const FALLBACK: PanelLook = makeLook("#808080");
 
-function Builder({ product }: { product: BuilderProduct }) {
+function Builder({ product, slug }: { product: BuilderProduct; slug: string }) {
+  const router = useRouter();
   const [step, setStep] = useState<StepId>("colours");
   const [panels, setPanels] = useState<BuilderPanels>(product.defaults);
   const [art, setArt] = useState<readonly BuilderArt[]>([]);
@@ -151,6 +153,13 @@ function Builder({ product }: { product: BuilderProduct }) {
 
   /* ---- review ---- */
   const spec = useMemo(() => builderSpec(product, panels, art), [product, panels, art]);
+  const sendForQuote = (): void => {
+    // Jesse reads colour names; the code stays beside each so nothing is lost
+    const named = spec.replace(/#[0-9A-F]{6}/g, (hex) => { const c = PALETTE.find((x) => x.hex.toUpperCase() === hex); return c ? `${c.name} (${hex})` : hex; });
+    const logos = art.some((a) => a.kind === "logo") ? "\nLogo files are not attached: Jesse will ask for them." : "";
+    if (stashDesign({ product: quoteProductFor(slug), details: designDetails(product.copy.reviewTitle, named) + logos })) router.push(CONTACT_HREF);
+    else setProblem("The design could not be passed on from this device. Use Copy spec and paste it into the quote form.");
+  };
   const copySpec = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(spec);
@@ -337,7 +346,7 @@ function Builder({ product }: { product: BuilderProduct }) {
           <p className="ck__note">{product.copy.reviewNote}</p>
           {problem && <p className="ck__note ck__note--err" role="alert">{problem}</p>}
           <div className="ck__sheetrow gb__actions">
-            <Link className="ck__btn" href={WAITLIST_HREF}>Join the list</Link>
+            <button type="button" className="ck__btn" onClick={sendForQuote}>Send to Jesse for a quote</button>
             <button type="button" className="ck__btn ck__btn--ghost" onClick={savePictures} disabled={shots.length === 0}>Save pictures</button>
             <button type="button" className="ck__btn ck__btn--ghost" onClick={() => void copySpec()}>{copied ? "Copied" : "Copy spec"}</button>
             <button type="button" className="ck__btn ck__btn--ghost" onClick={() => go("colours")}>Keep designing</button>

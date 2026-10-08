@@ -45,7 +45,7 @@ export const GROINGUARD_PRODUCT: BuilderProduct = {
     reviewTitle: "Your groin guard",
     noun: "guard",
     standIn: "Illustrative groin guard shape. Jesse's own pattern replaces it when it is supplied.",
-    reviewNote: "Price to come. Custom groin guard orders are not open yet: join the list and we will tell you when they are.",
+    reviewNote: "Price to come. Online ordering is not open yet: send this design to Jesse and he will quote it.",
   },
   saveKey: "sanchez.groinguard.v1",
   fileStem: "sanchez-custom-groin-guard",
