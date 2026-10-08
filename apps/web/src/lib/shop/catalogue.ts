@@ -77,6 +77,7 @@ const B = "/assets/store/collection";
 /**
  * From the workshop: finished pieces Jesse has made, from his own photographs. Only pieces that carry no person's full name are shown; the pairs
  * lettered for named people (in the same folder) wait for each person's written consent. Labels say only what the photograph shows.
+ * A lettered pair can still show its construction: a view or a close crop with no lettering in frame (the faces, the hand opening, the laced rim).
  * Gloves and head guards have no photograph yet, so each shows the builder's own model and says so. TODO(owner): Jesse's photographs of both.
  */
 export const SHOP_WORK: readonly WorkPiece[] = [
@@ -92,6 +93,11 @@ export const SHOP_WORK: readonly WorkPiece[] = [
   { id: "groin-guard-large", kind: "groin-guards", label: "Groin guard", image: `${W}/groin-guard-sh-large.webp`, alt: "A red and blue groin guard with white lettering, seen from the front", href: "/build/groin-guard" },
   { id: "mitts-shamrock-matte", kind: "focus-mitts", label: "Striking face, matte", image: `${W}/focus-mitts-shamrock-face-matte-left.webp`, alt: "The striking face of a focus mitt in matte green with a stitched shamrock" },
   { id: "gym-bags", kind: "gyms", label: "Bags for a gym", image: `${B}/bag-white.webp`, alt: "Sanchez heavy bags standing together, black, white and tricolour", fill: true, href: "/gym-fit-outs" },
+  { id: "mitts-laced-rim", kind: "focus-mitts", label: "Laced rim, up close", image: `${W}/focus-mitts-laced-rim-detail.webp`, alt: "Close view of two focus mitts edge to edge, showing the black lacing through the white rim", fill: true },
+  { id: "mitts-measured-width", kind: "focus-mitts", label: "Striking face, measured", image: `${W}/focus-mitts-shamrock-measured-width.webp`, alt: "A green focus mitt face with a stitched shamrock on the workbench, a ruler laid across its width", fill: true },
+  { id: "mitts-brown-face", kind: "focus-mitts", label: "Striking face, brown", image: `${W}/focus-mitts-brown-zv-face.webp`, alt: "The plain brown leather striking face of a focus mitt" },
+  { id: "mitts-shamrock-matte-right", kind: "focus-mitts", label: "Striking face, matte, second mitt", image: `${W}/focus-mitts-shamrock-face-matte-right.webp`, alt: "The striking face of the second mitt of the pair in matte green with a stitched shamrock" },
+  { id: "mitts-measured-length", kind: "focus-mitts", label: "Measured on the bench", image: `${W}/focus-mitts-shamrock-measured-length.webp`, alt: "A green focus mitt face on the workbench with a ruler laid along its length", fill: true },
   { id: "mitts-hand-opening", kind: "focus-mitts", label: "Hand opening", image: `${W}/focus-mitts-freddie-roach-hand-opening.webp`, alt: "A focus mitt seen from the wrist, showing the hand opening and the laced rim" },
   { id: "groin-guard-small", kind: "groin-guards", label: "Groin guard, small", image: `${W}/groin-guard-sh-small.webp`, alt: "A smaller red and blue groin guard with white lettering", href: "/build/groin-guard" },
   { id: "mitts-brown-front", kind: "focus-mitts", label: "Focus mitt, back", image: `${W}/focus-mitts-brown-zv-front.webp`, alt: "The back of a brown focus mitt with the Sanchez badge and stitched initials" },
