@@ -70,17 +70,33 @@ export interface WorkPiece {
   readonly fill?: boolean;
   /** Where the piece leads, when there is somewhere to go (its 3D builder, or the gym page). */
   readonly href?: string;
+  /** Set on a piece lettered with a name: it is shown only once that name's written consent is on file (NAME_CONSENT). */
+  readonly consent?: ConsentKey;
 }
+
+/**
+ * Written consent to show a lettered piece, by the lettering on it (owner's rule: docs/LOCKED-DECISIONS.md). Every one is false until the
+ * person's written yes is saved in Dropbox "15. sanchezboxing/Client Submissions/consents". Turning one to true puts that pair's pictures
+ * in the gallery; nothing else needs to change. Do not turn one on without the file.
+ */
+export const NAME_CONSENT = {
+  "freddie-roach": false,
+  bowman: false,
+  "christian-ennor": false,
+  "team-savva": false,
+  "ttl-boxing": false,
+} satisfies Record<string, boolean>;
+export type ConsentKey = keyof typeof NAME_CONSENT;
 
 const B = "/assets/store/collection";
 
 /**
  * From the workshop: finished pieces Jesse has made, from his own photographs. Only pieces that carry no person's full name are shown; the pairs
- * lettered for named people (in the same folder) wait for each person's written consent. Labels say only what the photograph shows.
+ * lettered for named people are listed here too, each marked with whose consent it waits for, and stay out of the gallery until it is on file. Labels say only what the photograph shows.
  * A lettered pair can still show its construction: a view or a close crop with no lettering in frame (the faces, the hand opening, the laced rim).
  * Gloves and head guards have no photograph yet, so each shows the builder's own model and says so. TODO(owner): Jesse's photographs of both.
  */
-export const SHOP_WORK: readonly WorkPiece[] = [
+const WORK: readonly WorkPiece[] = [
   { id: "mitts-brown-pair", kind: "focus-mitts", label: "Focus mitts", image: `${W}/focus-mitts-brown-zv-pair.webp`, alt: "Brown leather focus mitts, one face down, one showing the Sanchez badge and stitched initials" },
   { id: "bags-gym-row", kind: "heavy-bags", label: "Heavy bags", image: `${B}/bag-range.webp`, alt: "Jesse Sanchez standing among a row of his heavy bags in a gym", fill: true, href: "/build/heavy-bag" },
   { id: "groin-guards-set", kind: "groin-guards", label: "Groin guards", image: `${W}/groin-guard-sh-set.webp`, alt: "Two red and blue groin guards with white lettering and a cross on the front", href: "/build/groin-guard" },
@@ -102,7 +118,38 @@ export const SHOP_WORK: readonly WorkPiece[] = [
   { id: "groin-guard-small", kind: "groin-guards", label: "Groin guard, small", image: `${W}/groin-guard-sh-small.webp`, alt: "A smaller red and blue groin guard with white lettering", href: "/build/groin-guard" },
   { id: "mitts-brown-front", kind: "focus-mitts", label: "Focus mitt, back", image: `${W}/focus-mitts-brown-zv-front.webp`, alt: "The back of a brown focus mitt with the Sanchez badge and stitched initials" },
   { id: "mitts-shamrock-gloss-alt", kind: "focus-mitts", label: "Striking face, gloss", image: `${W}/focus-mitts-shamrock-face-gloss-alt.webp`, alt: "A second view of the gloss green striking face with its shamrock" },
+  { id: "mitts-face-black", kind: "focus-mitts", label: "Striking face, black", image: `${W}/focus-mitts-face-black.webp`, alt: "The black leather striking face of a focus mitt with a red rim" },
+  { id: "mitts-face-black-gold", kind: "focus-mitts", label: "Striking face, black and gold", image: `${W}/focus-mitts-face-black-gold.webp`, alt: "The black striking face of a focus mitt with a gold rim" },
+  { id: "mitts-face-white", kind: "focus-mitts", label: "Striking face, white", image: `${W}/focus-mitts-face-white.webp`, alt: "The white leather striking face of a focus mitt with black lacing at the rim" },
+  { id: "mitts-red-cross", kind: "focus-mitts", label: "Stitched red cross, up close", image: `${W}/focus-mitts-red-cross-detail.webp`, alt: "Close view of a red leather cross stitched onto the white striking face of a focus mitt", fill: true },
+  // Lettered pieces: staged, and shown only with consent (NAME_CONSENT above).
+  { id: "fr-pair-front", kind: "focus-mitts", label: "Focus mitts, orange and green", image: `${W}/focus-mitts-freddie-roach-pair-front.webp`, alt: "A pair of orange, green and white focus mitts with white lettering and the Sanchez badge", consent: "freddie-roach" },
+  { id: "fr-pair-angle-1", kind: "focus-mitts", label: "Focus mitts, orange and green, at an angle", image: `${W}/focus-mitts-freddie-roach-pair-angle-1.webp`, alt: "The orange and green pair of focus mitts seen at an angle", consent: "freddie-roach" },
+  { id: "fr-pair-angle-2", kind: "focus-mitts", label: "Focus mitts, orange and green, second angle", image: `${W}/focus-mitts-freddie-roach-pair-angle-2.webp`, alt: "The orange and green pair of focus mitts from a second angle", consent: "freddie-roach" },
+  { id: "fr-pair-angle-3", kind: "focus-mitts", label: "Focus mitts, orange and green, third angle", image: `${W}/focus-mitts-freddie-roach-pair-angle-3.webp`, alt: "The orange and green pair of focus mitts from a third angle", consent: "freddie-roach" },
+  { id: "fr-left-front", kind: "focus-mitts", label: "Left mitt, back", image: `${W}/focus-mitts-freddie-front.webp`, alt: "The back of the left orange and green focus mitt with the Sanchez badge", consent: "freddie-roach" },
+  { id: "fr-left-front-alt", kind: "focus-mitts", label: "Left mitt, back, second view", image: `${W}/focus-mitts-freddie-front-alt.webp`, alt: "A second view of the back of the left orange and green focus mitt", consent: "freddie-roach" },
+  { id: "fr-right-front", kind: "focus-mitts", label: "Right mitt, back", image: `${W}/focus-mitts-roach-front.webp`, alt: "The back of the right orange and green focus mitt with the Sanchez badge", consent: "freddie-roach" },
+  { id: "fr-side-pair", kind: "focus-mitts", label: "Orange and green pair, side on", image: `${W}/focus-mitts-freddie-roach-side-pair.webp`, alt: "The orange and green focus mitts back to back, showing the laced edge", consent: "freddie-roach" },
+  { id: "fr-side-single", kind: "focus-mitts", label: "Orange and green mitt, edge on", image: `${W}/focus-mitts-freddie-roach-side-single.webp`, alt: "One orange and green focus mitt lying flat, seen edge on", consent: "freddie-roach" },
+  { id: "bowman-pair", kind: "focus-mitts", label: "Focus mitts, orange with green cuffs", image: `${W}/focus-mitts-bowman-pair-angle.webp`, alt: "A pair of orange focus mitts with white lettering, green cuffs and the Sanchez badge", consent: "bowman" },
+  { id: "bowman-side", kind: "focus-mitts", label: "Orange and green pair, side on", image: `${W}/focus-mitts-bowman-side-pair.webp`, alt: "Two orange and green focus mitts back to back, showing the black lacing through the white rim", consent: "bowman" },
+  { id: "ce-pair-front", kind: "focus-mitts", label: "Focus mitts, black and white", image: `${W}/focus-mitts-christian-ennor-pair-front.webp`, alt: "A pair of black focus mitts with white lettering and white straps", consent: "christian-ennor" },
+  { id: "ce-pair-angle", kind: "focus-mitts", label: "Focus mitts, black and white, at an angle", image: `${W}/focus-mitts-christian-ennor-pair-angle.webp`, alt: "The black and white pair of focus mitts stacked at an angle", consent: "christian-ennor" },
+  { id: "ce-left", kind: "focus-mitts", label: "Black and white mitt, back", image: `${W}/focus-mitts-christian-front.webp`, alt: "The back of a black focus mitt with white lettering and a white strap", consent: "christian-ennor" },
+  { id: "ce-right", kind: "focus-mitts", label: "Black and white mitt, second of the pair", image: `${W}/focus-mitts-ennor-front.webp`, alt: "The back of the second black focus mitt of the pair, with white lettering", consent: "christian-ennor" },
+  { id: "savva-pair", kind: "focus-mitts", label: "Focus mitts, white with black lettering", image: `${W}/focus-mitts-team-savva-pair.webp`, alt: "A pair of white leather focus mitts with black lettering", consent: "team-savva" },
+  { id: "savva-left", kind: "focus-mitts", label: "White mitt, left", image: `${W}/focus-mitts-team-savva-left.webp`, alt: "The back of the left white leather focus mitt with black lettering", consent: "team-savva" },
+  { id: "savva-right", kind: "focus-mitts", label: "White mitt, right", image: `${W}/focus-mitts-team-savva-right.webp`, alt: "The back of the right white leather focus mitt with black lettering", consent: "team-savva" },
+  { id: "savva-cross", kind: "focus-mitts", label: "White pair with a red cross face", image: `${W}/focus-mitts-savva-england-cross.webp`, alt: "A white focus mitt with black lettering resting on its partner, whose striking face carries a red cross", consent: "team-savva" },
+  { id: "ttl-pair", kind: "focus-mitts", label: "Focus mitts, black and white", image: `${W}/focus-mitts-ttl-pair.webp`, alt: "A pair of black and white focus mitts with lettering around the rim", consent: "ttl-boxing" },
+  { id: "ttl-body-protector", kind: "focus-mitts", label: "Body protector and mitts", image: `${W}/body-protector-ttl-with-mitts.webp`, alt: "A black body protector with white lettering, with the matching focus mitts beside it", consent: "ttl-boxing" },
 ];
+
+/** The gallery: everything unlettered, and each lettered piece whose consent is on file. */
+export const SHOP_WORK: readonly WorkPiece[] = WORK.filter((w) => !w.consent || NAME_CONSENT[w.consent]);
+/** Lettered pieces still waiting for consent: ready, not shown. */
+export const SHOP_WORK_WAITING: readonly WorkPiece[] = WORK.filter((w) => w.consent && !NAME_CONSENT[w.consent]);
 
 export const SHOP_NAV = [
   { href: "/shop", label: "Design in 3D" },
