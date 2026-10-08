@@ -78,4 +78,19 @@ export const MIGRATIONS: ReadonlyArray<{ id: string; sql: string }> = [
       CREATE INDEX IF NOT EXISTS experience_events_name_time_idx ON experience_events (event_name, occurred_at)
     `,
   },
+  {
+    // Quote requests from the form on /contact (lib/quote.ts). contact is an email address or an Instagram handle, as the visitor typed it.
+    id: "003_quote_requests",
+    sql: `
+      CREATE TABLE IF NOT EXISTS quote_requests (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text NOT NULL,
+        contact text NOT NULL,
+        product text NOT NULL,
+        details text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS quote_requests_created_idx ON quote_requests (created_at)
+    `,
+  },
 ];

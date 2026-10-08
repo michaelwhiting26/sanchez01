@@ -170,6 +170,30 @@ body:has(.shop) { background: #14100d; }
 .sh-foot__base { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; margin-block-start: 34px; padding-block-start: 18px; border-block-start: 1px solid rgb(255 255 255 / .14); font-size: 13px; }
 .shop .sh-foot__base p { margin: 0; display: flex; gap: 16px; }
 
+/* the craft strip under the hero: maker, finished piece, close-up, gym */
+.sh-craft { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sh-craft figure { margin: 0; background: #fff; border: 1px solid var(--sh-line); border-radius: 4px; overflow: hidden; }
+.sh-craft img { display: block; inline-size: 100%; aspect-ratio: 4 / 5; block-size: auto; object-fit: cover; }
+.sh-craft figcaption { display: grid; gap: 4px; padding: 12px 12px 14px; border-block-start: 4px solid var(--sh-red); }
+.sh-craft strong { font: italic 800 21px/1.05 var(--sh-display); text-transform: uppercase; }
+.sh-craft span { font-size: 14px; line-height: 1.4; color: var(--sh-ink-2); }
+
+/* the quote request form (/contact) */
+.sh-form { display: grid; gap: 18px; margin-block-end: 40px; padding: 22px; background: #fff; border: 1px solid var(--sh-line); border-radius: 8px; }
+.sh-form__field { display: grid; gap: 7px; }
+.sh-form label { font: 700 14px/1.2 var(--sh-text); }
+.sh-form :is(input, select, textarea) { inline-size: 100%; box-sizing: border-box; min-block-size: 50px; padding: 12px 14px; background: #fff; color: var(--sh-ink); border: 1px solid #b9b0a2; border-radius: 6px; font: 400 16px/1.4 var(--sh-text); }
+.sh-form textarea { resize: vertical; min-block-size: 140px; }
+.sh-form :is(input, select, textarea):focus-visible { outline: 2px solid var(--sh-ink); outline-offset: 2px; }
+.sh-form :is(input, select, textarea)[aria-invalid="true"] { border-color: var(--sh-red); box-shadow: 0 0 0 1px var(--sh-red); }
+.sh-form__trap { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+.shop .sh-form__msg { margin: 0; min-block-size: 1.4em; font: 600 14px/1.4 var(--sh-text); color: var(--sh-red-2); }
+.sh-form__msg:empty { display: none; }
+.sh-form .sh-btn { justify-self: start; min-inline-size: 12rem; }
+.sh-form .sh-btn:disabled { opacity: .6; cursor: default; }
+.sh-form--done h2 { margin: 0; font: italic 800 30px/1 var(--sh-display); text-transform: uppercase; }
+.shop .sh-form--done p { margin: 0; }
+
 /* inner pages (contact, gyms, legal) inside the shop frame: the same light look */
 .shop .pg { min-block-size: 50svh; background: transparent; color: var(--sh-ink); }
 .shop .pg__eyebrow { color: var(--sh-red); }
@@ -189,6 +213,8 @@ html body .shop .pg__btn--ghost { background: #fff !important; color: var(--sh-i
   .sh-steps { grid-template-columns: repeat(3, 1fr); }
   .sh-feats { grid-template-columns: repeat(2, 1fr); gap: 22px; }
   .sh-work { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+  .sh-craft { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+  .sh-form { padding: 32px; }
   .sh-split { grid-template-columns: 1.2fr 1fr; gap: 40px; }
   .sh-dark { grid-template-columns: 1fr 1.1fr; align-items: center; padding: 50px; }
   .sh-true { grid-template-columns: 1fr 1.2fr; padding: 44px 60px; }

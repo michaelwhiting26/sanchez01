@@ -2,13 +2,14 @@ import Link from "next/link";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { ShopShell } from "@/components/shop/ShopShell";
 import { WorkGallery } from "@/components/shop/WorkGallery";
-import { JESSE_CONSULTATION, JESSE_FEATURES, JESSE_HEADLINE, JESSE_QUOTE_TITLE, SHOP_PRODUCTS, SHOP_STEPS } from "@/lib/shop/catalogue";
+import { JESSE_CONSULTATION, JESSE_FEATURES, JESSE_HEADLINE, JESSE_QUOTE_TITLE, SHOP_CRAFT, SHOP_PRODUCTS, SHOP_STEPS } from "@/lib/shop/catalogue";
 import { ORIGIN_LINE } from "@/lib/site";
 
 /**
- * Home: a plain shop (owner, 7 Oct 2026). Top to bottom: hero, the range slider over the workshop pictures, Jesse's key features, three steps,
- * his design consultation, what is true of every piece, the products you can design in 3D (owner, 7 Oct 2026: at the bottom), and the quote
- * request. Headlines and feature wording are Jesse's own (lib/shop/catalogue.ts). The 3D store it replaces is parked whole at /3d-store.
+ * Home: a plain shop (owner, 7 Oct 2026). Top to bottom: hero, the craft strip (owner, 8 Oct 2026: the maker, a finished piece, the construction,
+ * the gym, before any technical detail), the range slider over the workshop pictures, four key features, three steps, his design consultation,
+ * what is true of every piece, the products you can design in 3D (owner, 7 Oct 2026: at the bottom), and the quote request. Headlines are
+ * Jesse's own (lib/shop/catalogue.ts). The 3D store it replaces is parked whole at /3d-store.
  */
 export default function HomePage() {
   return (
@@ -33,6 +34,21 @@ export default function HomePage() {
       </section>
 
       <section className="sh-wrap sh-sec">
+        <h2 className="sh-h">Made by hand</h2>
+        <div className="sh-craft">
+          {SHOP_CRAFT.map((c) => (
+            <figure key={c.title}>
+              <img src={c.image} alt={c.alt} width={800} height={1000} loading="lazy" style={c.at ? { objectPosition: c.at } : undefined} />
+              <figcaption>
+                <strong>{c.title}</strong>
+                <span>{c.text}</span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <section className="sh-wrap sh-sec">
         <WorkGallery />
       </section>
 
@@ -42,7 +58,7 @@ export default function HomePage() {
           {JESSE_FEATURES.map((f) => (
             <article key={f.title} className="sh-feat">
               <h3>{f.title}</h3>
-              {f.text ? <p>{f.text}</p> : null}
+              <p>{f.text}</p>
               <Link href="/contact">{JESSE_CONSULTATION.action}</Link>
             </article>
           ))}

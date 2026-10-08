@@ -124,13 +124,28 @@ export const JESSE_CONSULTATION = {
   action: "Get a Quote",
 } as const;
 
-/** His four key features. They describe how his bags are made; the fourth has a heading only on his site. */
+/**
+ * Four key features, one line each (owner, 8 Oct 2026: shorter and even, in place of Jesse's longer paragraphs). The first three lines say only what
+ * his own wording says (specs/wix-scrape-README.md). His site gives stitchwork a heading and no text, so that line is ours. TODO(owner): Jesse to confirm it.
+ */
 export const JESSE_FEATURES = [
-  { title: "Precision cutting", text: "Every piece of Persian vinyl used to make your bag is hand cut with elite precision." },
-  { title: "Reinforced adhesive", text: "HH-66 Vinyl Cement (by RH Adhesives) market-leading, solvent-based adhesive, engineered for a bond stronger than the vinyl itself, rapid setting, and extreme durability." },
-  { title: "Silicone based durable screen printing", text: "High-durability silicone-based screen printing, a technique that applies a flexible, permanent design directly onto the bag's surface for a long-lasting, impact-resistant finish that withstands heavy use." },
-  { title: "Masterclass stitchwork", text: null },
+  { title: "Precision cut", text: "Every panel of Persian vinyl is cut by hand." },
+  { title: "Reinforced construction", text: "Bonded with HH-66 vinyl cement, for a join stronger than the vinyl itself." },
+  { title: "Permanent print", text: "Silicone screen print that flexes with the bag and stands up to heavy use." },
+  { title: "Master stitchwork", text: "Sewn at the machine by hand, one seam at a time." },
 ] as const;
+
+/**
+ * The strip under the hero (owner, 8 Oct 2026): the maker, a finished piece, the construction up close, the bags in a gym, in that order and ahead
+ * of the technical detail. Captions say only what each photograph shows. The frame of a named gym's sign in the workshop film is not used: a named
+ * client needs written consent. "at" is where a wide photograph is held when it is cropped to the tall tile.
+ */
+export const SHOP_CRAFT: ReadonlyArray<{ title: string; text: string; image: string; alt: string; at?: string }> = [
+  { title: "The maker", text: "Jesse at his sewing machine in the workshop.", image: "/assets/carousel/workshop.jpg", at: "26% 50%", alt: "Jesse Sanchez sewing at his machine, with gloves hanging on the wall behind him" },
+  { title: "The finished piece", text: "A heavy bag in red, white and green.", image: "/assets/store/collection/bag-tricolour.webp", alt: "A Sanchez heavy bag in red, white and green standing beside two black bags" },
+  { title: "Up close", text: "Leather, piping and stitching on a focus mitt.", image: "/assets/store/collection/mitt-detail.webp", alt: "Close view of a focus mitt: green and tan leather, white piping and the stitched Sanchez badge" },
+  { title: "In the gym", text: "A row of Sanchez bags, with the man who made them.", image: "/assets/store/collection/bag-range.webp", alt: "Jesse Sanchez standing among a row of his heavy bags in a gym" },
+];
 
 export const JESSE_QUOTE_TITLE = "Request a Quote from the Owner" as const;
 
