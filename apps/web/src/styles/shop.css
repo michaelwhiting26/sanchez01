@@ -287,3 +287,20 @@ html.lenis, html.lenis body { height: auto; }
   .sh-card__acts .sh-btn { font-size: 13px; padding-inline: 8px; }
 }
 @media (max-width: 420px) { .sh-next { grid-template-columns: 1fr; } }
+
+/* ---- Buying path (owner, 15 Oct 2026, second pass) ---- */
+.shop .sh-sec[id] { scroll-margin-block-start: 84px; }
+.sh-more { margin: 20px 0 0; text-align: center; color: var(--sh-ink-2); }
+.sh-more a { color: var(--sh-red); font-weight: 700; }
+.sh-card--gym .sh-card__pic img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+.sh-craft--compact figcaption { padding-block: 10px; }
+.sh-story .sh-actions { margin-block-start: 18px; }
+.sh-sticky { display: none; }
+@media (max-width: 760px) {
+  .sh-sticky { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 60; display: grid; grid-template-columns: 1.35fr 1fr; gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: rgb(255 255 255 / .96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-block-start: 1px solid var(--sh-line); box-shadow: 0 -10px 30px rgb(20 16 13 / .08); transform: translateY(115%); transition: transform .3s ease-out; }
+  .sh-sticky[data-show] { transform: none; }
+  .sh-sticky .sh-btn { min-block-size: 46px; padding-inline: 10px; font-size: 15px; }
+  .sh-sticky-space { block-size: 78px; }
+}

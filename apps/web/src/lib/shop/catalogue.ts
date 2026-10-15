@@ -152,10 +152,10 @@ export const SHOP_WORK: readonly WorkPiece[] = WORK.filter((w) => !w.consent || 
 export const SHOP_WORK_WAITING: readonly WorkPiece[] = WORK.filter((w) => w.consent && !NAME_CONSENT[w.consent]);
 
 export const SHOP_NAV = [
-  { href: "/shop", label: "Design in 3D" },
-  { href: "/how-it-works", label: "How it works" },
+  { href: "/#choose", label: "Get yours made" },
+  { href: "/the-workshop", label: "The workshop" },
   { href: "/gym-fit-outs", label: "Gym Fit-Out" },
-  { href: "/contact", label: "Get a Quote" },
+  { href: "/shop", label: "Design in 3D" },
 ] as const;
 
 export const SHOP_STEPS = [

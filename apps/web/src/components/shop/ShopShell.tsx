@@ -28,8 +28,8 @@ export function ShopShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <Link href="/shop" className="sh-btn sh-btn--small sh-head__cta">
-            Design in 3D
+          <Link href="/contact?start=new" className="sh-btn sh-btn--small sh-head__cta">
+            Get a Quote
           </Link>
           <ShopMenu />
         </div>

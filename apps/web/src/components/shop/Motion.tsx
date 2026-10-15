@@ -20,7 +20,7 @@ export function Motion() {
       const [{ default: LenisCtor }, { gsap }, { ScrollTrigger }] = await Promise.all([import("lenis"), import("gsap"), import("gsap/ScrollTrigger")]);
       if (stopped) return;
       gsap.registerPlugin(ScrollTrigger);
-      lenis = new LenisCtor({ lerp: 0.11, smoothWheel: true });
+      lenis = new LenisCtor({ lerp: 0.11, smoothWheel: true, anchors: { offset: -84 } });
       lenis.on("scroll", () => ScrollTrigger.update());
       const tick = (t: number): void => {
         lenis?.raf(t);
