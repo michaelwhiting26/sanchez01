@@ -332,6 +332,34 @@ html[data-theme="dark"] .shop .sh-card:hover, html[data-theme="dark"] .shop .sh-
 @media (max-width: 760px) { .sh-theme { min-block-size: 34px; padding: 0 10px; font-size: 12.5px; } }
 
 
+/* ---- Luxury button system (owner, 15 Oct 2026: "dial it up a notch… luxury custom boxing equipment"). Square corners, hairline
+   borders, tracked small capitals, a fill that sweeps across on hover, a sliding arrow on the main calls to action, a crisp press. ---- */
+.shop .sh-btn { position: relative; isolation: isolate; overflow: hidden; gap: 10px; min-block-size: 52px; padding: 0 26px; border-radius: 2px;
+  border: 1px solid var(--sh-red); background: linear-gradient(180deg, #c3462b, var(--sh-red) 55%, #9a2f19);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .2), 0 12px 26px -16px rgb(178 58 34 / .85);
+  font: 600 13.5px/1.15 var(--sh-text); letter-spacing: .14em; text-transform: uppercase; text-align: center;
+  transition: color .35s ease, border-color .35s ease, box-shadow .35s ease, transform .12s ease; }
+.shop .sh-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #7a2513; transform: scaleX(0); transform-origin: right center;
+  transition: transform .5s cubic-bezier(.7, 0, .2, 1); }
+.shop .sh-btn:hover, .shop .sh-btn:focus-visible { background: linear-gradient(180deg, #c3462b, var(--sh-red) 55%, #9a2f19); border-color: #7a2513; }
+.shop .sh-btn:hover::before, .shop .sh-btn:focus-visible::before { transform: scaleX(1); transform-origin: left center; }
+.shop .sh-btn:active { transform: translateY(1px); }
+.shop a.sh-btn:not(.sh-btn--line):not(.sh-btn--light):not(.sh-btn--small)::after { content: "\2192"; font-size: 17px; letter-spacing: 0; transition: transform .35s ease; }
+.shop a.sh-btn:hover::after, .shop a.sh-btn:focus-visible::after { transform: translateX(4px); }
+.shop .sh-btn--line { background: transparent; border-color: var(--sh-ink); color: var(--sh-ink) !important; box-shadow: none; }
+.shop .sh-btn--line::before { background: var(--sh-ink); }
+.shop .sh-btn--line:hover, .shop .sh-btn--line:focus-visible { background: transparent; border-color: var(--sh-ink); color: var(--sh-bg) !important; }
+.shop .sh-btn--light { background: transparent; border-color: rgb(243 234 220 / .7); box-shadow: none; }
+.shop .sh-btn--light::before { background: #f3eadc; }
+.shop .sh-btn--light:hover, .shop .sh-btn--light:focus-visible { background: transparent; border-color: #f3eadc; color: #17120f !important; }
+.shop .sh-btn--small { min-block-size: 44px; padding: 0 16px; font-size: 12px; letter-spacing: .12em; }
+.shop .sh-btn:disabled { opacity: .6; cursor: progress; }
+.shop .sh-theme { border-radius: 2px; text-transform: uppercase; letter-spacing: .12em; font-size: 11.5px; }
+@media (max-width: 760px) {
+  .shop .sh-card__acts .sh-btn { padding-inline: 6px; font-size: 11px; letter-spacing: .08em; line-height: 1.2; white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .shop .sh-btn::before, .shop .sh-btn::after { transition: none; } }
+
 /* ---- Product order page and tick-box request (owner, 15 Oct 2026) ---- */
 .sh-piece__grid { display: grid; gap: 28px; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
 .sh-piece__media { position: sticky; inset-block-start: 96px; }
@@ -363,3 +391,10 @@ html[data-theme="dark"] .shop .sh-card:hover, html[data-theme="dark"] .shop .sh-
   .sh-piece__media { position: static; }
   .sh-tick__two { grid-template-columns: 1fr; }
 }
+
+/* Tick boxes, refined to match the buttons: square, hairline, a small tick when chosen */
+.shop .sh-chip span { border-radius: 3px; border-width: 1px; min-block-size: 44px; letter-spacing: .02em; }
+.shop .sh-chip input:checked + span { background: color-mix(in srgb, var(--sh-accent) 12%, var(--sh-card)); }
+.shop .sh-chip input:checked + span::before { content: "\2713"; font-size: 12px; color: var(--sh-accent); }
+.shop .sh-seg { border-radius: 3px; }
+.shop .sh-seg__opt { border-radius: 2px; text-transform: uppercase; letter-spacing: .12em; font-size: 12.5px; }
