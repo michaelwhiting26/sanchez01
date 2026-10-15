@@ -448,44 +448,25 @@ html[data-theme="dark"] .shop .sh-card:hover, html[data-theme="dark"] .shop .sh-
 @media (max-width: 420px) { .shop .sh-next { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .shop .sh-card--build, .shop .sh-card__pic img { transition: none; } .shop .sh-card--build:hover { transform: none; } }
 
-/* ---- Button colour (owner, 15 Oct 2026: "bland… I want them to look beautiful and I want people to want to click them").
-   Championship-belt gold for every main call to action, with a streak of light that crosses it on hover (and every few seconds on the
-   hero); glass outlines for second actions; gold for chosen tick boxes and the order switch. Red stays for brand marks. ---- */
-.shop { --sh-gold-1: #f7df9a; --sh-gold-2: #d9ae45; --sh-gold-3: #a3741d; --sh-gold-edge: #f0cf78; --sh-gold-ink: #1d1407; }
+/* ---- Buttons, final (owner, 15 Oct 2026: the gold was "tacky"). Quiet luxury: solid ivory pills on dark (near-black in light mode),
+   hairline outlines for second actions, no gradients, glows or glints; colour comes from contrast. Hero letters are solid, no outline. ---- */
+.shop { --sh-cta-bg: #f3eadc; --sh-cta-ink: #14100d; --sh-cta-hover: #ffffff; }
+html[data-theme="light"] .shop { --sh-cta-bg: #17120f; --sh-cta-ink: #f6f4ef; --sh-cta-hover: #000000; }
 .shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light),
 .shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):hover,
 .shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):focus-visible {
-  border: 1px solid var(--sh-gold-edge); color: var(--sh-gold-ink) !important; font-weight: 700;
-  background: linear-gradient(160deg, var(--sh-gold-1) 0%, var(--sh-gold-2) 48%, var(--sh-gold-3) 100%);
+  background: var(--sh-cta-bg); border: 1px solid var(--sh-cta-bg); color: var(--sh-cta-ink) !important; box-shadow: none; filter: none; font-weight: 700;
 }
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light) {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), inset 0 -2px 0 rgb(0 0 0 / .16), 0 10px 26px -12px rgb(217 174 69 / .6);
-  transition: box-shadow .35s ease, transform .15s ease, filter .35s ease;
-}
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):hover,
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):focus-visible {
-  transform: translateY(-1px); filter: brightness(1.05) saturate(1.06);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), inset 0 -2px 0 rgb(0 0 0 / .16), 0 16px 34px -12px rgb(217 174 69 / .8);
-}
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):active { transform: translateY(0); filter: brightness(.97); }
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light)::before {
-  inset: -30% auto -30% -55%; inline-size: 42%; background: linear-gradient(100deg, transparent, rgb(255 255 255 / .8), transparent);
-  transform: skewX(-20deg) translateX(0); transform-origin: center; transition: transform .9s cubic-bezier(.2, .7, .2, 1);
-}
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):hover::before,
-.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):focus-visible::before { transform: skewX(-20deg) translateX(430%); }
-@keyframes sh-glint { 0%, 72% { transform: skewX(-20deg) translateX(0); } 100% { transform: skewX(-20deg) translateX(430%); } }
-.shop .sh-hero .sh-btn:not(.sh-btn--light)::before { animation: sh-glint 5s ease-in-out 1.6s infinite; }
-
-.shop .sh-btn--line { background: rgb(255 255 255 / .03); border-color: color-mix(in srgb, var(--sh-ink) 38%, transparent); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.shop .sh-btn--line:hover, .shop .sh-btn--line:focus-visible { border-color: var(--sh-ink); }
-.shop .sh-btn--light { background: rgb(255 255 255 / .06); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-
-.shop .sh-seg__opt[aria-checked="true"] { background: linear-gradient(160deg, var(--sh-gold-1), var(--sh-gold-2) 50%, var(--sh-gold-3)); color: var(--sh-gold-ink); box-shadow: inset 0 1px 0 rgb(255 255 255 / .55); }
-.shop .sh-chip input:checked + span { border-color: var(--sh-gold-2); box-shadow: inset 0 0 0 1px var(--sh-gold-2); background: color-mix(in srgb, var(--sh-gold-2) 13%, var(--sh-card)); }
-.shop .sh-chip input:checked + span::before { color: var(--sh-gold-2); }
-.shop .sh-gal__dot[aria-current]::before { background: var(--sh-gold-2); }
-@media (prefers-reduced-motion: reduce) {
-  .shop .sh-hero .sh-btn::before { animation: none; }
-  .shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light)::before { transition: none; }
-}
+.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light)::before { display: none; }
+.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):hover { background: var(--sh-cta-hover); border-color: var(--sh-cta-hover); transform: translateY(-1px); }
+.shop .sh-btn:not(.sh-btn--line):not(.sh-btn--light):active { transform: none; }
+.shop :is(.sh-hero, .sh-story) .sh-btn:not(.sh-btn--line):not(.sh-btn--light) { background: #f3eadc; border-color: #f3eadc; color: #14100d !important; }
+.shop :is(.sh-hero, .sh-story) .sh-btn:not(.sh-btn--line):not(.sh-btn--light):hover { background: #fff; border-color: #fff; }
+.shop .sh-btn--line { background: transparent; border-color: color-mix(in srgb, var(--sh-ink) 32%, transparent); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.shop .sh-btn--line:hover, .shop .sh-btn--line:focus-visible { border-color: var(--sh-ink); color: var(--sh-bg) !important; }
+.shop .sh-btn--light { background: transparent; border-color: rgb(243 234 220 / .55); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.shop .sh-seg__opt[aria-checked="true"] { background: var(--sh-cta-bg); color: var(--sh-cta-ink); box-shadow: none; }
+.shop .sh-chip input:checked + span { border-color: var(--sh-ink); box-shadow: inset 0 0 0 1px var(--sh-ink); background: color-mix(in srgb, var(--sh-ink) 8%, var(--sh-card)); }
+.shop .sh-chip input:checked + span::before { color: var(--sh-ink); }
+.shop .sh-gal__dot[aria-current]::before { background: var(--sh-ink); }
+.shop .sh-hero__title span { color: #f3eadc; -webkit-text-stroke: 0; }
