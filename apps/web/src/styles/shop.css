@@ -330,3 +330,36 @@ html[data-theme="dark"] .shop .sh-card:hover, html[data-theme="dark"] .shop .sh-
 .sh-gal__dot::before { content: ""; inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--sh-ink-2); opacity: .45; transition: opacity .2s ease-out, transform .2s ease-out, background-color .2s ease-out; }
 .sh-gal__dot[aria-current]::before { opacity: 1; background: var(--sh-accent); transform: scale(1.3); }
 @media (max-width: 760px) { .sh-theme { min-block-size: 34px; padding: 0 10px; font-size: 12.5px; } }
+
+
+/* ---- Product order page and tick-box request (owner, 15 Oct 2026) ---- */
+.sh-piece__grid { display: grid; gap: 28px; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+.sh-piece__media { position: sticky; inset-block-start: 96px; }
+.sh-piece__media .sh-card__pic { border: 1px solid var(--sh-line); border-radius: 8px; overflow: hidden; }
+.sh-piece__price { margin: -10px 0 18px; font: 600 14px/1.4 var(--sh-text); color: var(--sh-ink-2); }
+.sh-tick fieldset { border: 0; padding: 0; margin: 0 0 20px; min-inline-size: 0; }
+.sh-tick legend { margin: 0 0 10px; padding: 0; font: 700 12.5px/1.2 var(--sh-text); letter-spacing: .1em; text-transform: uppercase; color: var(--sh-ink-2); }
+.sh-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.sh-chip { position: relative; }
+.sh-chip input { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
+.sh-chip span { display: inline-flex; align-items: center; gap: 8px; min-block-size: 42px; padding: 0 14px; border: 1.5px solid var(--sh-line); border-radius: 999px;
+  background: var(--sh-card); color: var(--sh-ink); font: 600 14px/1 var(--sh-text); cursor: pointer; transition: border-color .15s ease-out, box-shadow .15s ease-out; }
+.sh-chip span:hover { border-color: var(--sh-ink-2); }
+.sh-chip input:checked + span { border-color: var(--sh-accent); box-shadow: inset 0 0 0 1px var(--sh-accent); }
+.sh-chip input:focus-visible + span { outline: 2px solid var(--sh-ink); outline-offset: 2px; }
+.sh-sw { display: inline-block; inline-size: 16px; block-size: 16px; border-radius: 50%; border: 1px solid rgb(0 0 0 / .25); }
+.sh-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin: 0 0 22px; border: 1px solid var(--sh-line); border-radius: 10px; background: var(--sh-bg); }
+.sh-seg__opt { min-block-size: 46px; border: 0; border-radius: 7px; background: transparent; color: var(--sh-ink); font: 700 15px/1 var(--sh-text); cursor: pointer; }
+.sh-seg__opt[aria-checked="true"] { background: var(--sh-red); color: #fff; }
+.sh-tick__more { margin-block-start: 14px; }
+.sh-tick__label { margin: 12px 0 8px; font: 600 13px/1 var(--sh-text); color: var(--sh-ink-2); }
+.sh-tick__note { margin: 12px 0 0; font-size: 14px; color: var(--sh-ink-2); }
+.sh-tick__two { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.sh-tick__send { inline-size: 100%; }
+.sh-tick__small { margin: 10px 0 0; font-size: 13.5px; color: var(--sh-ink-2); text-align: center; }
+.sh-tick__small a { color: var(--sh-accent); font-weight: 700; }
+@media (max-width: 860px) {
+  .sh-piece__grid { grid-template-columns: 1fr; }
+  .sh-piece__media { position: static; }
+  .sh-tick__two { grid-template-columns: 1fr; }
+}

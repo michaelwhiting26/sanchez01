@@ -24,7 +24,13 @@ export type FunnelEvent =
   | "quote_sent"
   | "quote_fallback"
   | "quote_copy"
-  | "quote_instagram";
+  | "quote_instagram"
+  | "piece_mode_as_is"
+  | "piece_mode_change"
+  | "piece_sent"
+  | "piece_fallback"
+  | "piece_copy"
+  | "piece_to_3d";
 
 export function trackEvent(name: FunnelEvent, props?: Record<string, string>): void {
   try {

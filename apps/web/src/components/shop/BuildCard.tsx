@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { SHOP_GALLERIES, type ShopProduct } from "@/lib/shop/catalogue";
-import { QUOTE_FOR } from "@/lib/shop/journey";
 import { CardGallery } from "./CardGallery";
 
 /**
@@ -9,8 +8,6 @@ import { CardGallery } from "./CardGallery";
  * into 3D. No price until Jesse confirms it.
  */
 export function BuildCard({ product }: { product: ShopProduct }) {
-  const q = QUOTE_FOR[product.slug] ?? "other";
-  const piece = encodeURIComponent(product.name);
   const gallery = SHOP_GALLERIES[product.slug];
   const badge = product.ready ? <span className="sh-card__3d">3D</span> : null;
   return (
@@ -30,10 +27,10 @@ export function BuildCard({ product }: { product: ShopProduct }) {
         <span className="sh-card__line">{product.line}</span>
         <span className="sh-card__price">Price to come</span>
         <span className="sh-card__acts">
-          <Link className="sh-btn sh-btn--small" href={`/contact?product=${q}&start=this&piece=${piece}`} data-track="card_order_this" data-track-product={product.slug}>
+          <Link className="sh-btn sh-btn--small" href={`/piece/${product.slug}?mode=as-is`} data-track="card_order_this" data-track-product={product.slug}>
             Order this one
           </Link>
-          <Link className="sh-btn sh-btn--small sh-btn--line" href={`/contact?product=${q}&start=change&piece=${piece}`} data-track="card_this_different" data-track-product={product.slug}>
+          <Link className="sh-btn sh-btn--small sh-btn--line" href={`/piece/${product.slug}?mode=change`} data-track="card_this_different" data-track-product={product.slug}>
             This, but different
           </Link>
         </span>

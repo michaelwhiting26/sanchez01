@@ -58,7 +58,7 @@ export function CardGallery({ images, label, children }: { images: readonly Pic[
         <img key={p.src} className="sh-gal__img" data-on={k === at || undefined} src={p.src} alt={k === at ? p.alt : ""} width={p.width} height={p.height} loading="lazy" />
       ))}
       {children}
-      <span className="sh-gal__dots">
+      <span className="sh-gal__dots" hidden={n < 2}>
         {images.map((p, k) => (
           <button
             key={p.src}
