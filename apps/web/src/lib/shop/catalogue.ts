@@ -21,13 +21,25 @@ export interface ShopProduct {
   readonly ready: boolean;
 }
 
+const MITTS_PAIR: ShopProduct["image"] = { src: `${W}/focus-mitts-brown-zv-pair.webp`, alt: "A pair of Sanchez focus mitts photographed in the workshop, brown leather with the Sanchez badge", width: 1247, height: 1247 };
+
 const PICTURES: Record<string, ShopProduct["image"]> = {
   gloves: { src: `${P}/gloves.webp`, alt: "A black boxing glove with brass piping, from the 3D builder", width: 529, height: 900 },
   "heavy-bag": { src: "/assets/brand/bag-footer.webp", alt: "A red Sanchez heavy bag hanging from its chain", width: 800, height: 1200 },
   "head-guard": { src: `${P}/head-guard.webp`, alt: "A black head guard with a brass-edged face opening, from the 3D builder", width: 640, height: 900 },
   // the brown pair, not the pair lettered with a trainer's full name: a named person on the shop front needs that person's written consent first
-  "focus-mitts": { src: `${W}/focus-mitts-brown-zv-pair.webp`, alt: "A pair of Sanchez focus mitts photographed in the workshop, brown leather with the Sanchez badge", width: 1247, height: 1247 },
+  "focus-mitts": MITTS_PAIR,
   "groin-guard": { src: `${W}/groin-guard-sh-large-card.webp`, alt: "A Sanchez groin guard photographed in the workshop, red and blue leather with white lettering", width: 1211, height: 572 },
+};
+
+/** Extra angles of the same piece, shown as a card carousel (owner, 15 Oct 2026). The first entry is the card's main picture. */
+export const SHOP_GALLERIES: Readonly<Record<string, readonly ShopProduct["image"][]>> = {
+  "focus-mitts": [
+    MITTS_PAIR,
+    { src: `${W}/focus-mitts-brown-zv-front.webp`, alt: "Brown Sanchez focus mitts, front view", width: 1189, height: 1189 },
+    { src: `${W}/focus-mitts-brown-zv-side-pair.webp`, alt: "Two brown focus mitts back to back, showing the laced edge", width: 1317, height: 1317 },
+    { src: `${W}/focus-mitts-brown-zv-face.webp`, alt: "The striking face of a brown Sanchez focus mitt", width: 698, height: 698 },
+  ],
 };
 
 const LINES: Record<string, string> = {
