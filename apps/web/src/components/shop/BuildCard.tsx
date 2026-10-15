@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SHOP_GALLERIES, type ShopProduct } from "@/lib/shop/catalogue";
+import { RENDERED_PICTURES, SHOP_GALLERIES, type ShopProduct } from "@/lib/shop/catalogue";
 import { CardGallery } from "./CardGallery";
 
 /**
@@ -9,7 +9,7 @@ import { CardGallery } from "./CardGallery";
  */
 export function BuildCard({ product }: { product: ShopProduct }) {
   const gallery = SHOP_GALLERIES[product.slug];
-  const badge = product.ready ? <span className="sh-card__3d">3D</span> : null;
+  const badge = RENDERED_PICTURES.has(product.slug) ? <span className="sh-card__3d">3D design</span> : product.ready ? <span className="sh-card__3d">3D</span> : null;
   return (
     <article className="sh-card sh-card--build">
       {gallery && gallery.length > 1 ? (

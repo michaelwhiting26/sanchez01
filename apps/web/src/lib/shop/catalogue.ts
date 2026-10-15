@@ -32,6 +32,9 @@ const PICTURES: Record<string, ShopProduct["image"]> = {
   "groin-guard": { src: `${W}/groin-guard-sh-large-card.webp`, alt: "A Sanchez groin guard photographed in the workshop, red and blue leather with white lettering", width: 1211, height: 572 },
 };
 
+/** Card pictures that are 3D builder renders, not photographs of a finished piece: labelled "3D design" until Jesse supplies photos (evidence rule). */
+export const RENDERED_PICTURES: ReadonlySet<string> = new Set(["gloves", "head-guard", "heavy-bag"]);
+
 /** Extra angles of the same piece, shown as a card carousel (owner, 15 Oct 2026). The first entry is the card's main picture. */
 export const SHOP_GALLERIES: Readonly<Record<string, readonly ShopProduct["image"][]>> = {
   "focus-mitts": [
