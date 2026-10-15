@@ -9,8 +9,18 @@ const display = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "7
 const text = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--nf-text" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://sanchez01.vercel.app"),
   title: "Sanchez Custom Boxing Equipment | Designed in Sydney. Handmade in Pattaya.",
   description: "Custom boxing gloves, bags, guards and gym fit-outs, cut, stitched and printed by hand. Designed in Sydney. Handmade in Pattaya.",
+  // Link previews (WhatsApp, Instagram, iMessage): Jesse at his sewing machine.
+  openGraph: {
+    type: "website",
+    siteName: "Sanchez Custom Boxing",
+    title: "Sanchez Custom Boxing Equipment",
+    description: "Custom gloves, bags, guards and gym fit-outs, handmade by Jesse Sanchez. Designed in Sydney. Handmade in Pattaya.",
+    images: [{ url: "/assets/carousel/clip1.jpg", width: 1280, height: 720, alt: "Jesse Sanchez at his sewing machine in the workshop" }],
+  },
+  twitter: { card: "summary_large_image" },
   robots: { index: false, follow: false }, // prototype phase: stays out of search until launch (business TODO)
 };
 

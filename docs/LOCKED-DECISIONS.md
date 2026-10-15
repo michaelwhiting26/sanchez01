@@ -2,6 +2,23 @@
 
 The owner's current word on how each part of the site behaves. Anyone changing these parts (human or agent) reads this first and does not undo a line here without the owner saying so. Newest decision wins; when one changes, edit the line (do not append a contradicting rule elsewhere).
 
+## Home after the competitor research (owner, 15 Oct 2026; supersedes the home order and "a product page is its 3D builder" below where they differ)
+- **Source:** the audit of 18 brands in Dropbox `15. sanchezboxing/research_notes/2026-10-15 Competitor research/` (README.md). The owner's go-ahead was "apply it to the live Sanchez site", keeping Jesse's look. Jesse's own view: the 3D store felt like "a video game"; he wants buyers to see what he has made and order "this, but with this".
+- **Hero:** Jesse's workshop film plays as you land (`/assets/carousel/clip1.mp4`, poster `clip1.jpg`). The headline and origin line are unchanged. The two buttons are "See Jesse's builds" and "Make one for me".
+- **Three ways in, straight after the hero** (`lib/shop/journey.ts` DOORS):
+  1. Pick one of Jesse's.
+  2. Tell Jesse what you want.
+  3. Design it in 3D.
+
+  The 3D builder is now one option, not the gate.
+- **Jesse's builds** (`components/shop/BuildCard.tsx`): his photographs, each with "Order this one" and "This, but different". Both open the quote form with the product chosen and prompts written in (`?product=&start=&piece=`). "Or design it in 3D" is a quieter link.
+- **Jesse's story:** a dark section with a workshop film, tagged "Film coming soon". No claim about his past appears until Jesse tells it himself.
+- **What happens next:** six process steps (ORDER_STEPS). No times, percentages or guarantees until Jesse sets them.
+- **Motion** (`components/shop/Motion.tsx`):
+  - Lenis smooth scroll plus GSAP ScrollTrigger reveals, film parallax and a settling hero.
+  - Home only, loaded after first paint, off for reduced motion.
+- **Quote form never loses a request:** if the server cannot take it, the visitor gets the request written out, with "Copy my request" and "Message Jesse on Instagram" (`ig.me/m/sanchezproducts`). Quote requests are still not delivered by the server until a database and notifications are added (business TODO).
+
 ## Home is a plain shop (owner, 7 Oct 2026)
 - **The site is a plain shop on the pattern of Infinitude Fight.** The owner showed Jesse the 3D store over lunch; Jesse said it felt like a video game and asked for a site "exactly like Infinitude Fight". So: a top strip, a header with "Design in 3D", a hero, a row of products each marked 3D, picture tiles for the range, three steps, a dark "fully custom" panel, a short list of what is true of every piece, a four-column footer (`app/page.tsx`, `components/shop`, `styles/shop.css`, content in `lib/shop/catalogue.ts`). `/shop` is the product grid; `/how-it-works` the three steps.
 - **Home order** (owner, 8 Oct 2026; the slider and "Design in 3D" at the bottom are from 7 Oct): hero; then the craft strip "Made by hand", four pictures in this order: the maker, a finished piece, the construction up close, the bags in a gym (`SHOP_CRAFT`); then the range slider, a rail of pill-shaped stops (Everything, Gloves, Heavy bags, Focus mitts, Head guards, Groin guards, Gym fit-outs) that shows every workshop picture or only one kind (`components/shop/WorkGallery.tsx`), over "From the workshop"; technical detail (Key Features) only after the pictures; and the "Design in 3D" product row at the bottom, above the quote request. The six picture tiles ("Our range") are gone: the slider replaces them.

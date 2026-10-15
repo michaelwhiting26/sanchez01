@@ -3,12 +3,15 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { QUOTE_PRODUCTS, quoteSchema, type QuoteField, type QuoteResult } from "@/lib/quote";
 import { clearDesign, readDesign, type DesignHandoff } from "@/lib/quote-handoff";
+import { DIRECT_MESSAGE_HREF, startText } from "@/lib/shop/journey";
 
 const FIELDS: readonly QuoteField[] = ["name", "contact", "product", "details"];
 
 /**
  * The quote request on /contact: name, a way to reply, the product and what is wanted. Checked here and again on the server (/api/quote).
- * A visitor arriving from a 3D builder finds the product chosen and the design written in; they can add to it before sending.
+ * A visitor arriving from a 3D builder finds the product chosen and the design written in; one arriving from "Order this one",
+ * "This, but different" or "Tell Jesse" (?product=&start=&piece=) finds the product chosen and a few prompts to fill in.
+ * If the server cannot take the request, nothing is lost: the visitor gets it written out to copy and send to Jesse on Instagram.
  */
 export function QuoteForm() {
   const id = useId();
@@ -16,9 +19,19 @@ export function QuoteForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ message: string; field?: QuoteField } | null>(null);
   const [design, setDesign] = useState<DesignHandoff | null>(null);
+  const [prefill, setPrefill] = useState<{ product: string; details: string } | null>(null);
+  const [direct, setDirect] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    setDesign(readDesign()); // session storage is only there in the browser, so the design arrives after the first paint
+    const saved = readDesign(); // session storage is only there in the browser, so the design arrives after the first paint
+    setDesign(saved);
+    if (saved) return;
+    const sp = new URLSearchParams(window.location.search);
+    const asked = sp.get("product") ?? "";
+    const product = QUOTE_PRODUCTS.some((p) => p.value === asked) ? asked : "";
+    const details = startText(sp.get("start"), sp.get("piece"));
+    if (product || details) setPrefill({ product, details });
   }, []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
@@ -42,20 +55,50 @@ export function QuoteForm() {
     }
     setError(null);
     setBusy(true);
+    const label = QUOTE_PRODUCTS.find((p) => p.value === candidate.product)?.label ?? candidate.product;
+    const written = `Sanchez quote request\nName: ${candidate.name.trim()}\nReply to: ${candidate.contact.trim()}\nProduct: ${label}\n\n${candidate.details.trim()}`;
     try {
       const res = await fetch("/api/quote", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(candidate) });
       const json = (await res.json()) as QuoteResult;
       if (!json.ok) {
-        fail(json.message, json.field);
+        if (json.field) fail(json.message, json.field);
+        else setDirect(written); // the server could not take it: hand it to the visitor to send to Jesse directly
         return;
       }
       clearDesign();
       setDone(true);
     } catch {
-      fail("Could not reach us. Please try again.");
+      setDirect(written);
     } finally {
       setBusy(false);
     }
+  }
+
+  if (direct) {
+    return (
+      <div className="sh-form sh-form--direct" role="status">
+        <h2>Send it to Jesse directly</h2>
+        <p>We could not send your request from here, so here it is, written out. Copy it and send it to Jesse on Instagram, with any photos or your logo.</p>
+        <pre className="sh-form__text">{direct}</pre>
+        <div className="sh-actions">
+          <button
+            type="button"
+            className="sh-btn"
+            onClick={() => {
+              void navigator.clipboard.writeText(direct).then(
+                () => setCopied(true),
+                () => setCopied(false),
+              );
+            }}
+          >
+            {copied ? "Copied" : "Copy my request"}
+          </button>
+          <a className="sh-btn sh-btn--line" href={DIRECT_MESSAGE_HREF} target="_blank" rel="noopener noreferrer">
+            Message Jesse on Instagram
+          </a>
+        </div>
+      </div>
+    );
   }
 
   if (done) {
@@ -63,6 +106,13 @@ export function QuoteForm() {
       <div className="sh-form sh-form--done" role="status">
         <h2>Request sent.</h2>
         <p>Thank you. Jesse has what you asked for and will reply to the contact you gave.</p>
+        <p>
+          Got photos or a logo?{" "}
+          <a href={DIRECT_MESSAGE_HREF} target="_blank" rel="noopener noreferrer">
+            Send them to Jesse on Instagram
+          </a>{" "}
+          with your name.
+        </p>
       </div>
     );
   }
@@ -70,7 +120,7 @@ export function QuoteForm() {
   const invalid = (f: QuoteField) => (error?.field === f ? { "aria-invalid": true, "aria-describedby": `${id}-msg` } : {});
 
   return (
-    <form key={design ? "design" : "blank"} className="sh-form" onSubmit={(e) => void onSubmit(e)} noValidate>
+    <form key={design ? "design" : prefill ? "prefill" : "blank"} className="sh-form" onSubmit={(e) => void onSubmit(e)} noValidate>
       {design ? <p className="sh-form__design">Your 3D design is filled in below. Add anything else Jesse should know, such as size or weight.</p> : null}
       <div className="sh-form__field">
         <label htmlFor={`${id}-name`}>Name</label>
@@ -82,7 +132,7 @@ export function QuoteForm() {
       </div>
       <div className="sh-form__field">
         <label htmlFor={`${id}-product`}>Product</label>
-        <select id={`${id}-product`} name="product" defaultValue={design?.product ?? ""} required {...invalid("product")}>
+        <select id={`${id}-product`} name="product" defaultValue={design?.product ?? prefill?.product ?? ""} required {...invalid("product")}>
           <option value="" disabled>
             Choose one
           </option>
@@ -95,7 +145,7 @@ export function QuoteForm() {
       </div>
       <div className="sh-form__field">
         <label htmlFor={`${id}-details`}>What do you want made?</label>
-        <textarea id={`${id}-details`} name="details" rows={design ? 12 : 6} maxLength={4000} defaultValue={design?.details ?? ""} required {...invalid("details")} />
+        <textarea id={`${id}-details`} name="details" rows={design || prefill ? 10 : 6} maxLength={4000} defaultValue={design?.details ?? prefill?.details ?? ""} required {...invalid("details")} />
       </div>
       <div className="sh-form__trap" aria-hidden="true">
         <label htmlFor={`${id}-company`}>Company</label>
