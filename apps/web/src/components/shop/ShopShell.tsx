@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LEGAL_LINKS, LOGO_SRC, ORIGIN_LINE, SOCIALS } from "@/lib/site";
 import { SHOP_NAV, SHOP_PRODUCTS } from "@/lib/shop/catalogue";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { ShopMenu } from "./ShopMenu";
 import "../../styles/shop.css";
 
@@ -28,6 +29,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+          <ThemeToggle />
           <Link href="/contact?start=new" className="sh-btn sh-btn--small sh-head__cta" data-track="header_quote">
             Get a Quote
           </Link>

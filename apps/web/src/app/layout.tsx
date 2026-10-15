@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 import { ClickTracker } from "@/components/ClickTracker";
+
+/** Applies a saved light/dark choice before first paint (no flash). The page is served dark; see components/ThemeToggle.tsx. */
+const THEME_BOOT = `try{var t=localStorage.getItem("sanchez-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import "../styles/base.css";
 import "../styles/home.css";
@@ -31,8 +35,11 @@ export const viewport: Viewport = { themeColor: "#0e0b09", viewportFit: "cover",
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" dir="ltr" className={`${display.variable} ${text.variable}`}>
+    <html lang="en" dir="ltr" data-theme="dark" suppressHydrationWarning className={`${display.variable} ${text.variable}`}>
       <body>
+        <Script id="theme-boot" strategy="beforeInteractive">
+          {THEME_BOOT}
+        </Script>
         {children}
         <ClickTracker />
         <Analytics />
