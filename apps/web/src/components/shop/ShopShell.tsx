@@ -58,7 +58,7 @@ function ShopFooter() {
           ))}
         </FootCol>
         <FootCol title="Help">
-          <Link href="/how-it-works">How it works</Link>
+          <Link href="/#how">How it works</Link>
           <Link href="/contact">Get a Quote</Link>
           <Link href="/gym-fit-outs">Gym Fit-Out</Link>
         </FootCol>
@@ -78,7 +78,6 @@ function ShopFooter() {
               {l.label}
             </Link>
           ))}
-          <Link href="/3d-store">Superseded: 3D store</Link>
         </p>
       </div>
     </footer>

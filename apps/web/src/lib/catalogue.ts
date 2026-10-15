@@ -16,7 +16,7 @@ export interface CatalogueItem {
   readonly price: { readonly amountMinor: number; readonly currency: string } | null;
 }
 
-export const WAITLIST_HREF = "/superseded#waitlist" as const;
+export const WAITLIST_HREF = "/contact?start=new" as const; // the old scroll-site waitlist is gone (15 Oct 2026): pieces without a builder go to a quote
 
 export const OTHER_PRODUCTS: readonly CatalogueItem[] = [
   {

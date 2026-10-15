@@ -272,7 +272,7 @@ export function Cockpit({ initialPreset }: { initialPreset: Preset }) {
       </div>
 
       <header className="ck__top">
-        <Link href="/product" className="ck__brand" aria-label="Back to the bag"><img src={LOGO_SRC} alt="" width={44} height={38} /></Link>
+        <Link href="/" className="ck__brand" aria-label="Sanchez home"><img src={LOGO_SRC} alt="" width={44} height={38} /></Link>
         <div className="ck__mid">
           <ol className="ck__track" aria-label="Build progress">
             {steps.map((s) => (

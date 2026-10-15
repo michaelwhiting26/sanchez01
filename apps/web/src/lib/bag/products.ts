@@ -33,20 +33,20 @@ export const plain = (id: string, name: string, color: number): BagProduct => ({
   trim: 0xffffff,
   bump: 0,
   price: null,
-  order: { label: "Order this bag", href: "/product" },
+  order: { label: "Order this bag", href: "/piece/heavy-bag" },
   build: { label: "Build yourself", href: `/configure?preset=${id}` },
 });
 
 export const BAG_PRODUCTS: readonly BagProduct[] = [
-  { id: "tiger", name: "Tiger", sub: "Heavy bag", art: "tigerfull", trim: 0xffffff, bump: 1.4, price: null, order: { label: "Order this bag", href: "/product" }, build: { label: "Build yourself", href: "/configure?preset=tigerfull" } },
+  { id: "tiger", name: "Tiger", sub: "Heavy bag", art: "tigerfull", trim: 0xffffff, bump: 1.4, price: null, order: { label: "Order this bag", href: "/piece/heavy-bag" }, build: { label: "Build yourself", href: "/configure?preset=tigerfull" } },
   // PAUSED (Tiger and Monogram only): plain("royal-blue", "Royal Blue", 0x0b6fe8),
   // PAUSED (Tiger and Monogram only): plain("fight-red", "Fight Red", 0xef2a12),
   // PAUSED (Tiger and Monogram only): plain("forest-green", "Forest Green", 0x1f5c3a),
   // PAUSED (Tiger and Monogram only): plain("gold", "Gold", 0xe2b10a),
-  // PAUSED: { id: "dragon", name: "Dragon", sub: "After Hokusai · gold on oxblood", art: "dragonfull", trim: 0xc9a45c, bump: 1.3, order: { label: "Order this bag", href: "/product" }, build: { label: "Build yourself", href: "/configure?preset=dragon" } },
-  // PAUSED: { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: { label: "Order this bag", href: "/product" }, build: { label: "Build yourself", href: "/configure?preset=koi" } },
-  { id: "monogram", name: "Monogram", sub: "Tone on tone · black on black", art: "monogram", trim: 0x1c1c1e, bump: 1.6, price: null, order: { label: "Order this bag", href: "/product" }, build: { label: "Build yourself", href: "/configure?preset=monogram" } },
-  // PAUSED: { id: "kintsugi", name: "Gold Vein", sub: "Kintsugi leather", art: "kintsugi", trim: 0xb8953f, bump: 1.6, order: { label: "Order this bag", href: "/product" }, build: { label: "Build yourself", href: "/configure?preset=kintsugi" } },
+  // PAUSED: { id: "dragon", name: "Dragon", sub: "After Hokusai · gold on oxblood", art: "dragonfull", trim: 0xc9a45c, bump: 1.3, order: { label: "Order this bag", href: "/piece/heavy-bag" }, build: { label: "Build yourself", href: "/configure?preset=dragon" } },
+  // PAUSED: { id: "koi", name: "Koi", sub: "After Gakutei · coral on indigo", art: "koifull", trim: 0xe9e0cf, bump: 1.0, order: { label: "Order this bag", href: "/piece/heavy-bag" }, build: { label: "Build yourself", href: "/configure?preset=koi" } },
+  { id: "monogram", name: "Monogram", sub: "Tone on tone · black on black", art: "monogram", trim: 0x1c1c1e, bump: 1.6, price: null, order: { label: "Order this bag", href: "/piece/heavy-bag" }, build: { label: "Build yourself", href: "/configure?preset=monogram" } },
+  // PAUSED: { id: "kintsugi", name: "Gold Vein", sub: "Kintsugi leather", art: "kintsugi", trim: 0xb8953f, bump: 1.6, order: { label: "Order this bag", href: "/piece/heavy-bag" }, build: { label: "Build yourself", href: "/configure?preset=kintsugi" } },
 ];
 
 /** "From £1,299" style text for a product, or the marked placeholder while the price is not confirmed. */
