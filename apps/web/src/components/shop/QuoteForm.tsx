@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { QUOTE_PRODUCTS, quoteSchema, type QuoteField, type QuoteResult } from "@/lib/quote";
 import { clearDesign, readDesign, type DesignHandoff } from "@/lib/quote-handoff";
 import { DIRECT_MESSAGE_HREF, startText } from "@/lib/shop/journey";
+import { trackEvent } from "@/lib/track";
 
 const FIELDS: readonly QuoteField[] = ["name", "contact", "product", "details"];
 
@@ -22,6 +23,7 @@ export function QuoteForm() {
   const [prefill, setPrefill] = useState<{ product: string; details: string } | null>(null);
   const [direct, setDirect] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const started = useRef(false);
 
   useEffect(() => {
     const saved = readDesign(); // session storage is only there in the browser, so the design arrives after the first paint
@@ -62,13 +64,18 @@ export function QuoteForm() {
       const json = (await res.json()) as QuoteResult;
       if (!json.ok) {
         if (json.field) fail(json.message, json.field);
-        else setDirect(written); // the server could not take it: hand it to the visitor to send to Jesse directly
+        else {
+          setDirect(written); // the server could not take it: hand it to the visitor to send to Jesse directly
+          trackEvent("quote_fallback", { product: candidate.product });
+        }
         return;
       }
       clearDesign();
       setDone(true);
+      trackEvent("quote_sent", { product: candidate.product });
     } catch {
       setDirect(written);
+      trackEvent("quote_fallback", { product: candidate.product });
     } finally {
       setBusy(false);
     }
@@ -85,6 +92,7 @@ export function QuoteForm() {
             type="button"
             className="sh-btn"
             onClick={() => {
+              trackEvent("quote_copy");
               void navigator.clipboard.writeText(direct).then(
                 () => setCopied(true),
                 () => setCopied(false),
@@ -93,7 +101,7 @@ export function QuoteForm() {
           >
             {copied ? "Copied" : "Copy my request"}
           </button>
-          <a className="sh-btn sh-btn--line" href={DIRECT_MESSAGE_HREF} target="_blank" rel="noopener noreferrer">
+          <a className="sh-btn sh-btn--line" href={DIRECT_MESSAGE_HREF} target="_blank" rel="noopener noreferrer" data-track="quote_instagram">
             Message Jesse on Instagram
           </a>
         </div>
@@ -120,7 +128,17 @@ export function QuoteForm() {
   const invalid = (f: QuoteField) => (error?.field === f ? { "aria-invalid": true, "aria-describedby": `${id}-msg` } : {});
 
   return (
-    <form key={design ? "design" : prefill ? "prefill" : "blank"} className="sh-form" onSubmit={(e) => void onSubmit(e)} noValidate>
+    <form
+      key={design ? "design" : prefill ? "prefill" : "blank"}
+      className="sh-form"
+      onSubmit={(e) => void onSubmit(e)}
+      onFocusCapture={() => {
+        if (started.current) return;
+        started.current = true;
+        trackEvent("quote_form_start");
+      }}
+      noValidate
+    >
       {design ? <p className="sh-form__design">Your 3D design is filled in below. Add anything else Jesse should know, such as size or weight.</p> : null}
       <div className="sh-form__field">
         <label htmlFor={`${id}-name`}>Name</label>

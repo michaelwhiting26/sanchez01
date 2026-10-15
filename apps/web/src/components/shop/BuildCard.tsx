@@ -20,15 +20,15 @@ export function BuildCard({ product }: { product: ShopProduct }) {
         <span className="sh-card__line">{product.line}</span>
         <span className="sh-card__price">Price to come</span>
         <span className="sh-card__acts">
-          <Link className="sh-btn sh-btn--small" href={`/contact?product=${q}&start=this&piece=${piece}`}>
+          <Link className="sh-btn sh-btn--small" href={`/contact?product=${q}&start=this&piece=${piece}`} data-track="card_order_this" data-track-product={product.slug}>
             Order this one
           </Link>
-          <Link className="sh-btn sh-btn--small sh-btn--line" href={`/contact?product=${q}&start=change&piece=${piece}`}>
+          <Link className="sh-btn sh-btn--small sh-btn--line" href={`/contact?product=${q}&start=change&piece=${piece}`} data-track="card_this_different" data-track-product={product.slug}>
             This, but different
           </Link>
         </span>
         {product.ready ? (
-          <Link className="sh-card__to3d" href={product.href}>
+          <Link className="sh-card__to3d" href={product.href} data-track="card_design_3d" data-track-product={product.slug}>
             Or design it in 3D
           </Link>
         ) : null}

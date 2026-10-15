@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ClickTracker } from "@/components/ClickTracker";
 import { Barlow, Barlow_Condensed } from "next/font/google";
 import "../styles/base.css";
 import "../styles/home.css";
@@ -29,7 +32,12 @@ export const viewport: Viewport = { themeColor: "#0e0b09", viewportFit: "cover",
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" dir="ltr" className={`${display.variable} ${text.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ClickTracker />
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }

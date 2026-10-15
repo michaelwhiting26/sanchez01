@@ -17,10 +17,10 @@ export function StickyOrder() {
   }, []);
   return (
     <div className="sh-sticky" data-show={show || undefined} aria-hidden={!show}>
-      <Link className="sh-btn" href="/#choose" tabIndex={show ? 0 : -1}>
+      <Link className="sh-btn" href="/#choose" tabIndex={show ? 0 : -1} data-track="sticky_get_yours_made">
         Get yours made
       </Link>
-      <Link className="sh-btn sh-btn--line" href="/contact?start=new" tabIndex={show ? 0 : -1}>
+      <Link className="sh-btn sh-btn--line" href="/contact?start=new" tabIndex={show ? 0 : -1} data-track="sticky_quote">
         Get a Quote
       </Link>
     </div>

@@ -41,10 +41,10 @@ export default function HomePage() {
           </h1>
           <p className="sh-hero__text">Gloves, bags, pads and guards, made to order by Jesse Sanchez. {ORIGIN_LINE}</p>
           <div className="sh-actions">
-            <Link className="sh-btn" href="#choose">
+            <Link className="sh-btn" href="#choose" data-track="hero_get_yours_made">
               Get yours made
             </Link>
-            <Link className="sh-btn sh-btn--light" href="/contact?start=new">
+            <Link className="sh-btn sh-btn--light" href="/contact?start=new" data-track="hero_tell_jesse">
               Tell Jesse what you want
             </Link>
           </div>
@@ -71,10 +71,10 @@ export default function HomePage() {
               <span className="sh-card__line">Bags and gear for your gym, made to order.</span>
               <span className="sh-card__price">Price to come</span>
               <span className="sh-card__acts">
-                <Link className="sh-btn sh-btn--small" href="/gym-fit-outs">
+                <Link className="sh-btn sh-btn--small" href="/gym-fit-outs" data-track="card_gym">
                   Kit out your gym
                 </Link>
-                <Link className="sh-btn sh-btn--small sh-btn--line" href="/contact?product=gym-fit-out&start=new">
+                <Link className="sh-btn sh-btn--small sh-btn--line" href="/contact?product=gym-fit-out&start=new" data-track="card_gym">
                   Get a Quote
                 </Link>
               </span>
@@ -102,7 +102,7 @@ export default function HomePage() {
           ))}
         </ol>
         <div className="sh-actions sh-actions--mid" data-reveal>
-          <Link className="sh-btn" href="#choose">
+          <Link className="sh-btn" href="#choose" data-track="how_start_order">
             Start your order
           </Link>
         </div>
@@ -123,10 +123,10 @@ export default function HomePage() {
           ))}
         </div>
         <div className="sh-actions sh-actions--mid" data-reveal>
-          <Link className="sh-btn" href="#choose">
+          <Link className="sh-btn" href="#choose" data-track="craft_get_yours_made">
             Get yours made
           </Link>
-          <Link className="sh-btn sh-btn--line" href="/the-workshop">
+          <Link className="sh-btn sh-btn--line" href="/the-workshop" data-track="craft_see_workshop">
             See the workshop
           </Link>
         </div>
@@ -142,7 +142,7 @@ export default function HomePage() {
             </h2>
             <p>{STORY.text}</p>
             <div className="sh-actions">
-              <Link className="sh-btn" href="#choose">
+              <Link className="sh-btn" href="#choose" data-track="story_get_yours_made">
                 Get yours made
               </Link>
               <a className="sh-btn sh-btn--light" href={STORY.href} target="_blank" rel="noopener noreferrer">
@@ -158,7 +158,7 @@ export default function HomePage() {
           Ready when you are
         </h2>
         <div className="sh-actions sh-actions--mid">
-          <Link className="sh-btn" href="#choose">
+          <Link className="sh-btn" href="#choose" data-track="close_get_yours_made">
             Get yours made
           </Link>
           <Link className="sh-btn sh-btn--line" href="/contact?start=new">

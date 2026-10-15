@@ -28,7 +28,7 @@ export function ShopShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
-          <Link href="/contact?start=new" className="sh-btn sh-btn--small sh-head__cta">
+          <Link href="/contact?start=new" className="sh-btn sh-btn--small sh-head__cta" data-track="header_quote">
             Get a Quote
           </Link>
           <ShopMenu />
