@@ -398,3 +398,52 @@ html[data-theme="dark"] .shop .sh-card:hover, html[data-theme="dark"] .shop .sh-
 .shop .sh-chip input:checked + span::before { content: "\2713"; font-size: 12px; color: var(--sh-accent); }
 .shop .sh-seg { border-radius: 3px; }
 .shop .sh-seg__opt { border-radius: 2px; text-transform: uppercase; letter-spacing: .12em; font-size: 12.5px; }
+
+/* ---- Design pass (owner, 15 Oct 2026: "all the corners need to be rounded… elevate the standard"). One radius scale for the whole
+   shop, products three across in even rows with bigger pictures, roomier steps, one editorial left edge, more air between sections. ---- */
+.shop { --sh-r-sm: 12px; --sh-r-md: 16px; --sh-r-lg: 22px; --sh-r-pill: 999px; }
+.shop .sh-btn { border-radius: var(--sh-r-pill); letter-spacing: .1em; padding-inline: 28px; }
+.shop .sh-btn--small { padding-inline: 18px; }
+.shop .sh-theme, .shop .sh-card__3d, .shop .sh-story__tag { border-radius: var(--sh-r-pill); }
+.shop .sh-story__tag { padding: 7px 13px; }
+.shop .sh-seg { border-radius: var(--sh-r-pill); padding: 5px; }
+.shop .sh-seg__opt { border-radius: var(--sh-r-pill); }
+.shop .sh-chip span { border-radius: var(--sh-r-pill); padding-inline: 16px; }
+.shop .sh-card, .shop .sh-door, .shop .sh-next li, .shop .sh-feat { border-radius: var(--sh-r-md); }
+.shop .sh-card { overflow: hidden; }
+.shop .sh-craft figure { border-radius: var(--sh-r-md); overflow: hidden; }
+.shop .sh-story, .shop .sh-dark, .shop .sh-form, .shop .sh-piece__media .sh-card__pic { border-radius: var(--sh-r-lg); }
+.shop .sh-form :is(input, select, textarea), .shop .sh-form__text { border-radius: var(--sh-r-sm); }
+
+.shop .sh-builds { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.shop .sh-card--build .sh-card__body { padding: 18px 18px 22px; gap: 8px; }
+.shop .sh-card--build .sh-card__name { font: italic 800 26px/1 var(--sh-display); text-transform: uppercase; letter-spacing: .01em; }
+.shop .sh-card--build .sh-card__line { font-size: 14.5px; }
+.shop .sh-card__pic img { transition: transform .7s cubic-bezier(.2, .7, .2, 1); }
+.shop .sh-card--build { transition: transform .35s ease, box-shadow .35s ease; }
+.shop .sh-card--build:hover { transform: translateY(-4px); }
+.shop .sh-card--build:hover .sh-card__pic img { transform: scale(1.04); }
+
+.shop .sh-next { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.shop .sh-next li { padding: 24px 22px; }
+.shop .sh-next__n { font-size: 40px; }
+.shop .sh-next b { font-size: 24px; }
+.shop .sh-next li > span:last-child { font-size: 15.5px; }
+
+.shop .sh-sec > .sh-h:not(.sh-h--mid) { text-align: start; }
+.shop .sh-lede { margin: -6px 0 28px; text-align: start; max-inline-size: 40em; }
+.shop .sh-more { text-align: start; }
+.shop .sh-sec:not(.sh-end) > .sh-actions--mid { justify-content: flex-start; }
+@media (min-width: 900px) { .shop .sh-sec { padding-block: 60px; } }
+@media (max-width: 980px) { .shop .sh-builds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .shop .sh-builds { gap: 10px; }
+  .shop .sh-card--build .sh-card__name { font-size: 19px; }
+  .shop .sh-card--build .sh-card__body { padding: 12px 10px 14px; }
+  .shop .sh-card--build .sh-card__line { font-size: 13px; }
+  .shop .sh-next { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .shop .sh-next li { padding: 16px 14px; }
+  .shop .sh-next b { font-size: 19px; }
+}
+@media (max-width: 420px) { .shop .sh-next { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .shop .sh-card--build, .shop .sh-card__pic img { transition: none; } .shop .sh-card--build:hover { transform: none; } }
